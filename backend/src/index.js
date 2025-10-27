@@ -17,7 +17,7 @@ const pgPool = new Pool({
 });
 
 // MongoDB
-const mongoUri = process.env.MONGO_URI || "mongodb://mongo_db:27017/myapp";
+const mongoUri = process.env.MONGO_URI;
 mongoose
   .connect(mongoUri)
   .then(() => console.log("✅ MongoDB connected"))
@@ -25,7 +25,7 @@ mongoose
 
 // Redis
 const redisClient = createClient({
-  url: process.env.REDIS_URL || "redis://redis_cache:6379",
+  url: process.env.REDIS_URL,
 });
 redisClient
   .connect()
