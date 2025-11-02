@@ -1,8 +1,9 @@
+// src/config/postgres.js
 import pkg from "pg";
 import dns from "dns";
 const { Pool } = pkg;
 
-// Ép Node ưu tiên IPv4 (tránh lỗi ENETUNREACH)
+// Ép Node ưu tiên IPv4
 dns.setDefaultResultOrder("ipv4first");
 
 const connectionString = process.env.DATABASE_URL;
@@ -11,10 +12,10 @@ if (!connectionString) {
   throw new Error("❌ Missing DATABASE_URL in environment variables");
 }
 
-const pgPool = new Pool({
+export const pgPool = new Pool({
   connectionString,
   ssl: { rejectUnauthorized: false },
-  family: 6, // ép IPv4
+  family: 4, // ép dùng IPv4 thay vì IPv6
 });
 
 export const connectPostgres = async () => {
@@ -26,5 +27,3 @@ export const connectPostgres = async () => {
     throw err;
   }
 };
-
-export default pgPool;
