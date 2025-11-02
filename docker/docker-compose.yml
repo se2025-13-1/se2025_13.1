@@ -1,49 +1,16 @@
 services:
   backend:
-    build: ../backend
-    container_name: backend_app
+    build:
+      context: ../backend
+    container_name: se2025_backend
     ports:
       - "3000:3000"
     env_file:
-      - .env
-    depends_on:
-      - postgres_db
-      - mongo_db
-      - redis_cache
-    restart: always
+      - ../docker/.env
+    restart: unless-stopped
+    networks:
+      - my_ipv6_net
 
-  postgres_db:
-    image: postgres:17
-    container_name: postgres_db
-    env_file:
-      - .env
-    ports:
-      - "5433:5432" # tránh xung đột với PostgreSQL local
-    volumes:
-      - pg_data:/var/lib/postgresql/data
-    restart: always
-
-  mongo_db:
-    image: mongo:7
-    container_name: mongo_db
-    env_file:
-      - .env
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
-    restart: always
-
-  redis_cache:
-    image: redis:7
-    container_name: redis_cache
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    restart: always
-
-volumes:
-  pg_data:
-  mongo_data:
-  redis_data:
+networks:
+  my_ipv6_net:
+    external: true
