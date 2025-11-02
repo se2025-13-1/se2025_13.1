@@ -1,16 +1,30 @@
 import express from "express";
 import dotenv from "dotenv";
+import cors from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
 
 import { connectPostgres } from "./config/postgres.js";
 import { connectMongo } from "./config/mongo.js";
 import { connectRedis } from "./config/redis.js";
 
+// 🧩 Import routes
+import authRoutes from "./modules/auth/auth.routes.js";
+
 dotenv.config();
 
 const app = express();
-app.use(express.json());
 
-// 🧠 Route test để kiểm tra backend
+// 🧠 Middleware cơ bản
+app.use(express.json());
+app.use(cors());
+app.use(helmet());
+app.use(morgan("dev"));
+
+// 🧭 Routes
+app.use("/api/auth", authRoutes);
+
+// 🧪 Route test
 app.get("/", (req, res) => {
   res.json({ message: "Backend is running 🚀" });
 });
@@ -30,7 +44,7 @@ const startServer = async () => {
     });
   } catch (error) {
     console.error("❌ Failed to start server:", error);
-    process.exit(1); // Dừng lại nếu có lỗi kết nối DB
+    process.exit(1);
   }
 };
 
