@@ -1,49 +1,37 @@
 import express from "express";
-import pkg from "pg";
-import mongoose from "mongoose";
-import { createClient } from "redis";
+import dotenv from "dotenv";
 
-const { Pool } = pkg;
+import { connectPostgres } from "./config/postgres.js";
+import { connectMongo } from "./config/mongo.js";
+import { connectRedis } from "./config/redis.js";
+
+dotenv.config();
+
 const app = express();
+app.use(express.json());
 
-// PostgreSQL
-const pgPool = new Pool({
-  host: process.env.POSTGRES_HOST,
-  port: process.env.POSTGRES_PORT,
-  user: process.env.POSTGRES_USER,
-  password: process.env.POSTGRES_PASSWORD,
-  database: process.env.POSTGRES_DB,
-  ssl: { rejectUnauthorized: false }, // Supabase yêu cầu SSL
+// 🧠 Route test để kiểm tra backend
+app.get("/", (req, res) => {
+  res.json({ message: "Backend is running 🚀" });
 });
 
-// MongoDB
-const mongoUri = process.env.MONGO_URI;
-mongoose
-  .connect(mongoUri)
-  .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => console.error("❌ MongoDB error:", err));
-
-// Redis
-const redisClient = createClient({
-  url: process.env.REDIS_URL,
-});
-redisClient
-  .connect()
-  .then(() => console.log("✅ Redis connected"))
-  .catch((err) => console.error("❌ Redis error:", err));
-
-// Express
-app.get("/", async (req, res) => {
+// ⚙️ Hàm khởi động server
+const startServer = async () => {
   try {
-    const result = await pgPool.query("SELECT NOW()");
-    res.json({
-      message: "Hello from backend 🚀",
-      postgres_time: result.rows[0],
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+    console.log("🔄 Connecting to databases...");
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+    await connectPostgres();
+    await connectMongo();
+    await connectRedis();
+
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("❌ Failed to start server:", error);
+    process.exit(1); // Dừng lại nếu có lỗi kết nối DB
+  }
+};
+
+startServer();
