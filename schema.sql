@@ -6,6 +6,8 @@ CREATE TABLE users (
   phone VARCHAR(20),
   role VARCHAR(20) DEFAULT 'user',
   avatar_url TEXT,
+  is_verified BOOLEAN DEFAULT false,
+  otp_sent_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
