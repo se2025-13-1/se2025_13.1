@@ -3,7 +3,9 @@ import dotenv from "dotenv";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
+import cron from "node-cron";
 
+import { userRepository } from "./modules/auth/auth.repository.js";
 import { connectPostgres } from "./config/postgres.js";
 import { connectMongo } from "./config/mongo.js";
 import { connectRedis } from "./config/redis.js";
@@ -47,5 +49,10 @@ const startServer = async () => {
     process.exit(1);
   }
 };
+
+cron.schedule("*/10 * * * *", async () => {
+  console.log("🧹 Dọn dẹp user chưa xác thực...");
+  await userRepository.deleteUnverifiedUser();
+});
 
 startServer();
