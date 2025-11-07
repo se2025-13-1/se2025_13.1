@@ -1,0 +1,4 @@
+# Welcome Image Placeholder
+
+This file serves as a placeholder for welcome.png image.
+Please replace this with your actual welcome.png image file.
