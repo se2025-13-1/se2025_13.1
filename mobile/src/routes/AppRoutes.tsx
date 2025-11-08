@@ -1,11 +1,15 @@
-import React, {useState} from 'react';
-import SplashScreen from '../screens/Splash/SplashScreen';
-import WelcomeScreen from '../screens/Welcome/WelcomeScreen';
-import LoginScreen from '../screens/Login/LoginScreen';
-import SignUpScreen from '../screens/SignUp/SignUpScreen';
-import ForgotPasswordScreen from '../screens/ForgotPassword/ForgotPasswordScreen';
-import VerificationPassword from '../screens/ForgotPassword/VerificationPassword';
-import ResetPassword from '../screens/ForgotPassword/ResetPassword';
+// src/routes/AppRoutes.tsx
+import React, { useState } from 'react';
+import { SplashScreen } from '@modules/splash';
+import { HomeScreen } from '@modules/home';
+import { WelcomeScreen } from '@modules/welcome';
+import {
+  LoginScreen,
+  SignUpScreen,
+  ForgotPasswordScreen,
+  VerificationPassword,
+  ResetPasswordScreen,
+} from '@modules/auth';
 
 export type Screen =
   | 'splash'
@@ -14,90 +18,84 @@ export type Screen =
   | 'signup'
   | 'forgotPassword'
   | 'verification'
-  | 'resetPassword';
+  | 'resetPassword'
+  | 'home'; // Thêm home
 
 const AppRoutes: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>('splash');
   const [userEmail, setUserEmail] = useState('');
 
-  const navigateToWelcome = () => {
-    setCurrentScreen('welcome');
-  };
-
-  const navigateToLogin = () => {
-    setCurrentScreen('login');
-  };
-
-  const navigateToSignUp = () => {
-    setCurrentScreen('signup');
-  };
-
-  const navigateToForgotPassword = () => {
-    setCurrentScreen('forgotPassword');
-  };
-
-  const navigateToVerification = (email: string) => {
+  // === NAVIGATION HELPERS ===
+  const goTo = (screen: Screen) => setCurrentScreen(screen);
+  const goToVerification = (email: string) => {
     setUserEmail(email);
-    setCurrentScreen('verification');
+    goTo('verification');
   };
 
-  const navigateToResetPassword = () => {
-    setCurrentScreen('resetPassword');
-  };
-
-  const navigateBack = () => {
-    setCurrentScreen('welcome');
-  };
-
-  const navigateBackToLogin = () => {
-    setCurrentScreen('login');
-  };
-
+  // === RENDER SCREEN ===
   const renderScreen = () => {
     switch (currentScreen) {
       case 'splash':
-        return <SplashScreen onFinish={navigateToWelcome} />;
+        return <SplashScreen onFinish={() => goTo('welcome')} />;
+
       case 'welcome':
         return (
           <WelcomeScreen
-            onLogin={navigateToLogin}
-            onSignUp={navigateToSignUp}
+            onLogin={() => goTo('login')}
+            onSignUp={() => goTo('signup')}
           />
         );
+
       case 'login':
         return (
           <LoginScreen
-            onBack={navigateBack}
-            onSignUp={navigateToSignUp}
-            onForgotPassword={navigateToForgotPassword}
+            onBack={() => goTo('welcome')}
+            onSignUp={() => goTo('signup')}
+            onForgotPassword={() => goTo('forgotPassword')}
+            onSuccess={() => goTo('home')} // Sau khi login thành công
           />
         );
+
       case 'signup':
-        return <SignUpScreen onBack={navigateBack} onLogin={navigateToLogin} />;
+        return (
+          <SignUpScreen
+            onBack={() => goTo('welcome')}
+            onLogin={() => goTo('login')}
+            onVerify={goToVerification}
+          />
+        );
+
       case 'forgotPassword':
         return (
           <ForgotPasswordScreen
-            onBack={navigateBackToLogin}
-            onSendCode={navigateToVerification}
+            onBack={() => goTo('login')}
+            onSendCode={goToVerification}
           />
         );
+
       case 'verification':
         return (
           <VerificationPassword
-            onBack={navigateToForgotPassword}
-            onVerifyCode={navigateToResetPassword}
             email={userEmail}
+            onBack={() => goTo('forgotPassword')}
+            onVerifyCode={() => goTo('resetPassword')}
           />
         );
+
       case 'resetPassword':
         return (
-          <ResetPassword
-            onBack={() => setCurrentScreen('verification')}
-            onPasswordReset={navigateToLogin}
+          <ResetPasswordScreen
+            email={userEmail}
+            onBack={() => goTo('verification')}
+            onPasswordReset={() => goTo('login')}
           />
         );
+
+      case 'home':
+        return <HomeScreen onLogout={() => goTo('welcome')} />;
+
       default:
-        return <SplashScreen onFinish={navigateToWelcome} />;
+        return <SplashScreen onFinish={() => goTo('welcome')} />;
     }
   };
 
