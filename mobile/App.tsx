@@ -1,13 +1,10 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+// src/App.tsx
+import React from 'react';
+import AppRoutes from './src/routes/AppRoutes'; // hoặc './src/routes/AppRoutes'
 
-// src/index.js hoặc App.tsx
-import { AppRoutes } from './src/routes/AppRoutes';
-
-export default function App() {
+const App = () => {
   return <AppRoutes />;
-}
+};
+
+// PHẢI CÓ DÒNG NÀY
+export default App;

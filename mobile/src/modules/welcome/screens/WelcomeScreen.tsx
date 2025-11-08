@@ -34,7 +34,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({onLogin, onSignUp}) => {
       {/* Welcome Image */}
       <View style={styles.imageContainer}>
         <Image
-          source={require('../../assets/images/welcome.png')}
+          source={require('../../../assets/images/welcome.png')}
           style={styles.welcomeImage}
           resizeMode="contain"
         />
