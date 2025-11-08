@@ -5,11 +5,9 @@
  * @format
  */
 
-import React from 'react';
-import AppRoutes from './src/routes/AppRoutes';
+// src/index.js hoặc App.tsx
+import { AppRoutes } from './src/routes/AppRoutes';
 
-function App(): React.JSX.Element {
+export default function App() {
   return <AppRoutes />;
 }
-
-export default App;
