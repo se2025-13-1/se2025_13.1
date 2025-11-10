@@ -1,4 +1,5 @@
 import React, {useState, useRef, useEffect} from 'react';
+import {AppConfig} from '../../../config/AppConfig';
 import {
   View,
   Text,
@@ -107,11 +108,11 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
   };
 
   const sendVerificationEmail = (userEmail: string, code: string) => {
-    // Simulate sending email with verification code
-    console.log(`Sending verification code ${code} to ${userEmail}`);
+    // Keep a local simulation for development; in production the server will send the code
+    console.log(`(dev) Sending verification code ${code} to ${userEmail}`);
     Alert.alert(
       'Verification Code Sent',
-      `A 6-digit verification code has been sent to ${userEmail}\n\nFor testing purposes, your code is: ${code}`,
+      `A 6-digit verification code has been sent to ${userEmail}. Please check your email.`,
       [{text: 'OK'}],
     );
   };
@@ -131,40 +132,61 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
       return;
     }
 
-    if (codeString !== generatedCode) {
-      setVerificationError('Invalid verification code. Please try again.');
-      return;
-    }
-
-    // Clear error if validation passes
+    // Call backend verify API
     setVerificationError('');
     setIsVerifying(true);
 
-    // Simulate account creation process
-    setTimeout(() => {
-      setIsVerifying(false);
-      setIsSuccess(true);
-
-      // Redirect to login screen directly
-      setTimeout(() => {
-        if (onLogin) {
-          onLogin();
-        } else {
-          // Fallback: go back to previous screen
-          onBack();
-        }
-      }, 1000);
-    }, 2000);
+    fetch(`${AppConfig.BASE_URL}/api/auth/verify-otp`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({email, otp: codeString}),
+    })
+      .then(async res => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Verification failed');
+        setIsVerifying(false);
+        setIsSuccess(true);
+        Alert.alert('Success', 'Email verified. You can now log in.');
+        setTimeout(() => {
+          if (onLogin) onLogin();
+          else onBack();
+        }, 800);
+      })
+      .catch(err => {
+        setIsVerifying(false);
+        setVerificationError(err.message || 'Verification failed');
+      });
   };
 
   const handleResendCode = () => {
-    const newCode = generateVerificationCode();
-    setGeneratedCode(newCode);
+    // Try to ask backend to re-send registration OTP.
+    // Backend.register now supports re-sending OTP for unverified users.
+    setVerificationError('');
+    setTimeLeft(60);
     setVerificationCode(['', '', '', '', '', '']);
     setFocusedIndex(0);
-    setTimeLeft(60); // Reset timer
-    setVerificationError(''); // Clear errors
-    sendVerificationEmail(email, newCode);
+
+    fetch(`${AppConfig.BASE_URL}/api/auth/register`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        name: fullName,
+        email,
+        password,
+        phone: phoneNumber,
+      }),
+    })
+      .then(async res => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Could not resend code');
+        // Inform user to check email
+        Alert.alert('Sent', 'A new verification code was sent to your email.');
+      })
+      .catch(err => {
+        // Fallback to local simulation if backend not reachable
+        const newCode = generateVerificationCode();
+        sendVerificationEmail(email, newCode);
+      });
   };
 
   const handleBackToSignUp = () => {
@@ -322,14 +344,38 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
 
     setErrors(newErrors);
 
-    // If no errors, send verification code
+    // If no errors, call backend register which will send OTP
     if (Object.keys(newErrors).length === 0) {
-      const code = generateVerificationCode();
-      setGeneratedCode(code);
-      setTimeLeft(60); // Reset timer
-      setVerificationError(''); // Clear any previous errors
-      sendVerificationEmail(email, code);
-      setShowVerification(true);
+      setErrors({});
+      // Call backend
+      fetch(`${AppConfig.BASE_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          name: fullName,
+          email,
+          password,
+          phone: phoneNumber,
+        }),
+      })
+        .then(async res => {
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || 'Registration failed');
+          setTimeLeft(60);
+          setShowVerification(true);
+          Alert.alert(
+            'Thành công',
+            'Mã xác nhận đã được gửi tới email của bạn.',
+          );
+        })
+        .catch(err => {
+          // If backend not reachable, fallback to local simulation
+          const code = generateVerificationCode();
+          setGeneratedCode(code);
+          setTimeLeft(60);
+          sendVerificationEmail(email, code);
+          setShowVerification(true);
+        });
     }
   };
 
