@@ -1,8 +1,8 @@
 // src/routes/AppRoutes.tsx
-import React, { useState } from 'react';
-import { SplashScreen } from '@modules/splash';
-import { HomeScreen } from '@modules/home';
-import { WelcomeScreen } from '@modules/welcome';
+import React, {useState} from 'react';
+import {SplashScreen} from '@modules/splash';
+import {HomeScreen} from '@modules/home';
+import {WelcomeScreen} from '@modules/welcome';
 import {
   LoginScreen,
   SignUpScreen,
@@ -52,7 +52,6 @@ const AppRoutes: React.FC = () => {
             onBack={() => goTo('welcome')}
             onSignUp={() => goTo('signup')}
             onForgotPassword={() => goTo('forgotPassword')}
-            onSuccess={() => goTo('home')} // Sau khi login thành công
           />
         );
 
@@ -61,7 +60,7 @@ const AppRoutes: React.FC = () => {
           <SignUpScreen
             onBack={() => goTo('welcome')}
             onLogin={() => goTo('login')}
-            onVerify={goToVerification}
+            _onVerify={goToVerification}
           />
         );
 
@@ -85,7 +84,6 @@ const AppRoutes: React.FC = () => {
       case 'resetPassword':
         return (
           <ResetPasswordScreen
-            email={userEmail}
             onBack={() => goTo('verification')}
             onPasswordReset={() => goTo('login')}
           />
