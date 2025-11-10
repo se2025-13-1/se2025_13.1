@@ -1,8 +1,8 @@
 // src/routes/AppRoutes.tsx
-import React, { useState } from 'react';
-import { SplashScreen } from '@modules/splash';
-import { HomeScreen } from '@modules/home';
-import { WelcomeScreen } from '@modules/welcome';
+import React, {useState} from 'react';
+import {SplashScreen} from '@modules/splash';
+import {HomeScreen} from '@modules/home';
+import {WelcomeScreen} from '@modules/welcome';
 import {
   LoginScreen,
   SignUpScreen,
@@ -19,17 +19,25 @@ export type Screen =
   | 'forgotPassword'
   | 'verification'
   | 'resetPassword'
-  | 'home'; // Thêm home
+  | 'home';
 
 const AppRoutes: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>('splash');
   const [userEmail, setUserEmail] = useState('');
+  const [otpCode, setOtpCode] = useState(''); // THÊM: LƯU OTP
 
   // === NAVIGATION HELPERS ===
   const goTo = (screen: Screen) => setCurrentScreen(screen);
+
   const goToVerification = (email: string) => {
     setUserEmail(email);
     goTo('verification');
+  };
+
+  // THÊM: Lưu OTP khi xác thực thành công
+  const goToResetPassword = (otp: string) => {
+    setOtpCode(otp);
+    goTo('resetPassword');
   };
 
   // === RENDER SCREEN ===
@@ -52,7 +60,7 @@ const AppRoutes: React.FC = () => {
             onBack={() => goTo('welcome')}
             onSignUp={() => goTo('signup')}
             onForgotPassword={() => goTo('forgotPassword')}
-            onSuccess={() => goTo('home')} // Sau khi login thành công
+            onSuccess={() => goTo('home')}
           />
         );
 
@@ -78,7 +86,7 @@ const AppRoutes: React.FC = () => {
           <VerificationPassword
             email={userEmail}
             onBack={() => goTo('forgotPassword')}
-            onVerifyCode={() => goTo('resetPassword')}
+            onVerifyCode={goToResetPassword} // TRUYỀN OTP
           />
         );
 
@@ -86,6 +94,7 @@ const AppRoutes: React.FC = () => {
         return (
           <ResetPasswordScreen
             email={userEmail}
+            otp={otpCode} // TRUYỀN OTP VÀO
             onBack={() => goTo('verification')}
             onPasswordReset={() => goTo('login')}
           />

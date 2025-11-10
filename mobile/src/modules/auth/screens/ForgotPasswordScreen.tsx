@@ -6,86 +6,76 @@ import {
   TouchableOpacity,
   StatusBar,
   TextInput,
-  ScrollView,
+  ActivityIndicator,
 } from 'react-native';
+import {AuthApi} from '@services/authApi';
 
-interface ForgotPasswordScreenProps {
+interface Props {
   onBack: () => void;
   onSendCode: (email: string) => void;
 }
 
-const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
-  onBack,
-  onSendCode,
-}) => {
+const ForgotPasswordScreen: React.FC<Props> = ({onBack, onSendCode}) => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const validateEmail = (emailInput: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(emailInput);
-  };
+  const validateEmail = (email: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  const handleSendCode = () => {
+  const handleSendCode = async () => {
     if (!email.trim()) {
-      setError('Please enter your email address');
+      setError('Vui lòng nhập email');
       return;
     }
-
     if (!validateEmail(email)) {
-      setError('Please enter a valid email address');
+      setError('Email không hợp lệ');
       return;
     }
 
     setError('');
-    onSendCode(email);
+    setIsLoading(true);
+    try {
+      await AuthApi.sendResetCode(email);
+      onSendCode(email);
+    } catch (err: any) {
+      setError(err?.message || 'Lỗi khi gửi mã');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <View style={styles.container}>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
+      <TouchableOpacity onPress={onBack} style={styles.backButton}>
+        <Text style={styles.backButtonText}>←</Text>
+      </TouchableOpacity>
 
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>←</Text>
-        </TouchableOpacity>
-      </View>
+      <Text style={styles.title}>Quên mật khẩu</Text>
 
-      {/* Content */}
-      <View style={styles.content}>
-        <Text style={styles.title}>Forgot password</Text>
-        <Text style={styles.subtitle}>
-          Enter your email for the verification process.{'\n'}
-          We will send 4 digits code to your email.
-        </Text>
+      <TextInput
+        placeholder="Nhập email"
+        value={email}
+        onChangeText={setEmail}
+        style={styles.input}
+        keyboardType="email-address"
+        autoCapitalize="none"
+      />
 
-        {/* Email Input */}
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={[styles.input, error && styles.inputError]}
-            placeholder="Enter your email address"
-            placeholderTextColor="#999999"
-            value={email}
-            onChangeText={text => {
-              setEmail(text);
-              if (error) {
-                setError('');
-              }
-            }}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-          {error && <Text style={styles.errorText}>{error}</Text>}
-        </View>
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-        {/* Send Code Button */}
-        <TouchableOpacity style={styles.sendButton} onPress={handleSendCode}>
-          <Text style={styles.sendButtonText}>Send Code</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+      <TouchableOpacity
+        onPress={handleSendCode}
+        disabled={isLoading}
+        style={styles.sendButton}>
+        {isLoading ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text style={styles.sendButtonText}>Gửi mã</Text>
+        )}
+      </TouchableOpacity>
+    </View>
   );
 };
 
@@ -93,48 +83,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-  },
-  header: {
-    paddingTop: 60,
     paddingHorizontal: 24,
-    paddingBottom: 20,
+    paddingTop: 60,
   },
   backButton: {
     width: 40,
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 20,
   },
   backButtonText: {
     fontSize: 24,
     color: '#000000',
     fontWeight: '400',
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 20,
-  },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
     color: '#000000',
     marginBottom: 16,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666666',
-    lineHeight: 24,
-    marginBottom: 40,
-  },
-  inputContainer: {
-    marginBottom: 40,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#000000',
-    marginBottom: 8,
   },
   input: {
     borderWidth: 1,
@@ -145,15 +113,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#000000',
     backgroundColor: '#FFFFFF',
-  },
-  inputError: {
-    borderColor: '#FF4444',
-    backgroundColor: '#FFF5F5',
+    marginBottom: 8,
   },
   errorText: {
     fontSize: 12,
     color: '#FF4444',
-    marginTop: 4,
+    marginBottom: 16,
   },
   sendButton: {
     backgroundColor: '#000000',

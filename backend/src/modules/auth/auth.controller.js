@@ -128,3 +128,47 @@ export const loginFacebook = async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 };
+
+// THÊM VÀO auth.controller.js
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: "Thiếu email" });
+
+    const result = await authService.sendResetCode(email);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    if (!email || !otp || !newPassword)
+      return res.status(400).json({ error: "Thiếu thông tin" });
+
+    const result = await authService.resetPassword({ email, otp, newPassword });
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+// Đổi mật khẩu khi user biết mật khẩu hiện tại
+export const changePassword = async (req, res) => {
+  try {
+    const { email, oldPassword, newPassword } = req.body;
+    if (!email || !oldPassword || !newPassword)
+      return res.status(400).json({ error: "Thiếu thông tin" });
+
+    const result = await authService.changePassword({
+      email,
+      oldPassword,
+      newPassword,
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};

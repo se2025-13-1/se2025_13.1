@@ -32,10 +32,10 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({onBack, onLogin}) => {
     return passwordInput.length >= 6;
   };
 
-  const handleSignUp = () => {
-    const newErrors: {[key: string]: string} = {};
+  const handleSignUp = async () => {
+    const newErrors: { [key: string]: string } = {};
 
-    // Validation
+    // 🧩 Validation cơ bản
     if (!fullName.trim()) {
       newErrors.fullName = 'Please enter your full name';
     }
@@ -43,7 +43,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({onBack, onLogin}) => {
     if (!email.trim()) {
       newErrors.email = 'Please enter your email address';
     } else if (!validateEmail(email)) {
-      newErrors.email = 'Please enter valid email address';
+      newErrors.email = 'Please enter a valid email address';
     }
 
     if (!password.trim()) {
@@ -52,22 +52,62 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({onBack, onLogin}) => {
       newErrors.password = 'Password must be at least 6 characters';
     }
 
-    setErrors(newErrors);
+    if (!confirmPassword.trim()) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (confirmPassword !== password) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
 
-    // If no errors, show success
-    if (Object.keys(newErrors).length === 0) {
-      setIsSuccess(true);
-      setTimeout(() => {
-        Alert.alert('Success', 'Account created successfully!', [
-          {text: 'OK', onPress: onBack},
-        ]);
-      }, 1500);
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      // ✅ Gọi API BE thật sự
+      const res = await AuthApi.register({
+        name: fullName,
+        email,
+        password,
+        phone, // nếu có input phone thì truyền vào
+      });
+
+      Alert.alert(
+        'OTP Sent',
+        'Check your email to verify your account.',
+        [
+          {
+            text: 'OK',
+            onPress: () => onVerification(email), // chuyển sang màn Verification
+          },
+        ],
+      );
+    } catch (err: any) {
+      const message =
+        err.response?.data?.error ||
+        err.message ||
+        'Registration failed, please try again.';
+      Alert.alert('Error', message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleSocialLogin = (provider: string) => {
-    Alert.alert('Coming Soon', `${provider} sign up will be available soon!`);
+
+  const handleSocialLogin = async (provider: string) => {
+    try {
+      const token = await getProviderToken(provider); // hàm lấy access_token từ Google/Facebook SDK
+      const res = await AuthApi.loginWithProvider(provider, token);
+
+      Alert.alert('Welcome', `Logged in with ${provider}`);
+      onLoginSuccess(res.user);
+    } catch (err: any) {
+      Alert.alert('Error', err.message || `${provider} login failed`);
+    }
   };
+
 
   const handleGoToLogin = () => {
     if (onLogin) {

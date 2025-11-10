@@ -1,3 +1,4 @@
+// src/modules/auth/screens/ResetPassword.tsx
 import React, {useState} from 'react';
 import {
   View,
@@ -8,14 +9,21 @@ import {
   TextInput,
   ScrollView,
   Modal,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
+import {AuthApi} from '@services/authApi';
 
 interface ResetPasswordProps {
+  email: string;
+  otp: string;
   onBack: () => void;
   onPasswordReset: () => void;
 }
 
 const ResetPassword: React.FC<ResetPasswordProps> = ({
+  email,
+  otp,
   onBack,
   onPasswordReset,
 }) => {
@@ -25,12 +33,13 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // THÊM LOADING
 
   const validatePassword = (passwordInput: string) => {
     return passwordInput.length >= 6;
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     const newErrors: {[key: string]: string} = {};
 
     // Validation
@@ -48,15 +57,24 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({
 
     setErrors(newErrors);
 
-    // If no errors, show success
-    if (Object.keys(newErrors).length === 0) {
+    // Nếu có lỗi → dừng
+    if (Object.keys(newErrors).length > 0) return;
+
+    // GỌI API THỰC TẾ
+    setIsLoading(true);
+    try {
+      await AuthApi.resetPassword(email, otp, password);
       setShowSuccessModal(true);
+    } catch (err: any) {
+      Alert.alert('Lỗi', err.message || 'Đặt lại mật khẩu thất bại');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
-    onPasswordReset();
+    onPasswordReset(); // Về Login
   };
 
   return (
@@ -66,7 +84,7 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>←</Text>
+          <Text style={styles.backButtonText}>Back</Text>
         </TouchableOpacity>
       </View>
 
@@ -74,8 +92,7 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({
       <View style={styles.content}>
         <Text style={styles.title}>Reset Password</Text>
         <Text style={styles.subtitle}>
-          Set the new password for your account so you can login and access all
-          the features.
+          Set the new password for your account.
         </Text>
 
         {/* Password Input */}
@@ -103,7 +120,9 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({
             <TouchableOpacity
               style={styles.eyeButton}
               onPress={() => setShowPassword(!showPassword)}>
-              <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '🙈'}</Text>
+              <Text style={styles.eyeIcon}>
+                {showPassword ? 'Open Eye' : 'Closed Eye'}
+              </Text>
             </TouchableOpacity>
           </View>
           {errors.password && (
@@ -111,16 +130,16 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({
           )}
         </View>
 
-        {/* Confirm Password Input */}
+        {/* Confirm Password */}
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Password</Text>
+          <Text style={styles.label}>Confirm Password</Text>
           <View style={styles.passwordContainer}>
             <TextInput
               style={[
                 styles.passwordInput,
                 errors.confirmPassword && styles.inputError,
               ]}
-              placeholder="Re-enter password"
+              placeholder="Confirm your password"
               placeholderTextColor="#999999"
               value={confirmPassword}
               onChangeText={text => {
@@ -137,7 +156,7 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({
               style={styles.eyeButton}
               onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
               <Text style={styles.eyeIcon}>
-                {showConfirmPassword ? '👁️' : '🙈'}
+                {showConfirmPassword ? 'Open Eye' : 'Closed Eye'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -149,25 +168,26 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({
         {/* Continue Button */}
         <TouchableOpacity
           style={styles.continueButton}
-          onPress={handleContinue}>
-          <Text style={styles.continueButtonText}>Continue</Text>
+          onPress={handleContinue}
+          disabled={isLoading}>
+          {isLoading ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.continueButtonText}>Continue</Text>
+          )}
         </TouchableOpacity>
       </View>
 
       {/* Success Modal */}
-      <Modal
-        visible={showSuccessModal}
-        transparent
-        animationType="fade"
-        onRequestClose={handleSuccessModalClose}>
+      <Modal visible={showSuccessModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.successIcon}>
-              <Text style={styles.checkMark}>✓</Text>
+              <Text style={styles.checkMark}>Checkmark</Text>
             </View>
             <Text style={styles.successTitle}>Password Changed!</Text>
             <Text style={styles.successSubtitle}>
-              You can now use your new password to login to your account.
+              You can now use your new password to login.
             </Text>
             <TouchableOpacity
               style={styles.loginButton}
@@ -181,56 +201,23 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({
   );
 };
 
+// === STYLES (giữ nguyên như cũ) ===
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  header: {
-    paddingTop: 60,
-    paddingHorizontal: 24,
-    paddingBottom: 20,
-  },
+  container: {flex: 1, backgroundColor: '#FFFFFF'},
+  header: {paddingTop: 60, paddingHorizontal: 24, paddingBottom: 20},
   backButton: {
     width: 40,
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  backButtonText: {
-    fontSize: 24,
-    color: '#000000',
-    fontWeight: '400',
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 20,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#000000',
-    marginBottom: 16,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666666',
-    lineHeight: 24,
-    marginBottom: 40,
-  },
-  inputContainer: {
-    marginBottom: 24,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#000000',
-    marginBottom: 8,
-  },
-  passwordContainer: {
-    position: 'relative',
-  },
+  backButtonText: {fontSize: 24, color: '#000000', fontWeight: '400'},
+  content: {flex: 1, paddingHorizontal: 24, paddingTop: 20},
+  title: {fontSize: 32, fontWeight: 'bold', color: '#000000', marginBottom: 16},
+  subtitle: {fontSize: 16, color: '#666666', lineHeight: 24, marginBottom: 40},
+  inputContainer: {marginBottom: 24},
+  label: {fontSize: 16, fontWeight: '500', color: '#000000', marginBottom: 8},
+  passwordContainer: {position: 'relative'},
   passwordInput: {
     borderWidth: 1,
     borderColor: '#E0E0E0',
@@ -242,27 +229,16 @@ const styles = StyleSheet.create({
     color: '#000000',
     backgroundColor: '#FFFFFF',
   },
-  inputError: {
-    borderColor: '#FF4444',
-    backgroundColor: '#FFF5F5',
-  },
+  inputError: {borderColor: '#FF4444', backgroundColor: '#FFF5F5'},
   eyeButton: {
     position: 'absolute',
     right: 16,
     top: 16,
     bottom: 16,
     justifyContent: 'center',
-    alignItems: 'center',
-    width: 24,
   },
-  eyeIcon: {
-    fontSize: 18,
-  },
-  errorText: {
-    fontSize: 12,
-    color: '#FF4444',
-    marginTop: 4,
-  },
+  eyeIcon: {fontSize: 18},
+  errorText: {fontSize: 12, color: '#FF4444', marginTop: 4},
   continueButton: {
     backgroundColor: '#000000',
     paddingVertical: 18,
@@ -270,17 +246,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 20,
   },
-  continueButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
+  continueButtonText: {fontSize: 16, fontWeight: '600', color: '#FFFFFF'},
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
   },
   modalContent: {
     backgroundColor: '#FFFFFF',
@@ -288,7 +259,7 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
     paddingHorizontal: 30,
     alignItems: 'center',
-    width: '100%',
+    width: '90%',
     maxWidth: 320,
   },
   successIcon: {
@@ -300,23 +271,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
   },
-  checkMark: {
-    fontSize: 40,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-  },
+  checkMark: {fontSize: 40, color: '#FFFFFF', fontWeight: 'bold'},
   successTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#000000',
     marginBottom: 12,
-    textAlign: 'center',
   },
   successSubtitle: {
     fontSize: 16,
     color: '#666666',
     textAlign: 'center',
-    lineHeight: 22,
     marginBottom: 30,
   },
   loginButton: {
@@ -324,7 +289,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 40,
     borderRadius: 8,
-    minWidth: 120,
   },
   loginButtonText: {
     fontSize: 16,

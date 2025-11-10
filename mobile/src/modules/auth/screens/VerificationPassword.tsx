@@ -1,3 +1,4 @@
+// src/modules/auth/screens/VerificationPassword.tsx
 import React, {useState, useRef, useEffect} from 'react';
 import {
   View,
@@ -8,11 +9,13 @@ import {
   TextInput,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
+import {AuthApi} from '@services/authApi';
 
 interface VerificationPasswordProps {
   onBack: () => void;
-  onVerifyCode: (code: string) => void;
+  onVerifyCode: (code: string) => void; // Truyền 6 số OTP
   email: string;
 }
 
@@ -21,35 +24,31 @@ const VerificationPassword: React.FC<VerificationPasswordProps> = ({
   onVerifyCode,
   email,
 }) => {
-  const [code, setCode] = useState(['', '', '', '']);
+  const [code, setCode] = useState(['', '', '', '', '', '']); // 6 ô
+  const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
   useEffect(() => {
-    // Focus first input when component mounts
-    if (inputRefs.current[0]) {
-      inputRefs.current[0]?.focus();
-    }
+    inputRefs.current[0]?.focus();
   }, []);
 
   const handleCodeChange = (value: string, index: number) => {
-    if (value.length > 1) {
-      return; // Only allow single digit
-    }
+    if (value.length > 1) return;
 
     const newCode = [...code];
     newCode[index] = value;
     setCode(newCode);
 
-    // Auto focus next input
-    if (value && index < 3) {
+    // Focus ô tiếp theo
+    if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
 
-    // Auto submit when all 4 digits are entered
-    if (index === 3 && value) {
+    // Tự động submit khi đủ 6 số
+    if (index === 5 && value) {
       const fullCode = newCode.join('');
-      if (fullCode.length === 4) {
+      if (fullCode.length === 6) {
         setTimeout(() => handleContinue(), 100);
       }
     }
@@ -57,30 +56,38 @@ const VerificationPassword: React.FC<VerificationPasswordProps> = ({
 
   const handleKeyPress = (key: string, index: number) => {
     if (key === 'Backspace' && !code[index] && index > 0) {
-      // Focus previous input on backspace
       inputRefs.current[index - 1]?.focus();
     }
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     const fullCode = code.join('');
-    if (fullCode.length !== 4) {
-      Alert.alert('Invalid Code', 'Please enter all 4 digits');
+    if (fullCode.length !== 6) {
+      Alert.alert('Lỗi', 'Vui lòng nhập đủ 6 số');
       return;
     }
-    onVerifyCode(fullCode);
+
+    setIsLoading(true);
+    try {
+      await AuthApi.verifyOTP(email, fullCode); // GỌI API
+      onVerifyCode(fullCode); // Truyền 6 số OTP
+    } catch (err: any) {
+      Alert.alert('Lỗi', err.message || 'Mã OTP không hợp lệ');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleResendCode = () => {
+  const handleResendCode = async () => {
     setIsResending(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      await AuthApi.sendResetCode(email);
+      Alert.alert('Đã gửi lại', 'Mã OTP mới đã được gửi đến email của bạn');
+    } catch (err: any) {
+      Alert.alert('Lỗi', err.message);
+    } finally {
       setIsResending(false);
-      Alert.alert(
-        'Code Sent',
-        'A new verification code has been sent to your email.',
-      );
-    }, 2000);
+    }
   };
 
   return (
@@ -90,19 +97,19 @@ const VerificationPassword: React.FC<VerificationPasswordProps> = ({
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>←</Text>
+          <Text style={styles.backButtonText}>Back</Text>
         </TouchableOpacity>
       </View>
 
       {/* Content */}
       <View style={styles.content}>
-        <Text style={styles.title}>Enter 4 Digit Code</Text>
+        <Text style={styles.title}>Nhập mã OTP</Text>
         <Text style={styles.subtitle}>
-          Enter 4 digit code that you received on your email{' '}
-          <Text style={styles.emailText}>{email}</Text>.
+          Vui lòng nhập mã 6 chữ số đã được gửi đến email:{' '}
+          <Text style={styles.emailText}>{email}</Text>
         </Text>
 
-        {/* Code Input */}
+        {/* 6 ô OTP */}
         <View style={styles.codeContainer}>
           {code.map((digit, index) => (
             <TextInput
@@ -122,15 +129,15 @@ const VerificationPassword: React.FC<VerificationPasswordProps> = ({
           ))}
         </View>
 
-        {/* Resend Code */}
+        {/* Resend */}
         <TouchableOpacity
           style={styles.resendContainer}
           onPress={handleResendCode}
           disabled={isResending}>
           <Text style={styles.resendText}>
-            Email not received?{' '}
+            Chưa nhận được mã?{' '}
             <Text style={styles.resendLink}>
-              {isResending ? 'Sending...' : 'Resend code'}
+              {isResending ? 'Đang gửi...' : 'Gửi lại'}
             </Text>
           </Text>
         </TouchableOpacity>
@@ -138,8 +145,13 @@ const VerificationPassword: React.FC<VerificationPasswordProps> = ({
         {/* Continue Button */}
         <TouchableOpacity
           style={styles.continueButton}
-          onPress={handleContinue}>
-          <Text style={styles.continueButtonText}>Continue</Text>
+          onPress={handleContinue}
+          disabled={isLoading}>
+          {isLoading ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.continueButtonText}>Tiếp tục</Text>
+          )}
         </TouchableOpacity>
       </View>
     </ScrollView>
