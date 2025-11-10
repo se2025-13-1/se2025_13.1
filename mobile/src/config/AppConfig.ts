@@ -1,3 +1,3 @@
 export const AppConfig = {
-  BASE_URL: "http://192.168.1.7:3000", // 👈 IP thật của bạn
+  BASE_URL: 'http://192.168.1.7:3000', // 👈 IP thật của bạn
 };

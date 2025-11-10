@@ -12,17 +12,24 @@ export const authService = {
    * Đăng ký user mới, gửi OTP xác nhận
    */
   register: async ({ name, email, password, phone }) => {
+    // Nếu user đã tồn tại và đã xác minh -> lỗi
     const existing = await userRepository.findByEmail(email);
-    if (existing) throw new Error("Email đã được đăng ký");
+    if (existing && existing.is_verified)
+      throw new Error("Email đã được đăng ký");
 
-    const hash = await bcrypt.hash(password, 10);
-
-    const user = await userRepository.createUser({
-      name,
-      email,
-      password_hash: hash,
-      phone,
-    });
+    // Nếu user tồn tại nhưng chưa xác thực, không tạo user mới, chỉ gửi mã lại
+    let user;
+    if (existing && !existing.is_verified) {
+      user = existing;
+    } else {
+      const hash = await bcrypt.hash(password, 10);
+      user = await userRepository.createUser({
+        name,
+        email,
+        password_hash: hash,
+        phone,
+      });
+    }
 
     // Tạo OTP (6 chữ số)
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -30,7 +37,7 @@ export const authService = {
     // Lưu OTP trong Redis 5 phút
     await redisClient.set(`otp:${email}`, otp, { EX: 300 });
 
-    // Gửi OTP qua email
+    // Gửi OTP qua email (template mặc định)
     await sendVerificationEmail(email, otp);
     console.log("✅ OTP sent to", email);
 
