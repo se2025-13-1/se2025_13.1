@@ -86,6 +86,8 @@ const AppRoutes: React.FC = () => {
           <ResetPasswordScreen
             onBack={() => goTo('verification')}
             onPasswordReset={() => goTo('login')}
+            email={''}
+            otp={''}
           />
         );
 
