@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useRef, useEffect} from 'react';
 import {
   View,
   Text,
@@ -13,29 +13,285 @@ import {
 interface SignUpScreenProps {
   onBack: () => void;
   onLogin?: () => void;
+  _onVerify?: (email: string) => void;
 }
 
-const SignUpScreen: React.FC<SignUpScreenProps> = ({onBack, onLogin}) => {
+const SignUpScreen: React.FC<SignUpScreenProps> = ({
+  onBack,
+  onLogin,
+  _onVerify,
+}) => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [isSuccess, setIsSuccess] = useState(false);
+  const [showVerification, setShowVerification] = useState(false);
+  const [verificationCode, setVerificationCode] = useState([
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+  ]);
+  const [generatedCode, setGeneratedCode] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState(0);
+  const [verificationError, setVerificationError] = useState('');
+  const [timeLeft, setTimeLeft] = useState(60);
+  const inputRefs = useRef<(TextInput | null)[]>(Array(6).fill(null));
+
+  // Auto focus first input when verification screen shows
+  useEffect(() => {
+    if (showVerification) {
+      setTimeout(() => {
+        inputRefs.current[0]?.focus();
+      }, 100);
+    }
+  }, [showVerification]);
+
+  // Timer countdown for code expiration
+  useEffect(() => {
+    if (showVerification && timeLeft > 0) {
+      const timer = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            setVerificationError(
+              'Verification code has expired. Please request a new code.',
+            );
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [showVerification, timeLeft]);
 
   const validateEmail = (emailInput: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(emailInput);
   };
 
+  const validatePhoneNumber = (phoneInput: string) => {
+    const phoneRegex = /^[0-9]{10,11}$/;
+    return phoneRegex.test(phoneInput.replace(/[^0-9]/g, ''));
+  };
+
   const validatePassword = (passwordInput: string) => {
     return passwordInput.length >= 6;
   };
 
-  const handleSignUp = async () => {
-    const newErrors: { [key: string]: string } = {};
+  const isFormValid = () => {
+    return (
+      fullName.trim().length > 0 &&
+      email.trim().length > 0 &&
+      validateEmail(email) &&
+      phoneNumber.trim().length > 0 &&
+      validatePhoneNumber(phoneNumber) &&
+      password.trim().length > 0 &&
+      validatePassword(password) &&
+      confirmPassword.trim().length > 0 &&
+      password === confirmPassword
+    );
+  };
 
-    // 🧩 Validation cơ bản
+  const generateVerificationCode = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
+
+  const sendVerificationEmail = (userEmail: string, code: string) => {
+    // Simulate sending email with verification code
+    console.log(`Sending verification code ${code} to ${userEmail}`);
+    Alert.alert(
+      'Verification Code Sent',
+      `A 6-digit verification code has been sent to ${userEmail}\n\nFor testing purposes, your code is: ${code}`,
+      [{text: 'OK'}],
+    );
+  };
+
+  const handleVerifyCode = () => {
+    const codeString = verificationCode.join('');
+
+    if (codeString.length !== 6) {
+      setVerificationError('Please enter a 6-digit verification code');
+      return;
+    }
+
+    if (timeLeft === 0) {
+      setVerificationError(
+        'Verification code has expired. Please request a new code.',
+      );
+      return;
+    }
+
+    if (codeString !== generatedCode) {
+      setVerificationError('Invalid verification code. Please try again.');
+      return;
+    }
+
+    // Clear error if validation passes
+    setVerificationError('');
+    setIsVerifying(true);
+
+    // Simulate account creation process
+    setTimeout(() => {
+      setIsVerifying(false);
+      setIsSuccess(true);
+
+      // Redirect to login screen directly
+      setTimeout(() => {
+        if (onLogin) {
+          onLogin();
+        } else {
+          // Fallback: go back to previous screen
+          onBack();
+        }
+      }, 1000);
+    }, 2000);
+  };
+
+  const handleResendCode = () => {
+    const newCode = generateVerificationCode();
+    setGeneratedCode(newCode);
+    setVerificationCode(['', '', '', '', '', '']);
+    setFocusedIndex(0);
+    setTimeLeft(60); // Reset timer
+    setVerificationError(''); // Clear errors
+    sendVerificationEmail(email, newCode);
+  };
+
+  const handleBackToSignUp = () => {
+    setShowVerification(false);
+    setVerificationCode(['', '', '', '', '', '']);
+    setGeneratedCode('');
+    setFocusedIndex(0);
+    setVerificationError('');
+    setTimeLeft(60);
+  };
+
+  const handleBackspaceGlobal = () => {
+    const newCode = [...verificationCode];
+
+    // Find the last filled box (rightmost box with content)
+    let lastFilledIndex = -1;
+    for (let i = 5; i >= 0; i--) {
+      if (verificationCode[i] !== '') {
+        lastFilledIndex = i;
+        break;
+      }
+    }
+
+    // If there's content to delete
+    if (lastFilledIndex >= 0) {
+      // Clear the last filled box
+      newCode[lastFilledIndex] = '';
+      setVerificationCode(newCode);
+
+      // Focus to the cleared box
+      setFocusedIndex(lastFilledIndex);
+      inputRefs.current[lastFilledIndex]?.focus();
+    }
+  };
+
+  const handleCodeChange = (value: string, index: number) => {
+    // Clear error when user starts typing
+    if (verificationError) {
+      setVerificationError('');
+    }
+
+    // Handle backspace at the beginning of input change
+    if (value === '' && verificationCode[index] !== '') {
+      // This means user pressed backspace/delete
+      handleBackspaceGlobal();
+      return;
+    }
+
+    // Handle paste - if user pastes a long string
+    if (value.length > 1) {
+      const numericValue = value.replace(/[^0-9]/g, '');
+      const newCode = ['', '', '', '', '', ''];
+
+      // Fill from current index
+      for (let i = 0; i < Math.min(numericValue.length, 6 - index); i++) {
+        newCode[index + i] = numericValue[i];
+      }
+
+      // Keep existing values before current index
+      for (let i = 0; i < index; i++) {
+        newCode[i] = verificationCode[i];
+      }
+
+      setVerificationCode(newCode);
+
+      // Focus to the last filled position or last box
+      const lastFilledIndex = Math.min(index + numericValue.length, 5);
+      setFocusedIndex(lastFilledIndex);
+      inputRefs.current[lastFilledIndex]?.focus();
+      return;
+    }
+
+    // Handle single character input
+    const numericValue = value.replace(/[^0-9]/g, '');
+
+    if (numericValue.length <= 1) {
+      const newCode = [...verificationCode];
+      newCode[index] = numericValue;
+      setVerificationCode(newCode);
+
+      // Auto focus next input if current input has value
+      if (numericValue && index < 5) {
+        setFocusedIndex(index + 1);
+        inputRefs.current[index + 1]?.focus();
+      }
+    }
+  };
+
+  const handleKeyPress = (key: string, _index: number) => {
+    // Handle backspace - use global backspace handler
+    if (key === 'Backspace') {
+      handleBackspaceGlobal();
+    }
+  };
+
+  const isCodeComplete = () => {
+    return (
+      verificationCode.every(digit => digit !== '') &&
+      verificationCode.join('').length === 6
+    );
+  };
+
+  // Individual field validation helpers
+  const isFullNameValid = () => {
+    return fullName.trim().length > 0;
+  };
+
+  const isEmailValid = () => {
+    return email.trim().length > 0 && validateEmail(email);
+  };
+
+  const isPhoneNumberValid = () => {
+    return phoneNumber.trim().length > 0 && validatePhoneNumber(phoneNumber);
+  };
+
+  const isPasswordValid = () => {
+    return password.trim().length > 0 && validatePassword(password);
+  };
+
+  const isConfirmPasswordValid = () => {
+    return confirmPassword.trim().length > 0 && password === confirmPassword;
+  };
+
+  const handleSignUp = () => {
+    const newErrors: {[key: string]: string} = {};
+
+    // Validation
     if (!fullName.trim()) {
       newErrors.fullName = 'Please enter your full name';
     }
@@ -43,7 +299,13 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({onBack, onLogin}) => {
     if (!email.trim()) {
       newErrors.email = 'Please enter your email address';
     } else if (!validateEmail(email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = 'Please enter valid email address';
+    }
+
+    if (!phoneNumber.trim()) {
+      newErrors.phoneNumber = 'Please enter your phone number';
+    } else if (!validatePhoneNumber(phoneNumber)) {
+      newErrors.phoneNumber = 'Please enter valid phone number (10-11 digits)';
     }
 
     if (!password.trim()) {
@@ -54,60 +316,26 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({onBack, onLogin}) => {
 
     if (!confirmPassword.trim()) {
       newErrors.confirmPassword = 'Please confirm your password';
-    } else if (confirmPassword !== password) {
+    } else if (password !== confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
+    setErrors(newErrors);
 
-    try {
-      setIsLoading(true);
-
-      // ✅ Gọi API BE thật sự
-      const res = await AuthApi.register({
-        name: fullName,
-        email,
-        password,
-        phone, // nếu có input phone thì truyền vào
-      });
-
-      Alert.alert(
-        'OTP Sent',
-        'Check your email to verify your account.',
-        [
-          {
-            text: 'OK',
-            onPress: () => onVerification(email), // chuyển sang màn Verification
-          },
-        ],
-      );
-    } catch (err: any) {
-      const message =
-        err.response?.data?.error ||
-        err.message ||
-        'Registration failed, please try again.';
-      Alert.alert('Error', message);
-    } finally {
-      setIsLoading(false);
+    // If no errors, send verification code
+    if (Object.keys(newErrors).length === 0) {
+      const code = generateVerificationCode();
+      setGeneratedCode(code);
+      setTimeLeft(60); // Reset timer
+      setVerificationError(''); // Clear any previous errors
+      sendVerificationEmail(email, code);
+      setShowVerification(true);
     }
   };
 
-
-  const handleSocialLogin = async (provider: string) => {
-    try {
-      const token = await getProviderToken(provider); // hàm lấy access_token từ Google/Facebook SDK
-      const res = await AuthApi.loginWithProvider(provider, token);
-
-      Alert.alert('Welcome', `Logged in with ${provider}`);
-      onLoginSuccess(res.user);
-    } catch (err: any) {
-      Alert.alert('Error', err.message || `${provider} login failed`);
-    }
+  const handleSocialLogin = (provider: string) => {
+    Alert.alert('Coming Soon', `${provider} sign up will be available soon!`);
   };
-
 
   const handleGoToLogin = () => {
     if (onLogin) {
@@ -121,179 +349,365 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({onBack, onLogin}) => {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Content */}
-      <View style={styles.content}>
-        <Text style={styles.title}>Create an account</Text>
-        <Text style={styles.subtitle}>Let's create your account.</Text>
-
-        {/* Form */}
-        <View style={styles.form}>
-          {/* Full Name */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Full Name</Text>
-            <TextInput
-              style={[
-                styles.input,
-                errors.fullName && styles.inputError,
-                isSuccess && !errors.fullName && styles.inputSuccess,
-              ]}
-              placeholder="Enter your full name"
-              placeholderTextColor="#999999"
-              value={fullName}
-              onChangeText={text => {
-                setFullName(text);
-                if (errors.fullName) {
-                  const newErrors = {...errors};
-                  delete newErrors.fullName;
-                  setErrors(newErrors);
-                }
-              }}
-            />
-            {errors.fullName && (
-              <Text style={styles.errorText}>{errors.fullName}</Text>
-            )}
-            {isSuccess && !errors.fullName && fullName && (
-              <View style={styles.successIcon}>
-                <Text style={styles.successIconText}>✓</Text>
-              </View>
-            )}
+      {!showVerification ? (
+        // Sign Up Form
+        <>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={onBack} style={styles.backButton}>
+              <Text style={styles.backButtonText}>← Back</Text>
+            </TouchableOpacity>
           </View>
 
-          {/* Email */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={[
-                styles.input,
-                errors.email && styles.inputError,
-                isSuccess && !errors.email && styles.inputSuccess,
-              ]}
-              placeholder="Enter your email address"
-              placeholderTextColor="#999999"
-              value={email}
-              onChangeText={text => {
-                setEmail(text);
-                if (errors.email) {
-                  const newErrors = {...errors};
-                  delete newErrors.email;
-                  setErrors(newErrors);
-                }
-              }}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            {errors.email && (
-              <Text style={styles.errorText}>{errors.email}</Text>
-            )}
-            {isSuccess && !errors.email && email && (
-              <View style={styles.successIcon}>
-                <Text style={styles.successIconText}>✓</Text>
-              </View>
-            )}
-          </View>
+          {/* Content */}
+          <View style={styles.content}>
+            <Text style={styles.title}>Create an account</Text>
+            <Text style={styles.subtitle}>Let's create your account.</Text>
 
-          {/* Password */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={[
-                  styles.passwordInput,
-                  errors.password && styles.inputError,
-                  isSuccess && !errors.password && styles.inputSuccess,
-                ]}
-                placeholder="Enter your password"
-                placeholderTextColor="#999999"
-                value={password}
-                onChangeText={text => {
-                  setPassword(text);
-                  if (errors.password) {
-                    const newErrors = {...errors};
-                    delete newErrors.password;
-                    setErrors(newErrors);
-                  }
-                }}
-                secureTextEntry={!showPassword}
-              />
+            {/* Form */}
+            <View style={styles.form}>
+              {/* Full Name */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Full Name</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    errors.fullName && styles.inputError,
+                    isFullNameValid() &&
+                      !errors.fullName &&
+                      styles.inputSuccess,
+                  ]}
+                  placeholder="Enter your full name"
+                  placeholderTextColor="#999999"
+                  value={fullName}
+                  onChangeText={text => {
+                    setFullName(text);
+                    if (errors.fullName) {
+                      const newErrors = {...errors};
+                      delete newErrors.fullName;
+                      setErrors(newErrors);
+                    }
+                  }}
+                />
+                {errors.fullName && (
+                  <Text style={styles.errorText}>{errors.fullName}</Text>
+                )}
+              </View>
+
+              {/* Email */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Email</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    errors.email && styles.inputError,
+                    isEmailValid() && !errors.email && styles.inputSuccess,
+                  ]}
+                  placeholder="Enter your email address"
+                  placeholderTextColor="#999999"
+                  value={email}
+                  onChangeText={text => {
+                    setEmail(text);
+                    if (errors.email) {
+                      const newErrors = {...errors};
+                      delete newErrors.email;
+                      setErrors(newErrors);
+                    }
+                  }}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+                {errors.email && (
+                  <Text style={styles.errorText}>{errors.email}</Text>
+                )}
+              </View>
+
+              {/* Phone Number */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Phone Number</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    errors.phoneNumber && styles.inputError,
+                    isPhoneNumberValid() &&
+                      !errors.phoneNumber &&
+                      styles.inputSuccess,
+                  ]}
+                  placeholder="Enter your phone number"
+                  placeholderTextColor="#999999"
+                  value={phoneNumber}
+                  onChangeText={text => {
+                    setPhoneNumber(text);
+                    if (errors.phoneNumber) {
+                      const newErrors = {...errors};
+                      delete newErrors.phoneNumber;
+                      setErrors(newErrors);
+                    }
+                  }}
+                  keyboardType="phone-pad"
+                />
+                {errors.phoneNumber && (
+                  <Text style={styles.errorText}>{errors.phoneNumber}</Text>
+                )}
+              </View>
+
+              {/* Password */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Password</Text>
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={[
+                      styles.passwordInput,
+                      errors.password && styles.inputError,
+                      isPasswordValid() &&
+                        !errors.password &&
+                        styles.inputSuccess,
+                    ]}
+                    placeholder="Enter your password"
+                    placeholderTextColor="#999999"
+                    value={password}
+                    onChangeText={text => {
+                      setPassword(text);
+                      if (errors.password) {
+                        const newErrors = {...errors};
+                        delete newErrors.password;
+                        setErrors(newErrors);
+                      }
+                    }}
+                    secureTextEntry={!showPassword}
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeButton}
+                    onPress={() => setShowPassword(!showPassword)}>
+                    <Text style={styles.eyeIcon}>
+                      {showPassword ? '👁️' : '🙈'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                {errors.password && (
+                  <Text style={styles.errorText}>{errors.password}</Text>
+                )}
+              </View>
+
+              {/* Confirm Password */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Confirm Password</Text>
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={[
+                      styles.passwordInput,
+                      errors.confirmPassword && styles.inputError,
+                      isConfirmPasswordValid() &&
+                        !errors.confirmPassword &&
+                        styles.inputSuccess,
+                    ]}
+                    placeholder="Confirm your password"
+                    placeholderTextColor="#999999"
+                    value={confirmPassword}
+                    onChangeText={text => {
+                      setConfirmPassword(text);
+                      if (errors.confirmPassword) {
+                        const newErrors = {...errors};
+                        delete newErrors.confirmPassword;
+                        setErrors(newErrors);
+                      }
+                    }}
+                    secureTextEntry={!showConfirmPassword}
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeButton}
+                    onPress={() =>
+                      setShowConfirmPassword(!showConfirmPassword)
+                    }>
+                    <Text style={styles.eyeIcon}>
+                      {showConfirmPassword ? '👁️' : '🙈'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                {errors.confirmPassword && (
+                  <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+                )}
+              </View>
+
+              {/* Terms */}
+              <Text style={styles.termsText}>
+                By signing up you agree to our{' '}
+                <Text style={styles.linkText}>Terms</Text>,{' '}
+                <Text style={styles.linkText}>Privacy Policy</Text>, and{' '}
+                <Text style={styles.linkText}>Cookie Use</Text>
+              </Text>
+
+              {/* Sign Up Button */}
               <TouchableOpacity
-                style={styles.eyeButton}
-                onPress={() => setShowPassword(!showPassword)}>
-                <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '🙈'}</Text>
+                style={[
+                  styles.signUpButton,
+                  isFormValid() && !isSuccess && styles.signUpButtonEnabled,
+                  isSuccess && styles.signUpButtonSuccess,
+                ]}
+                onPress={handleSignUp}
+                disabled={isSuccess}>
+                <Text
+                  style={[
+                    styles.signUpButtonText,
+                    isFormValid() &&
+                      !isSuccess &&
+                      styles.signUpButtonTextEnabled,
+                    isSuccess && styles.signUpButtonTextSuccess,
+                  ]}>
+                  {isSuccess ? 'Account Created!' : 'Create an Account'}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Divider */}
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>Or</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              {/* Social Buttons */}
+              <TouchableOpacity
+                style={styles.socialButton}
+                onPress={() => handleSocialLogin('Google')}>
+                <Text style={styles.socialButtonText}>
+                  📧 Sign Up with Google
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.facebookButton}
+                onPress={() => handleSocialLogin('Facebook')}>
+                <Text style={styles.facebookButtonText}>
+                  📘 Sign Up with Facebook
+                </Text>
+              </TouchableOpacity>
+
+              {/* Login Link */}
+              <TouchableOpacity
+                style={styles.loginLink}
+                onPress={handleGoToLogin}>
+                <Text style={styles.loginLinkText}>
+                  Already have an account?{' '}
+                  <Text style={styles.linkText}>Log In</Text>
+                </Text>
               </TouchableOpacity>
             </View>
-            {errors.password && (
-              <Text style={styles.errorText}>{errors.password}</Text>
-            )}
-            {isSuccess && !errors.password && password && (
-              <View style={styles.successIcon}>
-                <Text style={styles.successIconText}>✓</Text>
+          </View>
+        </>
+      ) : (
+        // Verification Screen
+        <>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity
+              onPress={handleBackToSignUp}
+              style={styles.backButton}>
+              <Text style={styles.backButtonText}>← Back</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Content */}
+          <View style={styles.content}>
+            <Text style={styles.title}>Email Verification</Text>
+            <Text style={styles.subtitle}>
+              Enter the 6-digit code sent to {email}
+            </Text>
+
+            {/* Verification Code Input */}
+            <View style={styles.form}>
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Verification Code</Text>
+
+                {/* Code Input Boxes */}
+                <View style={styles.codeContainer}>
+                  {verificationCode.map((digit, index) => (
+                    <TextInput
+                      key={index}
+                      ref={ref => (inputRefs.current[index] = ref)}
+                      style={[
+                        styles.codeBox,
+                        focusedIndex === index && styles.codeBoxFocused,
+                        digit && styles.codeBoxFilled,
+                      ]}
+                      value={digit}
+                      onChangeText={value => handleCodeChange(value, index)}
+                      onKeyPress={({nativeEvent}) =>
+                        handleKeyPress(nativeEvent.key, index)
+                      }
+                      onFocus={() => setFocusedIndex(index)}
+                      keyboardType="number-pad"
+                      maxLength={1}
+                      textAlign="center"
+                      selectTextOnFocus
+                      autoFocus={index === 0}
+                    />
+                  ))}
+                </View>
+
+                {/* Error Message */}
+                {verificationError && (
+                  <Text style={styles.errorText}>{verificationError}</Text>
+                )}
+
+                {isCodeComplete() && !verificationError && (
+                  <View style={styles.successIconCenter}>
+                    <Text style={styles.successIconText}>✓</Text>
+                  </View>
+                )}
               </View>
-            )}
+
+              {/* Verify Button */}
+              <TouchableOpacity
+                style={[
+                  styles.signUpButton,
+                  isCodeComplete() &&
+                    !isVerifying &&
+                    styles.signUpButtonEnabled,
+                  isSuccess && styles.signUpButtonSuccess,
+                ]}
+                onPress={handleVerifyCode}
+                disabled={!isCodeComplete() || isVerifying || isSuccess}>
+                <Text
+                  style={[
+                    styles.signUpButtonText,
+                    isCodeComplete() &&
+                      !isVerifying &&
+                      styles.signUpButtonTextEnabled,
+                    isSuccess && styles.signUpButtonTextSuccess,
+                  ]}>
+                  {isSuccess
+                    ? 'Account Created! Redirecting...'
+                    : isVerifying
+                    ? 'Verifying...'
+                    : 'Verify Code'}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Resend Code */}
+              <TouchableOpacity
+                style={[
+                  styles.resendButton,
+                  timeLeft > 0 && styles.resendButtonDisabled,
+                ]}
+                onPress={handleResendCode}
+                disabled={timeLeft > 0}>
+                <Text
+                  style={[
+                    styles.resendButtonText,
+                    timeLeft > 0 && styles.resendButtonTextDisabled,
+                  ]}>
+                  {timeLeft > 0
+                    ? `Resend in ${timeLeft}s`
+                    : "Didn't receive the code? "}
+                  {timeLeft === 0 && (
+                    <Text style={styles.linkText}>Resend</Text>
+                  )}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-
-          {/* Terms */}
-          <Text style={styles.termsText}>
-            By signing up you agree to our{' '}
-            <Text style={styles.linkText}>Terms</Text>,{' '}
-            <Text style={styles.linkText}>Privacy Policy</Text>, and{' '}
-            <Text style={styles.linkText}>Cookie Use</Text>
-          </Text>
-
-          {/* Sign Up Button */}
-          <TouchableOpacity
-            style={[
-              styles.signUpButton,
-              isSuccess && styles.signUpButtonSuccess,
-            ]}
-            onPress={handleSignUp}
-            disabled={isSuccess}>
-            <Text
-              style={[
-                styles.signUpButtonText,
-                isSuccess && styles.signUpButtonTextSuccess,
-              ]}>
-              {isSuccess ? 'Account Created!' : 'Create an Account'}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Divider */}
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>Or</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          {/* Social Buttons */}
-          <TouchableOpacity
-            style={styles.socialButton}
-            onPress={() => handleSocialLogin('Google')}>
-            <Text style={styles.socialButtonText}>📧 Sign Up with Google</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.facebookButton}
-            onPress={() => handleSocialLogin('Facebook')}>
-            <Text style={styles.facebookButtonText}>
-              📘 Sign Up with Facebook
-            </Text>
-          </TouchableOpacity>
-
-          {/* Login Link */}
-          <TouchableOpacity style={styles.loginLink} onPress={handleGoToLogin}>
-            <Text style={styles.loginLinkText}>
-              Already have an account?{' '}
-              <Text style={styles.linkText}>Log In</Text>
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+        </>
+      )}
     </ScrollView>
   );
 };
@@ -428,6 +842,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
   },
+  signUpButtonEnabled: {
+    backgroundColor: '#007AFF',
+  },
   signUpButtonSuccess: {
     backgroundColor: '#000000',
   },
@@ -435,6 +852,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#999999',
+  },
+  signUpButtonTextEnabled: {
+    color: '#FFFFFF',
   },
   signUpButtonTextSuccess: {
     color: '#FFFFFF',
@@ -487,6 +907,75 @@ const styles = StyleSheet.create({
   loginLinkText: {
     fontSize: 14,
     color: '#666666',
+  },
+  codeInput: {
+    textAlign: 'center',
+    fontSize: 24,
+    fontWeight: '600',
+    letterSpacing: 8,
+  },
+  resendButton: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  resendButtonText: {
+    fontSize: 14,
+    color: '#666666',
+  },
+  resendButtonDisabled: {
+    opacity: 0.5,
+  },
+  resendButtonTextDisabled: {
+    color: '#999999',
+  },
+  codeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 20,
+  },
+  codeBox: {
+    width: 50,
+    height: 60,
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#000000',
+    textAlign: 'center',
+    elevation: 2, // Android shadow
+    shadowColor: '#000000', // iOS shadow
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  codeBoxFocused: {
+    borderColor: '#007AFF',
+    backgroundColor: '#FFFFFF',
+    elevation: 4,
+    shadowOpacity: 0.15,
+  },
+  codeBoxFilled: {
+    borderColor: '#007AFF',
+    backgroundColor: '#007AFF',
+    color: '#FFFFFF',
+    elevation: 3,
+    shadowOpacity: 0.12,
+  },
+  successIconCenter: {
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  timerText: {
+    fontSize: 14,
+    color: '#666666',
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 16,
   },
 });
 

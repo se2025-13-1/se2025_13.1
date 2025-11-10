@@ -19,25 +19,17 @@ export type Screen =
   | 'forgotPassword'
   | 'verification'
   | 'resetPassword'
-  | 'home';
+  | 'home'; // Thêm home
 
 const AppRoutes: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>('splash');
   const [userEmail, setUserEmail] = useState('');
-  const [otpCode, setOtpCode] = useState(''); // THÊM: LƯU OTP
 
   // === NAVIGATION HELPERS ===
   const goTo = (screen: Screen) => setCurrentScreen(screen);
-
   const goToVerification = (email: string) => {
     setUserEmail(email);
     goTo('verification');
-  };
-
-  // THÊM: Lưu OTP khi xác thực thành công
-  const goToResetPassword = (otp: string) => {
-    setOtpCode(otp);
-    goTo('resetPassword');
   };
 
   // === RENDER SCREEN ===
@@ -60,7 +52,6 @@ const AppRoutes: React.FC = () => {
             onBack={() => goTo('welcome')}
             onSignUp={() => goTo('signup')}
             onForgotPassword={() => goTo('forgotPassword')}
-            onSuccess={() => goTo('home')}
           />
         );
 
@@ -69,7 +60,7 @@ const AppRoutes: React.FC = () => {
           <SignUpScreen
             onBack={() => goTo('welcome')}
             onLogin={() => goTo('login')}
-            onVerify={goToVerification}
+            _onVerify={goToVerification}
           />
         );
 
@@ -86,15 +77,13 @@ const AppRoutes: React.FC = () => {
           <VerificationPassword
             email={userEmail}
             onBack={() => goTo('forgotPassword')}
-            onVerifyCode={goToResetPassword} // TRUYỀN OTP
+            onVerifyCode={() => goTo('resetPassword')}
           />
         );
 
       case 'resetPassword':
         return (
           <ResetPasswordScreen
-            email={userEmail}
-            otp={otpCode} // TRUYỀN OTP VÀO
             onBack={() => goTo('verification')}
             onPasswordReset={() => goTo('login')}
           />
