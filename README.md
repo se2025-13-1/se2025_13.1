@@ -101,6 +101,8 @@ Hệ thống sử dụng PostgreSQL làm cơ sở dữ liệu duy nhất, với 
 
         vouchers: Mã giảm giá.
 
+![Database Diagram](./DB_Diagram.png)
+
 ## 🚀 Hướng dẫn cài đặt (Local Development)
 
 1️⃣ Clone dự án

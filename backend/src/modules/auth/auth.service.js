@@ -1,394 +1,196 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import axios from "axios";
-
-import { userRepository } from "./auth.repository.js";
+import { AuthRepository } from "./auth.repository.js";
 import { redisClient } from "../../config/redis.js";
-import { sendVerificationEmail } from "../../utils/email.js";
-import { pgPool } from "../../config/postgres.js";
+// import { sendVerificationEmail } from "../../utils/email.js"; // Tạm thời chưa dùng đến
 
-export const authService = {
-  /**
-   * Đăng ký user mới, gửi OTP xác nhận
-   */
-  register: async ({ name, email, password, phone }) => {
-    // Nếu user đã tồn tại và đã xác minh -> lỗi
-    const existing = await userRepository.findByEmail(email);
-    if (existing && existing.is_verified)
-      throw new Error("Email đã được đăng ký");
+const JWT_SECRET = process.env.JWT_SECRET || "secret";
 
-    // Nếu user tồn tại nhưng chưa xác thực, không tạo user mới, chỉ gửi mã lại
+// Helper tạo token
+const generateTokens = (user) => {
+  const payload = { id: user.id, email: user.email, role: user.role };
+  const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
+  const refreshToken = jwt.sign(
+    payload,
+    process.env.JWT_REFRESH_SECRET || "refresh_secret",
+    { expiresIn: "7d" }
+  );
+  return { accessToken, refreshToken };
+};
+
+export const AuthService = {
+  // 1. Đăng ký Local (Lazy Auth: Đăng ký xong trả token luôn)
+  async register({ email, password, fullName }) {
+    const existing = await AuthRepository.findByEmail(email);
+    if (existing) throw new Error("Email đã được sử dụng");
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    // Chỉ truyền 3 tham số cơ bản
+    const newUser = await AuthRepository.createUser({
+      email,
+      passwordHash,
+      fullName,
+      avatarUrl: null,
+    });
+
+    const tokens = generateTokens(newUser);
+    return { user: newUser, ...tokens };
+  },
+
+  // 2. Đăng nhập Local
+  async loginLocal({ email, password }) {
+    const user = await AuthRepository.findByEmail(email);
+    if (!user) throw new Error("Email hoặc mật khẩu không đúng");
+
+    // Nếu user đăng ký bằng Google thì không có pass
+    if (!user.password_hash)
+      throw new Error("Vui lòng đăng nhập bằng Google/Facebook");
+
+    const isMatch = await bcrypt.compare(password, user.password_hash);
+    if (!isMatch) throw new Error("Email hoặc mật khẩu không đúng");
+
+    const tokens = generateTokens(user);
+    return { user, ...tokens };
+  },
+
+  // 3. Lấy thông tin
+  async getProfile(userId) {
+    const user = await AuthRepository.findById(userId);
+    if (!user) throw new Error("User not found");
+    return user;
+  },
+
+  // 4. Cập nhật thông tin
+  async updateProfile(userId, payload) {
+    // payload: { fullName, gender, birthday, phone, avatarUrl }
+    const updated = await AuthRepository.updateProfile(userId, payload);
+    if (!updated) throw new Error("Update failed");
+    return updated;
+  },
+
+  // 3. Hàm xử lý chung cho Social Login (Tránh lặp code)
+  async handleSocialLogin({
+    provider,
+    providerUserId,
+    email,
+    fullName,
+    avatarUrl,
+    accessToken,
+  }) {
+    // A. Kiểm tra provider đã link chưa
+    const linkedProvider = await AuthRepository.findProvider(
+      provider,
+      providerUserId
+    );
+
     let user;
-    if (existing && !existing.is_verified) {
-      user = existing;
+
+    if (linkedProvider) {
+      // Đã link -> Lấy user gốc
+      user = await AuthRepository.findById(linkedProvider.user_id);
     } else {
-      const hash = await bcrypt.hash(password, 10);
-      user = await userRepository.createUser({
-        name,
-        email,
-        password_hash: hash,
-        phone,
+      // Chưa link -> Kiểm tra email có tồn tại không
+      user = await AuthRepository.findByEmail(email);
+
+      if (!user) {
+        // Chưa có user -> Tạo user mới (Không password)
+        user = await AuthRepository.createUser({
+          email,
+          fullName,
+          avatarUrl,
+          passwordHash: null,
+        });
+      }
+
+      // Link provider vào user
+      await AuthRepository.linkProvider({
+        userId: user.id,
+        provider,
+        providerUserId,
+        accessToken,
       });
     }
 
-    // Tạo OTP (6 chữ số)
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // Lưu OTP trong Redis 5 phút
-    await redisClient.set(`otp:${email}`, otp, { EX: 300 });
-
-    // Gửi OTP qua email (template mặc định)
-    await sendVerificationEmail(email, otp);
-    console.log("✅ OTP sent to", email);
-
-    return { message: "Đã gửi OTP xác nhận tới email", user };
+    const tokens = generateTokens(user);
+    return { user, ...tokens };
   },
 
-  /**
-   * Xác minh OTP được gửi qua email
-   */
-  verifyOTP: async ({ email, otp }) => {
-    const storedOtp = await redisClient.get(`otp:${email}`);
-    if (!storedOtp) throw new Error("OTP đã hết hạn hoặc không tồn tại");
-    if (storedOtp !== otp) throw new Error("OTP không hợp lệ");
-
-    // Đánh dấu user là đã xác thực
-    await userRepository.verifyUser(email);
-    await redisClient.del(`otp:${email}`);
-
-    return { message: "Xác thực tài khoản thành công" };
-  },
-
-  /**
-   * Xóa user chưa xác minh (khi OTP hết hạn)
-   */
-  deleteIfExpired: async (email) => {
-    await userRepository.deleteUnverifiedUser(email);
-  },
-
-  /**
-   * Đăng nhập bằng email / password
-   */
-  loginLocal: async ({ email, password }) => {
-    // ✅ fix: phải dùng userRepository thay vì findByEmail chưa định nghĩa
-    const user = await userRepository.findByEmail(email);
-    if (!user) throw new Error("Email không tồn tại");
-
-    if (!user.is_verified)
-      throw new Error("Tài khoản chưa được xác minh qua email OTP");
-
-    const valid = await bcrypt.compare(password, user.password_hash);
-    if (!valid) throw new Error("Sai mật khẩu");
-
-    // ✅ Sinh JWT
-    const payload = { id: user.id, email: user.email, role: user.role };
-
-    const accessToken = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
-
-    const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
-      expiresIn: "7d",
-    });
-
-    return {
-      message: "Đăng nhập thành công",
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-      accessToken,
-      refreshToken,
-    };
-  },
-
-  loginWithGoogle: async (googleAccessToken) => {
-    // 1️⃣ Lấy thông tin người dùng từ Google
-    const { data: googleUser } = await axios.get(
+  // 4. Login Google
+  async loginGoogle(googleAccessToken) {
+    // Verify token với Google Server
+    const { data } = await axios.get(
       "https://www.googleapis.com/oauth2/v3/userinfo",
       {
         headers: { Authorization: `Bearer ${googleAccessToken}` },
       }
     );
 
-    if (!googleUser.email) throw new Error("Không thể lấy thông tin từ Google");
+    if (!data.email) throw new Error("Google Token không hợp lệ");
 
-    // 2️⃣ Kiểm tra xem provider đã tồn tại chưa
-    let provider = await userRepository.findProvider("google", googleUser.sub);
-    let user;
-
-    if (provider) {
-      // user đã liên kết rồi
-      const res = await pgPool.query("SELECT * FROM users WHERE id = $1", [
-        provider.user_id,
-      ]);
-      user = res.rows[0];
-    } else {
-      // Nếu chưa, tạo mới user và link provider
-      user = await userRepository.findByEmail(googleUser.email);
-      if (!user) {
-        user = await userRepository.createUser({
-          name: googleUser.name,
-          email: googleUser.email,
-          avatar_url: googleUser.picture,
-        });
-      }
-
-      await userRepository.linkProvider({
-        user_id: user.id,
-        provider: "google",
-        provider_user_id: googleUser.sub,
-        access_token: googleAccessToken,
-      });
-    }
-
-    // 3️⃣ Trả JWT
-    const payload = { id: user.id, email: user.email, role: user.role };
-    const accessToken = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+    return await this.handleSocialLogin({
+      provider: "google",
+      providerUserId: data.sub,
+      email: data.email,
+      fullName: data.name,
+      avatarUrl: data.picture,
+      accessToken: googleAccessToken,
     });
-
-    return { message: "Đăng nhập bằng Google thành công", user, accessToken };
   },
 
-  /**
-   * Generic provider login handler (delegates to provider-specific or generic flow)
-   */
-  loginWithProvider: async ({
-    provider,
-    provider_user_id,
-    access_token,
-    name,
-    email,
-    avatar_url,
-  }) => {
-    // Delegate to provider-specific fast paths
-    if (provider === "google") {
-      // Google flow (inline to avoid referencing authService during init)
-      const { data: googleUser } = await axios.get(
-        "https://www.googleapis.com/oauth2/v3/userinfo",
-        {
-          headers: { Authorization: `Bearer ${access_token}` },
-        }
-      );
-
-      if (!googleUser.email)
-        throw new Error("Không thể lấy thông tin từ Google");
-
-      let providerRec = await userRepository.findProvider(
-        "google",
-        googleUser.sub
-      );
-      let gUser;
-      if (providerRec) {
-        const res = await pgPool.query("SELECT * FROM users WHERE id = $1", [
-          providerRec.user_id,
-        ]);
-        gUser = res.rows[0];
-      } else {
-        gUser = await userRepository.findByEmail(googleUser.email);
-        if (!gUser) {
-          gUser = await userRepository.createUser({
-            name: googleUser.name,
-            email: googleUser.email,
-            avatar_url: googleUser.picture,
-          });
-        }
-
-        await userRepository.linkProvider({
-          user_id: gUser.id,
-          provider: "google",
-          provider_user_id: googleUser.sub,
-          access_token,
-        });
-      }
-
-      const payloadG = { id: gUser.id, email: gUser.email, role: gUser.role };
-      const accessTokenG = jwt.sign(payloadG, process.env.JWT_SECRET, {
-        expiresIn: "1h",
-      });
-      return {
-        message: "Đăng nhập bằng Google thành công",
-        user: gUser,
-        accessToken: accessTokenG,
-      };
-    }
-    if (provider === "facebook") {
-      // Facebook flow (inline)
-      const { data: fbUser } = await axios.get(
-        `https://graph.facebook.com/me?fields=id,name,email,picture&access_token=${access_token}`
-      );
-      if (!fbUser.email) throw new Error("Không thể lấy thông tin từ Facebook");
-
-      let providerRec = await userRepository.findProvider(
-        "facebook",
-        fbUser.id
-      );
-      let fUser;
-      if (providerRec) {
-        const res = await pgPool.query("SELECT * FROM users WHERE id = $1", [
-          providerRec.user_id,
-        ]);
-        fUser = res.rows[0];
-      } else {
-        fUser = await userRepository.findByEmail(fbUser.email);
-        if (!fUser) {
-          fUser = await userRepository.createUser({
-            name: fbUser.name,
-            email: fbUser.email,
-            avatar_url: fbUser.picture?.data?.url,
-          });
-        }
-
-        await userRepository.linkProvider({
-          user_id: fUser.id,
-          provider: "facebook",
-          provider_user_id: fbUser.id,
-          access_token,
-        });
-      }
-
-      const payloadF = { id: fUser.id, email: fUser.email, role: fUser.role };
-      const accessTokenF = jwt.sign(payloadF, process.env.JWT_SECRET, {
-        expiresIn: "1h",
-      });
-      return {
-        message: "Đăng nhập bằng Facebook thành công",
-        user: fUser,
-        accessToken: accessTokenF,
-      };
-    }
-
-    // Generic provider flow: check provider mapping, create user if needed
-    let providerRecord = await userRepository.findProvider(
-      provider,
-      provider_user_id
-    );
-    let user;
-
-    if (providerRecord) {
-      const res = await pgPool.query("SELECT * FROM users WHERE id = $1", [
-        providerRecord.user_id,
-      ]);
-      user = res.rows[0];
-    } else {
-      user = await userRepository.findByEmail(email);
-      if (!user) {
-        user = await userRepository.createUser({
-          name,
-          email,
-          avatar_url,
-        });
-      }
-
-      await userRepository.linkProvider({
-        user_id: user.id,
-        provider,
-        provider_user_id,
-        access_token,
-      });
-    }
-
-    const payload = { id: user.id, email: user.email, role: user.role };
-    const accessToken = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
-
-    return {
-      message: `Đăng nhập bằng ${provider} thành công`,
-      user,
-      accessToken,
-    };
-  },
-
-  loginWithFacebook: async (facebookAccessToken) => {
-    // 1️⃣ Lấy thông tin người dùng từ Facebook Graph API
-    const { data: fbUser } = await axios.get(
-      `https://graph.facebook.com/me?fields=id,name,email,picture&access_token=${facebookAccessToken}`
+  // 5. Login Facebook
+  async loginFacebook(fbAccessToken) {
+    const { data } = await axios.get(
+      `https://graph.facebook.com/me?fields=id,name,email,picture&access_token=${fbAccessToken}`
     );
 
-    if (!fbUser.email) throw new Error("Không thể lấy thông tin từ Facebook");
+    if (!data.email)
+      throw new Error("Facebook Token không hợp lệ hoặc không có email");
 
-    let provider = await userRepository.findProvider("facebook", fbUser.id);
-    let user;
-
-    if (provider) {
-      const res = await pgPool.query("SELECT * FROM users WHERE id = $1", [
-        provider.user_id,
-      ]);
-      user = res.rows[0];
-    } else {
-      user = await userRepository.findByEmail(fbUser.email);
-      if (!user) {
-        user = await userRepository.createUser({
-          name: fbUser.name,
-          email: fbUser.email,
-          avatar_url: fbUser.picture?.data?.url,
-        });
-      }
-
-      await userRepository.linkProvider({
-        user_id: user.id,
-        provider: "facebook",
-        provider_user_id: fbUser.id,
-        access_token: facebookAccessToken,
-      });
-    }
-
-    const payload = { id: user.id, email: user.email, role: user.role };
-    const accessToken = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+    return await this.handleSocialLogin({
+      provider: "facebook",
+      providerUserId: data.id,
+      email: data.email,
+      fullName: data.name,
+      avatarUrl: data.picture?.data?.url,
+      accessToken: fbAccessToken,
     });
-
-    return { message: "Đăng nhập bằng Facebook thành công", user, accessToken };
   },
 
-  // THÊM VÀO auth.service.js
-  sendResetCode: async (email) => {
-    const user = await userRepository.findByEmail(email);
+  // --- Các hàm tiện ích khác (Forgot Password) ---
+
+  async sendResetCode(email) {
+    const user = await AuthRepository.findByEmail(email);
     if (!user) throw new Error("Email không tồn tại");
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    await redisClient.set(`reset_otp:${email}`, otp, { EX: 300 }); // 5 phút
+    // Lưu Redis 5 phút
+    if (redisClient)
+      await redisClient.set(`reset_otp:${email}`, otp, { EX: 300 });
 
-    await sendVerificationEmail(email, otp, "reset"); // Dùng template reset
-    return { message: "Đã gửi mã đặt lại mật khẩu" };
+    // TODO: Bật lại dòng này khi cấu hình xong email service
+    // await sendVerificationEmail(email, otp, "reset");
+
+    console.log(`🔑 RESET OTP cho ${email}: ${otp}`); // Log ra console để test trước
+    return { message: "Mã xác nhận đã được gửi (Check console)" };
   },
 
-  resetPassword: async ({ email, otp, newPassword }) => {
-    const storedOtp = await redisClient.get(`reset_otp:${email}`);
-    if (!storedOtp || storedOtp !== otp)
-      throw new Error("Mã OTP không hợp lệ hoặc hết hạn");
+  async resetPassword({ email, otp, newPassword }) {
+    if (redisClient) {
+      const storedOtp = await redisClient.get(`reset_otp:${email}`);
+      if (!storedOtp || storedOtp !== otp)
+        throw new Error("OTP sai hoặc hết hạn");
+    }
 
-    const hash = await bcrypt.hash(newPassword, 10);
-    await pgPool.query(
-      `UPDATE users SET password_hash = $1, updated_at = NOW() WHERE email = $2`,
-      [hash, email]
-    );
+    const salt = await bcrypt.genSalt(10);
+    const newHash = await bcrypt.hash(newPassword, salt);
 
-    await redisClient.del(`reset_otp:${email}`);
+    await AuthRepository.updatePassword(email, newHash);
+
+    if (redisClient) await redisClient.del(`reset_otp:${email}`);
+
     return { message: "Đặt lại mật khẩu thành công" };
-  },
-
-  /**
-   * Change password for existing user (requires current password)
-   * Accepts: { email, oldPassword, newPassword }
-   */
-  changePassword: async ({ email, oldPassword, newPassword }) => {
-    const user = await userRepository.findByEmail(email);
-    if (!user) throw new Error("Email không tồn tại");
-
-    const valid = await bcrypt.compare(oldPassword, user.password_hash);
-    if (!valid) throw new Error("Mật khẩu hiện tại không đúng");
-
-    const hash = await bcrypt.hash(newPassword, 10);
-    await pgPool.query(
-      `UPDATE users SET password_hash = $1, updated_at = NOW() WHERE email = $2`,
-      [hash, email]
-    );
-
-    return { message: "Đổi mật khẩu thành công" };
   },
 };

@@ -6,9 +6,8 @@ import morgan from "morgan";
 import cron from "node-cron";
 
 import { connectPostgres } from "./config/postgres.js";
-// import { connectMongo } from "./config/mongo.js"; // ❌ Đã bỏ Mongo
 import { connectRedis } from "./config/redis.js";
-import { userRepository } from "./modules/auth/auth.repository.js";
+import { AuthRepository } from "./modules/auth/auth.repository.js";
 
 // Import routes
 import authRoutes from "./modules/auth/auth.routes.js";
@@ -69,7 +68,7 @@ app.use((err, req, res, next) => {
 cron.schedule("*/10 * * * *", async () => {
   // console.log("🧹 Running Cron: Cleaning unverified users...");
   try {
-    if (userRepository && userRepository.deleteUnverifiedUser) {
+    if (AuthRepository && AuthRepository.deleteUnverifiedUser) {
       await userRepository.deleteUnverifiedUser();
     }
   } catch (err) {
