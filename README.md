@@ -1,146 +1,142 @@
-# se2025_13.1
+# se2025_13.1 : 🛍️ Fashion E-Commerce Platform (Single Seller)
 
-## 🛍️ E-Commerce Platform (Single Seller)
+## 📌 Giới thiệu
 
-📌 Giới thiệu
+Dự án **se2025_13.1** là hệ thống thương mại điện tử chuyên biệt cho thời trang (quần áo, phụ kiện) theo mô hình một nhà cung cấp (Single Seller). Hệ thống tập trung tối ưu hóa trải nghiệm người dùng (UX) với luồng mua sắm hiện đại: cho phép xem hàng tự do (Guest Browsing), đăng ký nhanh gọn và thanh toán bảo mật.
 
-    Dự án E-Commerce Platform là hệ thống bán hàng một nhà cung cấp (single seller) gồm:
+Hệ thống bao gồm:
 
-    Mobile App (React Native): dành cho khách hàng (user)
+- **Mobile App (React Native):** Dành cho khách hàng (User).
+- **Web App (ReactJS):** Dành cho quản trị viên (Admin/Seller).
+- **Backend (NodeJS + Express):** RESTful API hiệu suất cao.
+- **Docker:** Môi trường triển khai đồng nhất.
 
-    Web App (ReactJS): dành cho quản trị viên (admin/seller)
+---
 
-    Backend (NodeJS + Express): xử lý API, kết nối cơ sở dữ liệu
+## ⚙️ Công nghệ sử dụng
 
-    Docker: giúp đảm bảo môi trường đồng nhất khi phát triển
+| Thành phần            | Công nghệ                    | Ghi chú                                            |
+| :-------------------- | :--------------------------- | :------------------------------------------------- |
+| **Frontend (Web)**    | ReactJS + Vite + TailwindCSS | Dashboard quản lý tốc độ cao                       |
+| **Frontend (Mobile)** | React Native CLI             | Trải nghiệm Native mượt mà                         |
+| **Backend**           | NodeJS + ExpressJS           | Kiến trúc Layered (Controller-Service-Repo)        |
+| **Database**          | **PostgreSQL**               | **Lưu trữ toàn bộ dữ liệu (Product, User, Order)** |
+| **Cache**             | Redis                        | Cache danh sách sản phẩm & Chi tiết                |
+| **Deployment**        | Docker + Docker Compose      | Container hóa ứng dụng                             |
+| **Authentication**    | JWT + OTP (SĐT)              | Bảo mật 2 lớp khi thanh toán                       |
 
-    🔹 Admin = Seller: Một người quản lý duy nhất có quyền thêm sản phẩm, xem đơn hàng, và thống kê doanh thu.
+---
 
-⚙️ Công nghệ sử dụng
+## 🧱 Cấu trúc thư mục
 
-    Frontend (Web) ReactJS + Vite + TailwindCSS
+```text
+se2025_13.1/
+│
+├── backend/        # NodeJS (Express) - REST API Server
+├── docker/         # Cấu hình Docker Compose (PgSQL, Redis)
+├── website/        # ReactJS Web App (Admin Dashboard)
+├── mobile/         # React Native App (Customer App)
+└── README.md
 
-    Frontend (Mobile) React Native CLI
+```
 
-    Backend NodeJS + ExpressJS
-
-    Database (Quan hệ) PostgreSQL
-
-    Database (Phi cấu trúc) MongoDB
-
-    Cache Redis
-
-    Containerization Docker + Docker Compose
-
-    Authentication JWT (JSON Web Token)
-
-    Search (mở rộng) ElasticSearch (dự kiến)
-
-🧱 Cấu trúc thư mục
-
-    se2025_13.1/
-    │
-    ├── backend/ # NodeJS (Express) - REST API
-    ├── docker/ # Docker Compose config
-    ├── website/ # ReactJS web app (Admin)
-    ├── mobile/ # React Native mobile app (User)
-    └── README.md
-
-🔐 Phân quyền hệ thống
+## 🔐 Phân quyền & Tính năng
 
     Vai trò Nền tảng Chức năng chính
-    Admin (Seller) Web Quản lý sản phẩm, đơn hàng, khách hàng, báo cáo
-    User (Khách hàng) Mobile Xem sản phẩm, đặt hàng, thanh toán, đánh giá
+    Admin Web   - Quản lý danh mục đa cấp, Sản phẩm, Biến thể (Màu/Size)
+                - Quản lý đơn hàng, trạng thái vận chuyển
+                - Tạo mã giảm giá (Voucher)<br>- Báo cáo doanh thu
 
-📱 Ứng dụng Mobile (User)
+    User Mobile - Guest Mode: Xem hàng, thêm giỏ hàng không cần Login
+                - Lazy Auth: Chỉ đăng nhập khi cần thiết (Checkout/Like)
+                - Quản lý sổ địa chỉ, Lịch sử đơn hàng<br>- Đánh giá sản phẩm
 
-    Home: Hiển thị danh sách sản phẩm
-    Product Detail: Chi tiết sản phẩm, thêm vào giỏ hàng
-    Cart: Quản lý giỏ hàng
-    Checkout: Thanh toán
-    Orders: Theo dõi đơn hàng
-    Profile: Cập nhật thông tin cá nhân
+## 🧠 Kiến trúc tổng thể
 
-💻 Ứng dụng Web (Admin)
+    ┌─────────────────────────┐ ┌─────────────────────────┐
+    │     Mobile App (User)   │ │       Website (Admin)   │
+    └────────────┬────────────┘ └────────────┬────────────┘
+                 │                           │
+                 └────────────┐ ┌────────────┘
+                              ▼ ▼
+                    ┌───────────────────────┐
+                    │     Backend API       │
+                    │   (NodeJS + Express)  │
+                    └──────────┬────────────┘
+                               │
+           ┌───────────────────┴───────────────────┐
+           ▼                                       ▼
+        ┌──────────────┐                    ┌──────────────┐
+        │ PostgreSQL   │                    │    Redis     │
+        │ (Main Data)  │                    │   (Cache)    │
+        └──────────────┘                    └──────────────┘
 
-    Dashboard	Thống kê doanh thu, đơn hàng
-    Products	CRUD sản phẩm
-    Orders	Quản lý và xử lý đơn hàng
-    Customers	Danh sách khách hàng
-    Reports	Báo cáo kinh doanh
+## 🧩 Cơ sở dữ liệu (PostgreSQL Schema)
 
-🧠 Kiến trúc tổng thể
+Hệ thống sử dụng PostgreSQL làm cơ sở dữ liệu duy nhất, với thiết kế chuẩn hóa cao:
 
-    ┌───────────────────────────────────────────────┐
-    │  Mobile App (User)   │    Website (Admin)     │
-    └──────────────────────┬────────────────────────┘
-                           │
-    ┌──────────────────────▼────────────────────────┐
-    │                   Backend API                 │ NodeJS + Express + JWT
-    │               (Auth, Orders, CRUD)            │
-    └──────────────────────┬────────────────────────┘
-    │
-    ┌──────────────────────┴────────────────────────┐
-    │                                               │
-    ▼                                               ▼
-    PostgreSQL                                    MongoDB
-    (Relational)                             (Metadata, Logs)
-    └──────────────────────┬────────────────────────┘
-                           │
-                           ▼
-                         Redis
-                     (Cache Layer)
+    Auth & Users:
 
-🧩 Database Design (tóm tắt)
+        auth_users: Tài khoản, mật khẩu, xác thực OTP.
 
-    PostgreSQL
+        user_profiles: Thông tin cá nhân.
 
-        users – thông tin khách hàng
+        user_addresses: Sổ địa chỉ (Nhà riêng, Công ty).
 
-        products – sản phẩm
+    Products (Thời trang):
 
-        orders – đơn hàng
+        categories: Danh mục đa cấp (đệ quy).
 
-        order_items – chi tiết đơn hàng
+        products: Thông tin chung (Tên, mô tả, giá gốc).
 
-        payments – giao dịch thanh toán
+        product_variants: Biến thể SKU (Màu sắc, Size, Tồn kho).
 
-        reviews – đánh giá
+        product_images: Ảnh sản phẩm gắn theo màu sắc.
 
-    MongoDB
+    Sales & Orders:
 
-        activity_logs – thao tác người dùng
+        carts & cart_items: Giỏ hàng (Hỗ trợ Guest Session).
 
-        product_metadata – mô tả chi tiết, ảnh, tag
+        orders: Đơn hàng (Lưu Snapshot địa chỉ & giá lúc mua).
 
-    Redis
+        vouchers: Mã giảm giá.
 
-        Cache sản phẩm được xem nhiều
+## 🚀 Hướng dẫn cài đặt (Local Development)
 
-        Lưu session và token tạm thời
+1️⃣ Clone dự án
 
-🚀 Hướng dẫn cài đặt
+    git clone https://github.com/<your-repo>/se2025_13.1.git
+    cd se2025_13.1
 
-    1️⃣ Clone repository
-        git clone https://github.com/<your-repo>/se2025_13.1.git
-        cd se2025_13.1
+2️⃣ Khởi động Database & Cache (Docker)
 
-    2️⃣ Khởi động môi trường Docker
-        cd docker
-        docker compose up -d
+    cd docker
+    docker compose up -d
 
-    3️⃣ Cài đặt backend
-        cd backend
-        npm install
-        npm run dev
+Lệnh này sẽ chạy PostgreSQL (port 5432) và Redis (port 6379)
 
-    4️⃣ Cài đặt web (admin)
-        cd website
-        npm install
-        npm run dev
+3️⃣ Cài đặt Backend
 
-    5️⃣ Cài đặt mobile (user)
-        cd mobile
-        npm install
-        npx react-native start
-        npx react-native run-android
+Yêu cầu: Node.js >= 16
+
+Lưu ý: Tạo file .env trong thư mục backend dựa trên .env.example.
+
+    cd backend
+    npm install
+
+4️⃣ Cài đặt Web Admin
+
+    cd website
+    npm install
+    npm run dev
+
+5️⃣ Cài đặt Mobile App
+
+    Yêu cầu: Đã cài đặt môi trường React Native (Android Studio).
+    cd mobile
+
+    npm install
+
+    # Chạy trên Android
+    npx react-native start
+    npx react-native run-android

@@ -1,19 +1,33 @@
-// src/modules/product/product.controller.js
 import { ProductService } from "./product.service.js";
 
 export const ProductController = {
   async create(req, res) {
     try {
-      const payload = req.body;
+      // Map data từ request sang schema DB mới
+      const payload = {
+        name: req.body.name,
+        slug: req.body.slug, // Có thể null, service tự lo
+        description: req.body.description || req.body.short_description,
+        base_price: req.body.price, // Frontend gửi 'price', DB lưu 'base_price'
+        category_id: req.body.category_id || req.body.category, // Hỗ trợ cả 2 key
+        is_active: req.body.is_active,
+
+        // Mảng quan trọng
+        variants: req.body.variants || [], // [{color, size, sku, stock_quantity...}]
+        images: req.body.images || [], // [{image_url, color_ref...}]
+      };
+
       const created = await ProductService.createProduct(payload);
-      return res
-        .status(201)
-        .json({ message: "Product created", product: created });
+
+      return res.status(201).json({
+        message: "Product created successfully",
+        product: created,
+      });
     } catch (err) {
       console.error(err);
-      return res
-        .status(500)
-        .json({ error: err.message || "Create product failed" });
+      return res.status(500).json({
+        error: err.message || "Create product failed",
+      });
     }
   },
 
@@ -21,69 +35,66 @@ export const ProductController = {
     try {
       const { id } = req.params;
       const product = await ProductService.getProductDetail(id);
-      if (!product) return res.status(404).json({ error: "Product not found" });
+
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+
       return res.json({ product });
     } catch (err) {
       console.error(err);
-      return res
-        .status(500)
-        .json({ error: err.message || "Get product failed" });
+      return res.status(500).json({ error: "Get product failed" });
     }
   },
 
   async list(req, res) {
     try {
-      const { page = 1, limit = 20, q, category } = req.query;
+      const { page = 1, limit = 20, q, category, category_id } = req.query;
+
       const rows = await ProductService.listProducts({
         page: Number(page),
         limit: Number(limit),
         q,
-        category,
+        category_id: category_id || category, // Mapping query param cũ
       });
+
       return res.json({ products: rows });
     } catch (err) {
       console.error(err);
-      return res
-        .status(500)
-        .json({ error: err.message || "List products failed" });
+      return res.status(500).json({ error: "List products failed" });
     }
   },
 
   async update(req, res) {
     try {
       const { id } = req.params;
-      // Accept both product fields and metadata fields in body
-      const {
-        name,
-        sku,
-        price,
-        discount,
-        stock,
-        category,
-        short_description,
-        image_url,
-        is_active,
-        metadata,
-      } = req.body;
-      const productPatch = {};
-      if (name !== undefined) productPatch.name = name;
-      if (sku !== undefined) productPatch.sku = sku;
-      if (price !== undefined) productPatch.price = price;
-      if (discount !== undefined) productPatch.discount = discount;
-      if (stock !== undefined) productPatch.stock = stock;
-      if (category !== undefined) productPatch.category = category;
-      if (short_description !== undefined)
-        productPatch.short_description = short_description;
-      if (image_url !== undefined) productPatch.image_url = image_url;
-      if (is_active !== undefined) productPatch.is_active = is_active;
+      const body = req.body;
 
-      const metadataPatch = metadata || {};
+      // Chỉ lấy các field cho phép update ở bảng products
+      const payload = {};
+      if (body.name) payload.name = body.name;
+      if (body.description || body.short_description)
+        payload.description = body.description || body.short_description;
+      if (body.price) payload.base_price = body.price;
+      if (body.is_active !== undefined) payload.is_active = body.is_active;
+      if (body.category || body.category_id)
+        payload.category_id = body.category_id || body.category;
 
-      const updated = await ProductService.updateProduct(id, {
-        productPatch,
-        metadataPatch,
+      // Note: Hiện tại chưa hỗ trợ update Variants/Images qua API này
+      // vì logic diff variants khá phức tạp.
+
+      const updated = await ProductService.updateProduct(id, payload);
+
+      if (!updated) {
+        return res
+          .status(404)
+          .json({ error: "Product not found or update failed" });
+      }
+
+      return res.json({
+        message: "Product updated",
+        product: updated,
       });
-      return res.json({ message: "Product updated", product: updated });
     } catch (err) {
       console.error(err);
       return res.status(500).json({ error: err.message || "Update failed" });
@@ -94,11 +105,18 @@ export const ProductController = {
     try {
       const { id } = req.params;
       const deleted = await ProductService.deleteProduct(id);
-      if (!deleted) return res.status(404).json({ error: "Product not found" });
-      return res.json({ message: "Product deleted", product: deleted });
+
+      if (!deleted) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+
+      return res.json({
+        message: "Product deleted",
+        product_id: deleted.id,
+      });
     } catch (err) {
       console.error(err);
-      return res.status(500).json({ error: err.message || "Delete failed" });
+      return res.status(500).json({ error: "Delete failed" });
     }
   },
 };

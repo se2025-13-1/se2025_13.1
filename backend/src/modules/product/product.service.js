@@ -1,61 +1,62 @@
-// src/modules/product/product.service.js
 import { ProductRepository } from "./product.repository.js";
-import { ProductMetaRepository } from "./productMeta.repository.js";
-import { redisClient } from "../../config/redis.js"; // optional caching
+import { redisClient } from "../../config/redis.js";
+
+// Hàm hỗ trợ tạo slug (URL friendly)
+const generateSlug = (name) => {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-");
+};
 
 export const ProductService = {
   async createProduct(payload) {
-    // payload: { name, sku, price, discount, stock, category, short_description, image_url, metadata: { tags, images,... } }
-    const { metadata = {}, ...productData } = payload;
+    // 1. Tự động tạo slug nếu thiếu
+    if (!payload.slug && payload.name) {
+      payload.slug = generateSlug(payload.name) + "-" + Date.now();
+    }
 
-    // Use PG transaction inside ProductRepository.create if needed; we use single insert then metadata create
-    const created = await ProductRepository.create(productData);
+    // 2. Gọi Repository (đã bao gồm Transaction lưu Product + Variants + Images)
+    // Payload lúc này cần đúng chuẩn: { name, base_price, variants: [], images: [], ... }
+    const createdBasic = await ProductRepository.create(payload);
 
-    // create metadata document linking to the product id
-    await ProductMetaRepository.createForProduct(created.id, metadata);
-
-    // invalidate list cache
+    // 3. Xóa cache danh sách
     if (redisClient) await redisClient.del("products:all");
 
-    return created;
+    // 4. Trả về chi tiết đầy đủ (query lại để lấy đủ cấu trúc variants/images)
+    return await ProductRepository.findById(createdBasic.id);
   },
 
   async getProductDetail(productId) {
     const cacheKey = `product:${productId}:detail`;
+
+    // Check Cache
     if (redisClient) {
       const cached = await redisClient.get(cacheKey);
       if (cached) return JSON.parse(cached);
     }
 
+    // Query DB (Repository mới đã dùng JSON_AGG lấy variants & images)
     const product = await ProductRepository.findById(productId);
+
     if (!product) return null;
-    const metadata = await ProductMetaRepository.findByProductId(productId);
 
-    const combined = { ...product, metadata: metadata || null };
-
-    if (redisClient)
-      await redisClient.set(cacheKey, JSON.stringify(combined), { EX: 600 });
-    return combined;
-  },
-
-  async updateProduct(productId, { productPatch = {}, metadataPatch = {} }) {
-    // Update Postgres product first
-    const updatedProduct = Object.keys(productPatch).length
-      ? await ProductRepository.update(productId, productPatch)
-      : await ProductRepository.findById(productId);
-
-    // Update metadata in Mongo
-    let updatedMeta = null;
-    if (Object.keys(metadataPatch).length) {
-      updatedMeta = await ProductMetaRepository.updateByProductId(
-        productId,
-        metadataPatch
-      );
-    } else {
-      updatedMeta = await ProductMetaRepository.findByProductId(productId);
+    // Set Cache
+    if (redisClient) {
+      await redisClient.set(cacheKey, JSON.stringify(product), { EX: 600 }); // 10 phút
     }
 
-    // invalidate caches
+    return product;
+  },
+
+  async updateProduct(productId, payload) {
+    // Lưu ý: Repository.update hiện tại chỉ update bảng 'products' (name, desc, price...)
+    // Nếu muốn update variants/images, cần viết thêm logic riêng hoặc API riêng.
+    const updated = await ProductRepository.update(productId, payload);
+
+    // Invalidate caches
     if (redisClient) {
       await Promise.all([
         redisClient.del("products:all"),
@@ -63,17 +64,14 @@ export const ProductService = {
       ]);
     }
 
-    return { ...updatedProduct, metadata: updatedMeta || null };
+    return await ProductRepository.findById(productId);
   },
 
   async deleteProduct(productId) {
-    // Delete product in Postgres
+    // PostgreSQL CASCADE sẽ tự xóa variants và images liên quan
     const deleted = await ProductRepository.delete(productId);
-    // Delete metadata in Mongo
-    await ProductMetaRepository.deleteByProductId(productId);
 
-    // invalidate cache
-    if (redisClient) {
+    if (deleted && redisClient) {
       await Promise.all([
         redisClient.del("products:all"),
         redisClient.del(`product:${productId}:detail`),
@@ -84,8 +82,8 @@ export const ProductService = {
   },
 
   async listProducts(query) {
-    // basic list supports pagination + search
     const cacheKey = `products:list:${JSON.stringify(query)}`;
+
     if (redisClient) {
       const cached = await redisClient.get(cacheKey);
       if (cached) return JSON.parse(cached);
@@ -93,10 +91,10 @@ export const ProductService = {
 
     const rows = await ProductRepository.list(query);
 
-    // Optionally attach small metadata (like first image) by querying Mongo in batch (optional)
-    // For simplicity, return rows as-is
-    if (redisClient)
-      await redisClient.set(cacheKey, JSON.stringify(rows), { EX: 300 });
+    if (redisClient) {
+      await redisClient.set(cacheKey, JSON.stringify(rows), { EX: 300 }); // 5 phút
+    }
+
     return rows;
   },
 };
