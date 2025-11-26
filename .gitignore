@@ -101,3 +101,4 @@ mobile/expo-dev-client.json
 .nyc_output/
 coverage/
 *.tgz
+DB_Diagram.svg
