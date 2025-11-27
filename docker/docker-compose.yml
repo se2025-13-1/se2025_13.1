@@ -10,7 +10,9 @@ services:
     restart: unless-stopped
     networks:
       - my_ipv6_net
-
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
 networks:
   my_ipv6_net:
     external: true
