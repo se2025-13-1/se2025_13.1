@@ -1,174 +1,124 @@
-import { authService } from "./auth.service.js";
+import { AuthService } from "./auth.service.js";
 
-/**
- * Đăng ký tài khoản mới (local)
- * Gửi OTP xác thực qua email, lưu user tạm (is_verified = false)
- */
-export const register = async (req, res) => {
-  try {
-    const { name, email, password, phone } = req.body;
+export const AuthController = {
+  // 1. Đăng ký (Chỉ nhận 3 trường)
+  async register(req, res) {
+    try {
+      const { email, password, name } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email và mật khẩu là bắt buộc" });
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email và mật khẩu là bắt buộc" });
+      }
+
+      const result = await AuthService.register({
+        email,
+        password,
+        fullName: name,
+      });
+
+      return res.status(201).json(result);
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
     }
+  },
 
-    const result = await authService.register({ name, email, password, phone });
-    res.status(201).json(result);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-};
+  // 2. Cập nhật Profile (Tùy ý thay đổi)
+  async updateProfile(req, res) {
+    try {
+      const userId = req.user.id;
+      // Lấy các trường cho phép update từ body
+      const { full_name, gender, birthday, phone, avatar_url } = req.body;
 
-/**
- * Xác thực OTP (email verification)
- */
-export const verifyOTP = async (req, res) => {
-  try {
-    const { email, otp } = req.body;
+      const updated = await AuthService.updateProfile(userId, {
+        fullName: full_name,
+        gender,
+        birthday,
+        phone,
+        avatarUrl: avatar_url,
+      });
 
-    if (!email || !otp) {
-      return res.status(400).json({ error: "Thiếu email hoặc mã OTP" });
+      return res.json({
+        message: "Cập nhật hồ sơ thành công",
+        user: updated,
+      });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
     }
+  },
 
-    const result = await authService.verifyOTP({ email, otp });
-    res.json(result);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-};
-
-/**
- * Đăng nhập bằng email & mật khẩu
- */
-export const loginLocal = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ error: "Thiếu email hoặc mật khẩu" });
+  // Đăng nhập Local
+  async login(req, res) {
+    try {
+      const { email, password } = req.body;
+      const result = await AuthService.loginLocal({ email, password });
+      return res.json(result);
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
     }
+  },
 
-    const result = await authService.loginLocal({ email, password });
-    res.json(result);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-};
+  // Đăng nhập Google
+  async loginGoogle(req, res) {
+    try {
+      const { access_token } = req.body;
+      if (!access_token)
+        return res.status(400).json({ error: "Thiếu access_token" });
 
-/**
- * Đăng nhập hoặc liên kết tài khoản thông qua provider (Google, Facebook, ...)
- * (nếu client gửi trực tiếp provider info từ SDK)
- */
-export const loginWithProvider = async (req, res) => {
-  try {
-    const {
-      provider,
-      provider_user_id,
-      name,
-      email,
-      avatar_url,
-      access_token,
-      refresh_token,
-      token_expires_at,
-    } = req.body;
-
-    if (!provider || !provider_user_id || !email) {
-      return res.status(400).json({ error: "Thiếu dữ liệu provider" });
+      const result = await AuthService.loginGoogle(access_token);
+      return res.json(result);
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
     }
+  },
 
-    const result = await authService.loginWithProvider({
-      provider,
-      provider_user_id,
-      name,
-      email,
-      avatar_url,
-      access_token,
-      refresh_token,
-      token_expires_at,
-    });
+  // Đăng nhập Facebook
+  async loginFacebook(req, res) {
+    try {
+      const { access_token } = req.body;
+      if (!access_token)
+        return res.status(400).json({ error: "Thiếu access_token" });
 
-    res.json(result);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-};
-
-/**
- * Đăng nhập bằng Google OAuth (với access_token từ frontend)
- */
-export const loginGoogle = async (req, res) => {
-  try {
-    const { access_token } = req.body;
-
-    if (!access_token) {
-      return res.status(400).json({ error: "Thiếu access_token từ Google" });
+      const result = await AuthService.loginFacebook(access_token);
+      return res.json(result);
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
     }
+  },
 
-    const result = await authService.loginWithGoogle(access_token);
-    res.json(result);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-};
-
-/**
- * Đăng nhập bằng Facebook OAuth (với access_token từ frontend)
- */
-export const loginFacebook = async (req, res) => {
-  try {
-    const { access_token } = req.body;
-
-    if (!access_token) {
-      return res.status(400).json({ error: "Thiếu access_token từ Facebook" });
+  // Quên mật khẩu
+  async forgotPassword(req, res) {
+    try {
+      const { email } = req.body;
+      const result = await AuthService.sendResetCode(email);
+      return res.json(result);
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
     }
+  },
 
-    const result = await authService.loginWithFacebook(access_token);
-    res.json(result);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-};
+  // Lấy thông tin cá nhân
+  async getMe(req, res) {
+    try {
+      const userId = req.user.id;
+      const user = await AuthService.getProfile(userId);
+      return res.json({ user });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  },
 
-// THÊM VÀO auth.controller.js
-export const forgotPassword = async (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ error: "Thiếu email" });
-
-    const result = await authService.sendResetCode(email);
-    res.json(result);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-};
-
-export const resetPassword = async (req, res) => {
-  try {
-    const { email, otp, newPassword } = req.body;
-    if (!email || !otp || !newPassword)
-      return res.status(400).json({ error: "Thiếu thông tin" });
-
-    const result = await authService.resetPassword({ email, otp, newPassword });
-    res.json(result);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-};
-
-// Đổi mật khẩu khi user biết mật khẩu hiện tại
-export const changePassword = async (req, res) => {
-  try {
-    const { email, oldPassword, newPassword } = req.body;
-    if (!email || !oldPassword || !newPassword)
-      return res.status(400).json({ error: "Thiếu thông tin" });
-
-    const result = await authService.changePassword({
-      email,
-      oldPassword,
-      newPassword,
-    });
-    res.json(result);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
+  // Đặt lại mật khẩu
+  async resetPassword(req, res) {
+    try {
+      const { email, otp, newPassword } = req.body;
+      const result = await AuthService.resetPassword({
+        email,
+        otp,
+        newPassword,
+      });
+      return res.json(result);
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  },
 };
