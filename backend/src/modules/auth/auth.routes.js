@@ -21,5 +21,4 @@ router.post("/forgot-password", AuthController.forgotPassword);
 router.post("/reset-password", AuthController.resetPassword);
 
 // (Sau này thêm API đổi pass, update profile cần middleware requireAuth)
-
 export default router;
