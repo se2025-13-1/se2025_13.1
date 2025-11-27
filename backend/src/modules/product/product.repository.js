@@ -10,14 +10,14 @@ export const ProductRepository = {
       description,
       base_price,
       is_active = true,
-      variants = [], // Array: [{ color, size, sku, price, stock_quantity }]
-      images = [], // Array: [{ image_url, color_ref, display_order }]
+      variants = [],
+      images = [],
     } = payload;
 
     const client = await pgPool.connect();
 
     try {
-      await client.query("BEGIN"); // Bắt đầu giao dịch
+      await client.query("BEGIN");
 
       // 1. Insert Product
       const insertProductQuery = `
@@ -27,7 +27,7 @@ export const ProductRepository = {
       `;
       const productRes = await client.query(insertProductQuery, [
         name,
-        slug, // Bạn nên xử lý slug generation ở Service hoặc Client
+        slug,
         category_id,
         description,
         base_price,
@@ -35,14 +35,13 @@ export const ProductRepository = {
       ]);
       const productId = productRes.rows[0].id;
 
-      // 2. Insert Variants (Nếu có)
+      // 2. Insert Variants
       if (variants.length > 0) {
         const variantQuery = `
           INSERT INTO product_variants (product_id, sku, color, size, price, stock_quantity)
           VALUES ($1, $2, $3, $4, $5, $6)
         `;
         for (const v of variants) {
-          // Nếu variant không có giá riêng, dùng base_price
           const varPrice = v.price || base_price;
           await client.query(variantQuery, [
             productId,
@@ -55,7 +54,7 @@ export const ProductRepository = {
         }
       }
 
-      // 3. Insert Images (Nếu có)
+      // 3. Insert Images
       if (images.length > 0) {
         const imageQuery = `
           INSERT INTO product_images (product_id, image_url, color_ref, display_order)
@@ -65,51 +64,55 @@ export const ProductRepository = {
           await client.query(imageQuery, [
             productId,
             img.image_url,
-            img.color_ref || null, // null nghĩa là ảnh chung
+            img.color_ref || null,
             img.display_order || index,
           ]);
         }
       }
 
-      await client.query("COMMIT"); // Xác nhận thành công
-
-      // Trả về ID để service query lại chi tiết
+      await client.query("COMMIT");
       return productRes.rows[0];
     } catch (err) {
-      await client.query("ROLLBACK"); // Nếu lỗi thì hoàn tác sạch sẽ
+      await client.query("ROLLBACK");
       throw err;
     } finally {
       client.release();
     }
   },
 
-  // Lấy chi tiết kèm Variants và Images (Dùng JSON Aggregation)
+  // ✅ CẢI TIẾN: Dùng COALESCE để luôn trả về mảng [] nếu không có data
   async findById(id) {
     const query = `
       SELECT 
         p.*,
         c.name as category_name,
-        (
-          SELECT json_agg(json_build_object(
-            'id', pv.id,
-            'sku', pv.sku,
-            'color', pv.color,
-            'size', pv.size,
-            'price', pv.price,
-            'stock', pv.stock_quantity
-          ))
-          FROM product_variants pv 
-          WHERE pv.product_id = p.id
+        COALESCE(
+          (
+            SELECT json_agg(json_build_object(
+              'id', pv.id,
+              'sku', pv.sku,
+              'color', pv.color,
+              'size', pv.size,
+              'price', pv.price,
+              'stock', pv.stock_quantity
+            ))
+            FROM product_variants pv 
+            WHERE pv.product_id = p.id
+          ), 
+          '[]'::json
         ) as variants,
-        (
-          SELECT json_agg(json_build_object(
-            'id', pi.id,
-            'url', pi.image_url,
-            'color', pi.color_ref,
-            'sort', pi.display_order
-          ) ORDER BY pi.display_order ASC)
-          FROM product_images pi 
-          WHERE pi.product_id = p.id
+        COALESCE(
+          (
+            SELECT json_agg(json_build_object(
+              'id', pi.id,
+              'url', pi.image_url,
+              'color', pi.color_ref,
+              'sort', pi.display_order
+            ) ORDER BY pi.display_order ASC)
+            FROM product_images pi 
+            WHERE pi.product_id = p.id
+          ),
+          '[]'::json
         ) as images
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
@@ -120,12 +123,9 @@ export const ProductRepository = {
     return res.rows[0] || null;
   },
 
-  // Update sản phẩm (Cơ bản là update info, nâng cao cần xử lý variants riêng)
   async update(id, payload) {
     const { name, description, base_price, is_active, category_id } = payload;
 
-    // Chỉ update thông tin cơ bản của Product
-    // (Việc update variants/images nên làm API riêng hoặc logic phức tạp hơn check ID)
     const fields = [];
     const values = [];
     let idx = 1;
@@ -166,7 +166,6 @@ export const ProductRepository = {
   },
 
   async delete(id) {
-    // Nhờ ON DELETE CASCADE ở schema, variants và images sẽ tự bay màu
     const res = await pgPool.query(
       `DELETE FROM products WHERE id = $1 RETURNING id`,
       [id]
@@ -193,7 +192,6 @@ export const ProductRepository = {
 
     values.push(limit, offset);
 
-    // Query này lấy sản phẩm và ẢNH ĐẦU TIÊN để hiển thị thumbnail list
     const sql = `
       SELECT 
         p.id, p.name, p.slug, p.base_price, p.category_id,

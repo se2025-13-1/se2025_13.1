@@ -23,3 +23,11 @@ export const requireAuth = (req, res, next) => {
     return res.status(401).json({ error: "Unauthorized: Invalid token" });
   }
 };
+
+export const requireAdmin = (req, res, next) => {
+  // req.user đã có được từ requireAuth chạy trước đó
+  if (!req.user || req.user.role !== "admin") {
+    return res.status(403).json({ error: "Forbidden: Admin access required" });
+  }
+  next();
+};

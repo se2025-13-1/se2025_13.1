@@ -1,39 +1,32 @@
 // src/modules/product/product.routes.js
 import express from "express";
 import { ProductController } from "./product.controller.js";
-
-// Giả sử bạn sẽ có middleware kiểm tra đăng nhập và quyền Admin
-// import { requireAuth, requireAdmin } from "../../middlewares/auth.middleware.js";
+// 👇 Import middleware đã viết
+import {
+  requireAuth,
+  requireAdmin,
+} from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
 // ==========================================
-// 1. PUBLIC ROUTES (Ai cũng xem được)
+// 1. PUBLIC ROUTES (Guest Browsing)
 // ==========================================
-// Phù hợp với logic "Guest Browsing" chúng ta đã bàn:
-// Khách chưa đăng nhập vẫn xem được danh sách và chi tiết để kích thích mua hàng.
-
+// Khách vãng lai xem thoải mái
 router.get("/", ProductController.list);
-// GET /api/products?page=1&limit=10&q=ao&category_id=...
-
 router.get("/:id", ProductController.getDetail);
-// GET /api/products/uuid-cua-san-pham
 
 // ==========================================
-// 2. PRIVATE / ADMIN ROUTES (Cần bảo mật)
+// 2. ADMIN ROUTES (Bảo mật chặt chẽ)
 // ==========================================
-// Những API này thay đổi dữ liệu hệ thống, tuyệt đối không để Public.
+// Từ dòng này trở xuống, bắt buộc phải:
+// 1. Đã đăng nhập (requireAuth)
+// 2. Là Admin (requireAdmin)
 
-// TODO: Bỏ comment dòng dưới khi bạn đã viết xong middleware auth
-// router.use(requireAuth, requireAdmin);
+router.use(requireAuth, requireAdmin);
 
 router.post("/", ProductController.create);
-// POST /api/products (Body: { name, base_price, variants: [], images: [] ... })
-
 router.put("/:id", ProductController.update);
-// PUT /api/products/:id (Body: { name, base_price ... })
-
 router.delete("/:id", ProductController.remove);
-// DELETE /api/products/:id
 
 export default router;
