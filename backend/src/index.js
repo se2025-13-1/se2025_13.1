@@ -12,6 +12,7 @@ import { AuthRepository } from "./modules/auth/auth.repository.js";
 // Import routes
 import authRoutes from "./modules/auth/auth.routes.js";
 import productRoutes from "./modules/product/product.routes.js";
+import categoryRoutes from "./modules/category/category.routes.js";
 
 dotenv.config();
 
@@ -42,6 +43,7 @@ app.get("/", (req, res) => {
 // Module routes
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/categories", categoryRoutes);
 
 // =========================
 // ❗ GLOBAL ERROR HANDLER
