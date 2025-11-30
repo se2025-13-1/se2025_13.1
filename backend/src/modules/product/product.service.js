@@ -12,22 +12,36 @@ const generateSlug = (name) => {
 
 export const ProductService = {
   async createProduct(payload) {
-    // 1. Validate cơ bản
+    // 1. Chuẩn hóa input
     if (!Array.isArray(payload.variants)) payload.variants = [];
     if (!Array.isArray(payload.images)) payload.images = [];
 
-    // 2. Tự động tạo slug
+    // 2. VALIDATE LOGIC MỚI: Kiểm tra tính hợp lệ của màu ảnh
+    // Lấy danh sách các màu có trong variants (VD: Set{'Red', 'Blue'})
+    const validColors = new Set(
+      payload.variants.map((v) => v.color).filter((c) => c)
+    );
+
+    for (const img of payload.images) {
+      // Nếu ảnh có gán màu, mà màu đó không có trong danh sách biến thể -> Báo lỗi
+      if (img.color_ref && !validColors.has(img.color_ref)) {
+        throw new Error(
+          `Ảnh gán màu '${img.color_ref}' không khớp với bất kỳ biến thể nào.`
+        );
+      }
+    }
+
+    // 3. Tạo Slug
     if (!payload.slug && payload.name) {
       payload.slug = generateSlug(payload.name) + "-" + Date.now();
     }
 
-    // 3. Gọi Repository
+    // 4. Gọi Repo
     const createdBasic = await ProductRepository.create(payload);
 
-    // 4. Xóa cache
+    // 5. Xóa Cache
     if (redisClient) await redisClient.del("products:all");
 
-    // 5. Trả về chi tiết
     return await ProductRepository.findById(createdBasic.id);
   },
 
