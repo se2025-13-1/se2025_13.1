@@ -12,6 +12,9 @@ import { AuthRepository } from "./modules/auth/auth.repository.js";
 // Import routes
 import authRoutes from "./modules/auth/auth.routes.js";
 import productRoutes from "./modules/product/product.routes.js";
+import categoryRoutes from "./modules/category/category.routes.js";
+import addressRoutes from "./modules/address/address.routes.js";
+import uploadRoutes from "./modules/upload/upload.routes.js";
 
 dotenv.config();
 
@@ -42,6 +45,9 @@ app.get("/", (req, res) => {
 // Module routes
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/categories", categoryRoutes);
+app.use("/api/addresses", addressRoutes);
+app.use("/api/upload", uploadRoutes);
 
 // =========================
 // ❗ GLOBAL ERROR HANDLER
