@@ -15,6 +15,7 @@ import productRoutes from "./modules/product/product.routes.js";
 import categoryRoutes from "./modules/category/category.routes.js";
 import addressRoutes from "./modules/address/address.routes.js";
 import uploadRoutes from "./modules/upload/upload.routes.js";
+import cartRoutes from "./modules/cart/cart.routes.js";
 
 dotenv.config();
 
@@ -48,6 +49,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/addresses", addressRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/cart", cartRoutes);
 
 // =========================
 // ❗ GLOBAL ERROR HANDLER

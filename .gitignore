@@ -102,3 +102,4 @@ mobile/expo-dev-client.json
 coverage/
 *.tgz
 DB_Diagram.svg
+github-recovery-codes.txt
