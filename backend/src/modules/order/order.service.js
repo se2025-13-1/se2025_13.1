@@ -2,6 +2,8 @@ import { OrderRepository } from "./order.repository.js";
 import { CartRepository } from "../cart/cart.repository.js";
 import { ProductRepository } from "../product/product.repository.js";
 import { AddressRepository } from "../address/address.repository.js";
+import { VoucherService } from "../voucher/voucher.service.js";
+import { VoucherRepository } from "../voucher/voucher.repository.js";
 
 export const OrderService = {
   async createOrder(userId, payload) {
@@ -88,21 +90,43 @@ export const OrderService = {
       return { ...item, total_price: total };
     });
 
-    const shippingFee = 30000; // Hardcode tạm, sau này tính theo API GHN/GHTK
-    const discountAmount = 0; // Logic voucher làm sau
+    const shippingFee = 30000;
+
+    // 👇 TÍCH HỢP VOUCHER TẠI ĐÂY 👇
+    let discountAmount = 0;
+    let voucherId = null;
+
+    if (voucherCode) {
+      // Gọi service voucher để tính toán (Nó sẽ throw error nếu mã sai)
+      const voucherResult = await VoucherService.validateAndCalculate(
+        voucherCode,
+        subtotal
+      );
+      discountAmount = voucherResult.discountAmount;
+      voucherId = voucherResult.voucherId;
+    }
+    // 👆 KẾT THÚC TÍCH HỢP 👆
+
     const totalAmount = subtotal + shippingFee - discountAmount;
 
     // 4. Gọi Repository Transaction
-    return await OrderRepository.createTransaction({
+    const newOrder = await OrderRepository.createTransaction({
       userId,
       addressSnapshot,
       financials: { subtotal, shippingFee, discountAmount, totalAmount },
+      voucherId,
       paymentMethod,
       note,
       items: orderItemsData,
       cleanupCart: orderType === "cart",
       cartItemIdsToDelete: orderType === "cart" ? selectedCartItemIds : null,
     });
+
+    if (voucherId) {
+      await VoucherRepository.incrementUsage(voucherId);
+    }
+
+    return newOrder;
   },
 
   async getMyOrders(userId, query) {
