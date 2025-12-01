@@ -155,11 +155,73 @@ export const ProductRepository = {
     return res.rows;
   },
 
-  // ... (Các hàm update, delete giữ nguyên)
   async update(id, payload) {
-    /* ...Code cũ... */ return this.findById(id);
+    const { name, description, base_price, is_active, category_id } = payload;
+
+    const fields = [];
+    const values = [];
+    let idx = 1;
+
+    if (name) {
+      fields.push(`name = $${idx++}`);
+      values.push(name);
+    }
+    if (description) {
+      fields.push(`description = $${idx++}`);
+      values.push(description);
+    }
+    if (base_price) {
+      fields.push(`base_price = $${idx++}`);
+      values.push(base_price);
+    }
+    if (is_active !== undefined) {
+      fields.push(`is_active = $${idx++}`);
+      values.push(is_active);
+    }
+    if (category_id) {
+      fields.push(`category_id = $${idx++}`);
+      values.push(category_id);
+    }
+
+    if (fields.length === 0) return this.findById(id);
+
+    values.push(id);
+    const query = `
+      UPDATE products 
+      SET ${fields.join(", ")}, updated_at = NOW() 
+      WHERE id = $${idx} 
+      RETURNING *
+    `;
+
+    const res = await pgPool.query(query, values);
+    return res.rows[0];
   },
+
   async delete(id) {
-    /* ...Code cũ... */
+    const res = await pgPool.query(
+      `DELETE FROM products WHERE id = $1 RETURNING id`,
+      [id]
+    );
+    return res.rows[0] || null;
+  },
+
+  async findVariantsByIds(variantIds) {
+    if (variantIds.length === 0) return [];
+    const query = `
+    SELECT 
+      v.id, v.price, v.stock_quantity, v.sku, v.color, v.size,
+      p.name as product_name,
+      (
+        SELECT image_url FROM product_images pi 
+        WHERE pi.product_id = p.id 
+        AND (pi.color_ref = v.color OR pi.color_ref IS NULL)
+        ORDER BY (CASE WHEN pi.color_ref IS NULL THEN 0 ELSE 1 END) ASC LIMIT 1
+      ) as thumbnail
+    FROM product_variants v
+    JOIN products p ON v.product_id = p.id
+    WHERE v.id = ANY($1::uuid[])
+  `;
+    const res = await pgPool.query(query, [variantIds]);
+    return res.rows;
   },
 };
