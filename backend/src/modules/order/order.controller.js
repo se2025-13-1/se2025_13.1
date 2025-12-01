@@ -23,7 +23,7 @@ export const OrderController = {
         addressId: address_id,
         paymentMethod: payment_method || "cod",
         note,
-        voucher_code,
+        voucherCode: voucher_code,
         orderType: type || "cart",
         selectedCartItemIds: cart_item_ids,
         buyNowItems: items,
