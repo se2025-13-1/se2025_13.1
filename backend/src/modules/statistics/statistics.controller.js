@@ -1,0 +1,16 @@
+import { StatisticsService } from "./statistics.service.js";
+
+export const StatisticsController = {
+  async getDashboard(req, res) {
+    try {
+      const stats = await StatisticsService.getGeneralStats();
+      return res.json({
+        message: "Lấy thống kê thành công",
+        data: stats,
+      });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ error: err.message });
+    }
+  },
+};
