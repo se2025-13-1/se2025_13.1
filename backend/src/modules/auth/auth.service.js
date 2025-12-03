@@ -4,7 +4,7 @@ import axios from "axios";
 
 import { AuthRepository } from "./auth.repository.js";
 import { redisClient } from "../../config/redis.js";
-// import { sendVerificationEmail } from "../../utils/email.js"; // Tạm thời chưa dùng đến
+import { sendVerificationEmail } from "../../config/email.js"; // Tạm thời chưa dùng đến
 
 const JWT_SECRET = process.env.JWT_SECRET || "secret";
 
@@ -172,7 +172,7 @@ export const AuthService = {
       await redisClient.set(`reset_otp:${email}`, otp, { EX: 300 });
 
     // TODO: Bật lại dòng này khi cấu hình xong email service
-    // await sendVerificationEmail(email, otp, "reset");
+    await sendVerificationEmail(email, otp, "reset");
 
     console.log(`🔑 RESET OTP cho ${email}: ${otp}`); // Log ra console để test trước
     return { message: "Mã xác nhận đã được gửi (Check console)" };

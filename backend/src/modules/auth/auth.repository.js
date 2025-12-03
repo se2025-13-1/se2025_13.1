@@ -107,4 +107,25 @@ export const AuthRepository = {
       client.release();
     }
   },
+
+  async updatePassword(email, newHash) {
+    try {
+      const query = `
+        UPDATE auth_users
+        SET password_hash = $1, updated_at = NOW()
+        WHERE email = $2
+        RETURNING id, email;
+      `;
+
+      const result = await pgPool.query(query, [newHash, email]);
+
+      if (result.rowCount === 0) {
+        throw new Error("User not found");
+      }
+      return result.rows[0];
+    } catch (err) {
+      console.log("Error updating password:", err);
+      throw err;
+    }
+  },
 };
