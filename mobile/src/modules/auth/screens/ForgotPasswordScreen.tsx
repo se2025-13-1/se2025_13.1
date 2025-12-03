@@ -20,8 +20,8 @@ const ForgotPasswordScreen: React.FC<Props> = ({onBack, onSendCode}) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const validateEmail = (email: string) =>
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const validateEmail = (emailInput: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput);
 
   const handleSendCode = async () => {
     if (!email.trim()) {

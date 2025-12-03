@@ -10,7 +10,9 @@ export const AuthApi = {
       body: JSON.stringify(data),
     });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Lỗi đăng ký');
+    if (!res.ok) {
+      throw new Error(json.error || 'Lỗi đăng ký');
+    }
     return json;
   },
 
@@ -21,7 +23,9 @@ export const AuthApi = {
       body: JSON.stringify({email, otp}),
     });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'OTP không hợp lệ');
+    if (!res.ok) {
+      throw new Error(json.error || 'OTP không hợp lệ');
+    }
     return json;
   },
 
@@ -32,7 +36,9 @@ export const AuthApi = {
       body: JSON.stringify({email, password}),
     });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Sai tài khoản hoặc mật khẩu');
+    if (!res.ok) {
+      throw new Error(json.error || 'Sai tài khoản hoặc mật khẩu');
+    }
     return json;
   },
 
@@ -43,7 +49,9 @@ export const AuthApi = {
       body: JSON.stringify({email}),
     });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Không thể gửi mã');
+    if (!res.ok) {
+      throw new Error(json.error || 'Không thể gửi mã');
+    }
     return json;
   },
 
@@ -54,7 +62,9 @@ export const AuthApi = {
       body: JSON.stringify({email, otp, newPassword}),
     });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Đặt lại mật khẩu thất bại');
+    if (!res.ok) {
+      throw new Error(json.error || 'Đặt lại mật khẩu thất bại');
+    }
     return json;
   },
 
@@ -65,7 +75,9 @@ export const AuthApi = {
       body: JSON.stringify({access_token: accessToken}),
     });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Đăng nhập Google thất bại');
+    if (!res.ok) {
+      throw new Error(json.error || 'Đăng nhập Google thất bại');
+    }
     return json;
   },
 
@@ -76,7 +88,9 @@ export const AuthApi = {
       body: JSON.stringify({access_token: accessToken}),
     });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Đăng nhập Facebook thất bại');
+    if (!res.ok) {
+      throw new Error(json.error || 'Đăng nhập Facebook thất bại');
+    }
     return json;
   },
 };

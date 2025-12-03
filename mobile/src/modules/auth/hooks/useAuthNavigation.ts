@@ -1,5 +1,5 @@
 // src/modules/auth/hooks/useAuthNavigation.ts
-import { useCallback } from 'react';
+// import { useCallback } from 'react';
 
 type AuthNavigation = {
   goToLogin: () => void;
@@ -12,7 +12,7 @@ type AuthNavigation = {
 
 export const useAuthNavigation = (
   navigate: (screen: any) => void,
-  goBackScreen: any
+  goBackScreen: any,
 ): AuthNavigation => {
   return {
     goToLogin: () => navigate('login'),

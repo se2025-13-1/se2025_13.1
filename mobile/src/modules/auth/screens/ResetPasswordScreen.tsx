@@ -58,7 +58,9 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({
     setErrors(newErrors);
 
     // Nếu có lỗi → dừng
-    if (Object.keys(newErrors).length > 0) return;
+    if (Object.keys(newErrors).length > 0) {
+      return;
+    }
 
     // GỌI API THỰC TẾ
     setIsLoading(true);
