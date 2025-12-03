@@ -13,7 +13,11 @@
     "strict": true,
     "target": "esnext",
     "paths": {
-      "@modules/*": ["modules/*"]
+      "@modules/*": ["modules/*"],
+      "@services/*": ["services/*"],
+      "@config/*": ["config/*"],
+      "@assets/*": ["assets/*"],
+      "@utils/*": ["utils/*"]
     }
   },
   "exclude": [
