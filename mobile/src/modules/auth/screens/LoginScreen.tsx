@@ -14,12 +14,14 @@ interface LoginScreenProps {
   onBack: () => void;
   onSignUp?: () => void;
   onForgotPassword?: () => void;
+  onLoginSuccess?: () => void;
 }
 
 const LoginScreen: React.FC<LoginScreenProps> = ({
   onBack,
   onSignUp,
   onForgotPassword,
+  onLoginSuccess,
 }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -52,9 +54,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     if (Object.keys(newErrors).length === 0) {
       setIsSuccess(true);
       setTimeout(() => {
-        Alert.alert('Success', 'Login successful!', [
-          {text: 'OK', onPress: onBack},
-        ]);
+        if (onLoginSuccess) {
+          onLoginSuccess();
+        } else {
+          Alert.alert('Success', 'Login successful!', [
+            {text: 'OK', onPress: onBack},
+          ]);
+        }
       }, 1500);
     }
   };

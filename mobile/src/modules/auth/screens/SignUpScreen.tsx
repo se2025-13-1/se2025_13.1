@@ -40,7 +40,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
     '',
     '',
   ]);
-  const [generatedCode, setGeneratedCode] = useState('');
+  const [_generatedCode, setGeneratedCode] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(0);
   const [verificationError, setVerificationError] = useState('');
@@ -143,13 +143,18 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
     })
       .then(async res => {
         const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'Verification failed');
+        if (!res.ok) {
+          throw new Error(data.message || 'Verification failed');
+        }
         setIsVerifying(false);
         setIsSuccess(true);
         Alert.alert('Success', 'Email verified. You can now log in.');
         setTimeout(() => {
-          if (onLogin) onLogin();
-          else onBack();
+          if (onLogin) {
+            onLogin();
+          } else {
+            onBack();
+          }
         }, 800);
       })
       .catch(err => {
@@ -178,12 +183,15 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
     })
       .then(async res => {
         const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'Could not resend code');
+        if (!res.ok) {
+          throw new Error(data.message || 'Could not resend code');
+        }
         // Inform user to check email
         Alert.alert('Sent', 'A new verification code was sent to your email.');
       })
-      .catch(err => {
+      .catch(_err => {
         // Fallback to local simulation if backend not reachable
+        console.log('Failed to resend code, using fallback');
         const newCode = generateVerificationCode();
         sendVerificationEmail(email, newCode);
       });
@@ -360,7 +368,9 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
       })
         .then(async res => {
           const data = await res.json();
-          if (!res.ok) throw new Error(data.message || 'Registration failed');
+          if (!res.ok) {
+            throw new Error(data.message || 'Registration failed');
+          }
           setTimeLeft(60);
           setShowVerification(true);
           Alert.alert(
@@ -368,8 +378,9 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
             'Mã xác nhận đã được gửi tới email của bạn.',
           );
         })
-        .catch(err => {
+        .catch(_err => {
           // If backend not reachable, fallback to local simulation
+          console.log('Registration failed, using fallback');
           const code = generateVerificationCode();
           setGeneratedCode(code);
           setTimeLeft(60);
