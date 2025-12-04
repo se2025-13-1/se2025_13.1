@@ -44,7 +44,7 @@ const TabBar: React.FC<TabBarProps> = ({activeTab, onTabPress}) => {
     {
       id: 'profile',
       label: 'Hồ sơ',
-      icon: require('../../assets/icons/User.png'),
+      icon: require('../../assets/icons/UserIcon.png'),
     },
   ];
 
@@ -123,21 +123,21 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   tabLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '500',
     textAlign: 'center',
   },
   activeColor: {
-    color: '#007AFF',
+    color: '#333',
   },
   inactiveColor: {
-    color: '#8E8E93',
+    color: '#333',
   },
   activeTintColor: {
-    tintColor: '#007AFF',
+    tintColor: '#333',
   },
   inactiveTintColor: {
-    tintColor: '#8E8E93',
+    tintColor: '#333',
   },
 });
 
