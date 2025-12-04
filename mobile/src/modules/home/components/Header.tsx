@@ -10,14 +10,23 @@ import {
 
 interface HeaderProps {
   onNotificationPress?: () => void;
+  onChatPress?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({onNotificationPress}) => {
+const Header: React.FC<HeaderProps> = ({onNotificationPress, onChatPress}) => {
   const handleNotificationPress = () => {
     if (onNotificationPress) {
       onNotificationPress();
     } else {
       Alert.alert('Thông báo', 'Bạn có 0 thông báo mới');
+    }
+  };
+
+  const handleChatPress = () => {
+    if (onChatPress) {
+      onChatPress();
+    } else {
+      Alert.alert('Chat', 'Chưa có tin nhắn mới');
     }
   };
 
@@ -28,15 +37,27 @@ const Header: React.FC<HeaderProps> = ({onNotificationPress}) => {
         <Text style={styles.brandText}>DoubleD Fashion</Text>
       </View>
 
-      <TouchableOpacity
-        style={styles.notificationButton}
-        onPress={handleNotificationPress}
-        activeOpacity={0.7}>
-        <Image
-          source={require('../../../assets/icons/Bell.png')}
-          style={styles.bellIcon}
-        />
-      </TouchableOpacity>
+      <View style={styles.rightSection}>
+        <TouchableOpacity
+          style={styles.notificationButton}
+          onPress={handleNotificationPress}
+          activeOpacity={0.7}>
+          <Image
+            source={require('../../../assets/icons/Bell.png')}
+            style={styles.bellIcon}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.chatButton}
+          onPress={handleChatPress}
+          activeOpacity={0.7}>
+          <Image
+            source={require('../../../assets/icons/Chat.png')}
+            style={styles.chatIcon}
+          />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -61,6 +82,11 @@ const styles = StyleSheet.create({
   leftSection: {
     flex: 1,
   },
+  rightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 0,
+  },
   welcomeText: {
     fontSize: 14,
     color: '#666666',
@@ -73,14 +99,22 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
+  chatButton: {
+    padding: 8,
+    borderRadius: 20,
+  },
+  chatIcon: {
+    width: 28,
+    height: 28,
+    tintColor: '#333',
+  },
   notificationButton: {
-    position: 'relative',
     padding: 8,
     borderRadius: 20,
   },
   bellIcon: {
-    width: 26,
-    height: 26,
+    width: 28,
+    height: 28,
     tintColor: '#333',
   },
 });

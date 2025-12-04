@@ -13,6 +13,8 @@ import ResetPasswordScreen from './src/modules/auth/screens/ResetPasswordScreen'
 import VerificationPasswordScreen from './src/modules/auth/screens/VerificationPassword';
 import HomeScreen from './src/modules/home/screens/HomeScreen';
 import SearchEntry from './src/modules/search/screens/SearchEntry';
+import NotificationScreen from './src/modules/notifications/screens/NotificationScreen';
+import NotificationDetailScreen from './src/modules/notifications/screens/NotificationDetailScreen';
 
 // Navigation types
 export type RootStackParamList = {
@@ -25,6 +27,13 @@ export type RootStackParamList = {
   VerificationPassword: {email: string};
   Home: undefined;
   SearchEntry: undefined;
+  Notification: undefined;
+  NotificationDetail: {
+    id: string;
+    title: string;
+    description: string;
+    timestamp: string;
+  };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -74,6 +83,11 @@ const App = () => {
           <>
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="SearchEntry" component={SearchEntry} />
+            <Stack.Screen name="Notification" component={NotificationScreen} />
+            <Stack.Screen
+              name="NotificationDetail"
+              component={NotificationDetailScreen}
+            />
           </>
         ) : (
           <>

@@ -23,8 +23,7 @@ const HomeScreen: React.FC = () => {
   };
 
   const handleNotificationPress = () => {
-    console.log('Notification pressed');
-    // TODO: Navigate to notifications screen
+    navigation.navigate('Notification' as never);
   };
 
   return (
