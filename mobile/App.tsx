@@ -12,6 +12,7 @@ import ForgotPasswordScreen from './src/modules/auth/screens/ForgotPasswordScree
 import ResetPasswordScreen from './src/modules/auth/screens/ResetPasswordScreen';
 import VerificationPasswordScreen from './src/modules/auth/screens/VerificationPassword';
 import HomeScreen from './src/modules/home/screens/HomeScreen';
+import SearchEntry from './src/modules/search/screens/SearchEntry';
 
 // Navigation types
 export type RootStackParamList = {
@@ -23,6 +24,7 @@ export type RootStackParamList = {
   ResetPassword: {email: string; otp: string};
   VerificationPassword: {email: string};
   Home: undefined;
+  SearchEntry: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -69,7 +71,10 @@ const App = () => {
             {props => <SplashScreen {...props} onFinish={handleSplashFinish} />}
           </Stack.Screen>
         ) : isAuthenticated ? (
-          <Stack.Screen name="Home" component={HomeScreen} />
+          <>
+            <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen name="SearchEntry" component={SearchEntry} />
+          </>
         ) : (
           <>
             <Stack.Screen name="Welcome">
