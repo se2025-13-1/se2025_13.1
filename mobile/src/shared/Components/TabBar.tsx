@@ -66,12 +66,15 @@ const TabBar: React.FC<TabBarProps> = ({activeTab, onTabPress}) => {
             source={tab.icon}
             style={[
               styles.tabIcon,
-              {tintColor: isActive ? '#007AFF' : '#8E8E93'},
+              isActive ? styles.activeTintColor : styles.inactiveTintColor,
             ]}
           />
         </View>
         <Text
-          style={[styles.tabLabel, {color: isActive ? '#007AFF' : '#8E8E93'}]}>
+          style={[
+            styles.tabLabel,
+            isActive ? styles.activeColor : styles.inactiveColor,
+          ]}>
           {tab.label}
         </Text>
       </TouchableOpacity>
@@ -123,6 +126,18 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '500',
     textAlign: 'center',
+  },
+  activeColor: {
+    color: '#007AFF',
+  },
+  inactiveColor: {
+    color: '#8E8E93',
+  },
+  activeTintColor: {
+    tintColor: '#007AFF',
+  },
+  inactiveTintColor: {
+    tintColor: '#8E8E93',
   },
 });
 
