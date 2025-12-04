@@ -6,18 +6,18 @@ import {
   TextInput,
   TouchableOpacity,
 } from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 
 const SearchBar: React.FC = () => {
   const [searchText, setSearchText] = useState('');
+  const navigation = useNavigation();
 
-  const handleSearch = (text: string) => {
-    setSearchText(text);
-    console.log('Search:', text);
+  const handleFocus = () => {
+    navigation.navigate('SearchEntry' as never);
   };
 
   const handleClearSearch = () => {
     setSearchText('');
-    console.log('Clear search');
   };
 
   return (
@@ -31,7 +31,8 @@ const SearchBar: React.FC = () => {
         placeholder="Tìm kiếm sản phẩm..."
         placeholderTextColor="#888"
         value={searchText}
-        onChangeText={handleSearch}
+        onFocus={handleFocus}
+        onChangeText={text => setSearchText(text)}
       />
       {searchText.length > 0 && (
         <TouchableOpacity onPress={handleClearSearch}>
