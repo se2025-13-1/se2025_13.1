@@ -13,5 +13,6 @@ router.use(requireAuth, requireAdmin);
 router.get("/dashboard", StatisticsController.getDashboard);
 router.get("/revenue", StatisticsController.getRevenueChart);
 router.get("/top-products", StatisticsController.getTopProducts);
+router.get("/order-status", StatisticsController.getOrderStatus);
 
 export default router;
