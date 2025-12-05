@@ -30,7 +30,8 @@ export const CartRepository = {
         ci.quantity,
         ci.product_variant_id,
         v.sku, v.color, v.size, v.price, v.stock_quantity,
-        p.id as product_id, p.name as product_name, p.slug,
+        p.id as product_id, p.name as product_name, p.slug, 
+        p.is_active,
         (
           SELECT image_url FROM product_images pi 
           WHERE pi.product_id = p.id 
