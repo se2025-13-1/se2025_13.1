@@ -8,7 +8,7 @@ export const CartRepository = {
       // Tìm giỏ hàng cũ
       const findQuery = `SELECT * FROM carts WHERE user_id = $1`;
       const res = await client.query(findQuery, [userId]);
-      
+
       if (res.rows.length > 0) return res.rows[0];
 
       // Nếu chưa có -> Tạo mới
@@ -30,7 +30,8 @@ export const CartRepository = {
         ci.quantity,
         ci.product_variant_id,
         v.sku, v.color, v.size, v.price, v.stock_quantity,
-        p.id as product_id, p.name as product_name, p.slug,
+        p.id as product_id, p.name as product_name, p.slug, 
+        p.is_active,
         (
           SELECT image_url FROM product_images pi 
           WHERE pi.product_id = p.id 
@@ -84,7 +85,34 @@ export const CartRepository = {
 
   // Helper: Lấy thông tin tồn kho của biến thể
   async getVariantStock(variantId) {
-    const res = await pgPool.query(`SELECT stock_quantity, price FROM product_variants WHERE id = $1`, [variantId]);
+    const res = await pgPool.query(
+      `SELECT stock_quantity, price FROM product_variants WHERE id = $1`,
+      [variantId]
+    );
     return res.rows[0];
-  }
+  },
+
+  async getCartDetailsByUserId(userId) {
+    const query = `
+    SELECT 
+      ci.id as item_id,
+      ci.quantity,
+      ci.product_variant_id,
+      v.price, v.stock_quantity, v.sku, v.color, v.size,
+      p.name as product_name,
+      (
+        SELECT image_url FROM product_images pi 
+        WHERE pi.product_id = p.id 
+        AND (pi.color_ref = v.color OR pi.color_ref IS NULL)
+        ORDER BY (CASE WHEN pi.color_ref IS NULL THEN 0 ELSE 1 END) ASC LIMIT 1
+      ) as thumbnail
+    FROM cart_items ci
+    JOIN carts c ON ci.cart_id = c.id
+    JOIN product_variants v ON ci.product_variant_id = v.id
+    JOIN products p ON v.product_id = p.id
+    WHERE c.user_id = $1
+  `;
+    const res = await pgPool.query(query, [userId]);
+    return res.rows;
+  },
 };
