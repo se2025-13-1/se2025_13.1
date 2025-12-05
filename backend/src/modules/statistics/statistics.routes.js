@@ -11,5 +11,6 @@ const router = express.Router();
 router.use(requireAuth, requireAdmin);
 
 router.get("/dashboard", StatisticsController.getDashboard);
+router.get("/revenue", StatisticsController.getRevenueChart);
 
 export default router;

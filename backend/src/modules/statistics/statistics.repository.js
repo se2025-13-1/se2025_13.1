@@ -39,4 +39,24 @@ export const StatisticsRepository = {
       client.release();
     }
   },
+
+  async getRevenueStats(days) {
+    const client = await pgPool.connect();
+    try {
+      const query = `
+        SELECT
+          TO_CHAR(created_at, 'YYYY-MM-DD') as date,
+          SUM(total_amount) as revenue
+        FROM orders
+        WHERE status = 'completed'
+          AND created_at >= NOW() - ($1 || 'day') :: INTERVAL
+        GROUP BY TO_CHAR(created_at, 'YYYY-MM-DD')
+        ORDER BY date ASC;
+        `;
+      const res = await client.query(query, [days]);
+      return res.rows;
+    } finally {
+      client.release();
+    }
+  },
 };

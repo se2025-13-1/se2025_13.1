@@ -13,4 +13,14 @@ export const StatisticsController = {
       return res.status(500).json({ error: err.message });
     }
   },
+
+  async getRevenueChart(req, res) {
+    try {
+      const { range } = req.query;
+      const data = await StatisticsService.getRevenueChart(range || 7);
+      return res.json({ data });
+    } catch (err) {
+      return res.status(500).json({ err: message });
+    }
+  },
 };
