@@ -47,16 +47,6 @@ const Header: React.FC<HeaderProps> = ({onNotificationPress, onChatPress}) => {
             style={styles.bellIcon}
           />
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.chatButton}
-          onPress={handleChatPress}
-          activeOpacity={0.7}>
-          <Image
-            source={require('../../../assets/icons/Chat.png')}
-            style={styles.chatIcon}
-          />
-        </TouchableOpacity>
       </View>
     </View>
   );
@@ -113,8 +103,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   bellIcon: {
-    width: 28,
-    height: 28,
+    width: 29,
+    height: 29,
     tintColor: '#333',
   },
 });

@@ -32,18 +32,18 @@ const TabBar: React.FC<TabBarProps> = ({activeTab, onTabPress}) => {
       icon: require('../../assets/icons/Search.png'),
     },
     {
-      id: 'favorite',
-      label: 'Yêu thích',
-      icon: require('../../assets/icons/Heart.png'),
-    },
-    {
       id: 'cart',
       label: 'Giỏ hàng',
       icon: require('../../assets/icons/Cart.png'),
     },
     {
+      id: 'messages',
+      label: 'Tin nhắn',
+      icon: require('../../assets/icons/Chat.png'),
+    },
+    {
       id: 'profile',
-      label: 'Hồ sơ',
+      label: 'Cá nhân',
       icon: require('../../assets/icons/UserIcon.png'),
     },
   ];
