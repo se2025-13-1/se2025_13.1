@@ -75,7 +75,7 @@ export const StatisticsRepository = {
             ORDER BY (CASE WHEN pi.color_ref IS NULL THEN 0 ELSE 1 END) ASC LIMIT 1
           ) as thumbnail
         FROM order_items oi
-        JOIN oders o ON oi.order_id = o.id
+        JOIN orders o ON oi.order_id = o.id
         JOIN product_variants pv ON oi.product_variant_id = pv.id
         JOIN products p ON pv.product_id = p.id
         WHERE o.status = 'completed'
@@ -110,6 +110,21 @@ export const StatisticsRepository = {
         best_sellers: bestSellers.rows,
         high_stock: highStock.rows,
       };
+    } finally {
+      client.release();
+    }
+  },
+
+  async getOrderStatusStats() {
+    const client = await pgPool.connect();
+    try {
+      const query = `
+        SELECT status, COUNT(*) as count 
+        FROM orders 
+        GROUP BY status
+      `;
+      const res = await client.query(query);
+      return res.rows; // Trả về dạng: [{ status: 'pending', count: '5' }, ...]
     } finally {
       client.release();
     }

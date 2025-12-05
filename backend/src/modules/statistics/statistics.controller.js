@@ -32,4 +32,13 @@ export const StatisticsController = {
       return res.status(500).json({ error: err.message });
     }
   },
+
+  async getOrderStatus(req, res) {
+    try {
+      const data = await StatisticsService.getOrderStatusStats();
+      return res.json({ data });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  },
 };

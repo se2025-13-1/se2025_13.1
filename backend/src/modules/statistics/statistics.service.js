@@ -79,4 +79,48 @@ export const StatisticsService = {
 
     return data;
   },
+
+  async getOrderStatusStats() {
+    const cacheKey = "stats:order-status";
+
+    if (redisClient) {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    }
+
+    const rawData = await StatisticsRepository.getOrderStatusStats();
+
+    // 1. Định nghĩa bộ khung chuẩn (để đảm bảo luôn trả về đủ các trạng thái)
+    const formattedData = {
+      pending: 0,
+      confirmed: 0,
+      shipping: 0,
+      completed: 0,
+      cancelled: 0,
+      returned: 0,
+    };
+
+    // 2. Map dữ liệu từ DB vào bộ khung
+    rawData.forEach((item) => {
+      // item.status là key, item.count là value
+      if (formattedData.hasOwnProperty(item.status)) {
+        formattedData[item.status] = Number(item.count);
+      }
+    });
+
+    // 3. Chuyển đổi sang dạng Mảng để Frontend dễ vẽ biểu đồ (Recharts/ChartJS)
+    // Output: [{ name: 'Pending', value: 10 }, ...]
+    const chartData = Object.keys(formattedData).map((key) => ({
+      name: key.charAt(0).toUpperCase() + key.slice(1), // Viết hoa chữ cái đầu (Pending)
+      value: formattedData[key],
+      status_key: key, // Giữ key gốc để Frontend dùng nếu cần logic màu sắc
+    }));
+
+    // Cache 5 phút
+    if (redisClient) {
+      await redisClient.set(cacheKey, JSON.stringify(chartData), { EX: 300 });
+    }
+
+    return chartData;
+  },
 };
