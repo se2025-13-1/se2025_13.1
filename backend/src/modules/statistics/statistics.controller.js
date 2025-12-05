@@ -23,4 +23,13 @@ export const StatisticsController = {
       return res.status(500).json({ err: message });
     }
   },
+
+  async getTopProducts(req, res) {
+    try {
+      const data = await StatisticsService.getTopProducts();
+      return res.json({ data });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  },
 };

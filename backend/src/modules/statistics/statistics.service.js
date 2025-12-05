@@ -60,4 +60,23 @@ export const StatisticsService = {
 
     return fullData;
   },
+
+  async getTopProducts() {
+    const cacheKey = "stats:top-products";
+
+    if (redisClient) {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    }
+
+    // Lấy Top 5
+    const data = await StatisticsRepository.getTopProducts(5);
+
+    // Cache 10 phút (600s)
+    if (redisClient) {
+      await redisClient.set(cacheKey, JSON.stringify(data), { EX: 600 });
+    }
+
+    return data;
+  },
 };
