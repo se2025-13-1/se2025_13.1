@@ -23,7 +23,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
 
   const handleEditPress = () => {
     console.log('Edit avatar pressed');
-    // TODO: Implement avatar edit functionality
+    navigation?.navigate('EditProfile');
   };
 
   const handleSettingsPress = () => {
