@@ -45,7 +45,7 @@ const HomeScreen: React.FC = () => {
 
       {/* Render different screens based on active tab */}
       {activeTab === 'profile' ? (
-        <ProfileScreen />
+        <ProfileScreen navigation={navigation} />
       ) : (
         <>
           {/* Header Component */}
