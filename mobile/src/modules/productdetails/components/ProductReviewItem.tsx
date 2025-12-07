@@ -7,7 +7,7 @@ interface ProductReviewItemProps {
   userAvatar?: string;
   rating?: number;
   reviewText?: string;
-  timestamp?: string;
+  timestamp?: string | Date;
   verified?: boolean;
   likeCount?: number;
 }
@@ -18,10 +18,34 @@ const ProductReviewItem: React.FC<ProductReviewItemProps> = ({
   userAvatar,
   rating = 5,
   reviewText = 'Sản phẩm rất tốt, chất lượng cao, giao hàng nhanh',
-  timestamp = '2 ngày trước',
+  timestamp = new Date('2025-11-05'),
   verified = true,
   likeCount = 9,
 }) => {
+  const formatDate = (date: string | Date) => {
+    try {
+      let dateObj: Date;
+      if (typeof date === 'string') {
+        // Xử lý định dạng ISO (YYYY-MM-DD) hoặc timestamp
+        dateObj = new Date(date);
+      } else {
+        dateObj = date;
+      }
+
+      // Kiểm tra ngày có hợp lệ không
+      if (isNaN(dateObj.getTime())) {
+        return '01/01/2024';
+      }
+
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const year = dateObj.getFullYear();
+      return `${day}/${month}/${year}`;
+    } catch {
+      return '01/01/2024';
+    }
+  };
+
   const renderStars = (rating: number) => {
     const stars = [];
     for (let i = 1; i <= 5; i++) {
@@ -59,7 +83,7 @@ const ProductReviewItem: React.FC<ProductReviewItemProps> = ({
           <View style={styles.nameRow}>
             <Text style={styles.userName}>{userName}</Text>
           </View>
-          <Text style={styles.timestamp}>{timestamp}</Text>
+          <Text style={styles.timestamp}>{formatDate(timestamp)}</Text>
         </View>
 
         {/* Like Section */}

@@ -129,9 +129,8 @@ const ProductReviewList: React.FC<ProductReviewListProps> = ({
       {/* Reviews List */}
       <View style={styles.reviewsListContainer}>
         {reviews.length > 0 ? (
-          reviews
-            .slice(0, 3)
-            .map(review => (
+          <>
+            {reviews.slice(0, 3).map(review => (
               <ProductReviewItem
                 key={review.id}
                 id={review.id}
@@ -143,7 +142,20 @@ const ProductReviewList: React.FC<ProductReviewListProps> = ({
                 verified={review.verified}
                 likeCount={review.likeCount}
               />
-            ))
+            ))}
+
+            {/* View All Button */}
+            <TouchableOpacity
+              style={styles.viewAllButton}
+              onPress={onSeeAllPress}
+              activeOpacity={0.7}>
+              <Text style={styles.viewAllText}>Xem tất cả</Text>
+              <Image
+                source={require('../../../assets/icons/ArrowForward.png')}
+                style={styles.viewAllIcon}
+              />
+            </TouchableOpacity>
+          </>
         ) : (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateText}>Chưa có đánh giá nào</Text>
@@ -235,6 +247,25 @@ const styles = StyleSheet.create({
   reviewsListContainer: {
     borderTopWidth: 1,
     borderTopColor: '#F0F0F0',
+  },
+  viewAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  viewAllText: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#333333',
+    marginRight: 4,
+  },
+  viewAllIcon: {
+    width: 16,
+    height: 16,
   },
   emptyState: {
     paddingVertical: 32,

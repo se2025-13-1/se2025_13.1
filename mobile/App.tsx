@@ -18,6 +18,7 @@ import NotificationDetailScreen from './src/modules/notifications/screens/Notifi
 import EditProfileScreen from './src/modules/profile/screens/EditProfileScreen';
 import SettingScreen from './src/modules/profile/screens/SettingScreen';
 import ProductDetailScreen from './src/modules/productdetails/screens/ProductDetailScreen';
+import ReviewListScreen from './src/modules/reviews/screens/ReviewListScreen';
 
 // Navigation types
 export type RootStackParamList = {
@@ -40,6 +41,7 @@ export type RootStackParamList = {
   EditProfile: undefined;
   Settings: undefined;
   ProductDetail: undefined;
+  ReviewList: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -100,6 +102,7 @@ const App = () => {
               name="ProductDetail"
               component={ProductDetailScreen}
             />
+            <Stack.Screen name="ReviewList" component={ReviewListScreen} />
           </>
         ) : (
           <>
