@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useRoute} from '@react-navigation/native';
 import AddressSection from '../components/AddressSection';
 import ProductItem from '../components/ProductItem';
 import ShippingMethodSelector from '../components/ShippingMethodSelector';
@@ -18,6 +18,14 @@ import BottomCheckoutBar from '../components/BottomCheckoutBar';
 
 const PaymentScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  const route = useRoute();
+  const params = route.params as any;
+
+  // Get cart items from navigation params or use default
+  const cartItems = params?.cartItems || [];
+  const totalFromCart = params?.totalPrice || 0;
+  const totalQuantity = params?.totalQuantity || 0;
+
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
 
   const handleBackPress = () => {
@@ -53,14 +61,17 @@ const PaymentScreen: React.FC = () => {
         />
 
         {/* Products Section */}
-        <ProductItem
-          productName="Áo Sweater Có Zip PN STORE Vải Nỉ Da Cá Khóa..."
-          color="Đen"
-          size="M"
-          price={139920}
-          quantity={1}
-          image="https://via.placeholder.com/80x100/000000/000000?text=Product"
-        />
+        {cartItems.map((item: any) => (
+          <ProductItem
+            key={item.id}
+            productName={item.name}
+            color={item.size.split(',')[0] || 'Đen'} // Extract color from size string
+            size={item.size.split(',')[1]?.trim() || 'Size M'} // Extract size from size string
+            price={item.price}
+            quantity={item.quantity}
+            image={item.image}
+          />
+        ))}
 
         <ShippingMethodSelector />
 
@@ -69,11 +80,11 @@ const PaymentScreen: React.FC = () => {
         <PaymentMethodSelector />
 
         <OrderSummary
-          subtotal={159000}
+          subtotal={totalFromCart}
           shippingFee={22200}
           shippingDiscount={-22200}
-          voucherDiscount={-19080}
-          total={139920}
+          voucherDiscount={0}
+          total={totalFromCart + 22200 - 22200}
         />
 
         {/* Terms and Conditions Text */}
@@ -87,9 +98,11 @@ const PaymentScreen: React.FC = () => {
       </ScrollView>
 
       <BottomCheckoutBar
-        total={139920}
-        saved={132880}
-        onCheckout={() => console.log('Checkout pressed')}
+        total={totalFromCart}
+        saved={0} // Calculate savings if needed
+        onCheckout={() =>
+          console.log('Checkout pressed for', totalQuantity, 'items')
+        }
       />
     </View>
   );
