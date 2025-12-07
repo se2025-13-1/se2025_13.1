@@ -14,6 +14,7 @@ import Banner from '../components/Banner';
 import Categories from '../components/Categories';
 import ProductList from '../components/ProductList';
 import ProfileScreen from '../../profile/screens/ProfileScreen';
+import CartScreen from '../../cart/screens/CartScreen';
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -23,6 +24,8 @@ const HomeScreen: React.FC = () => {
     setActiveTab(tabId);
     if (tabId === 'search') {
       navigation.navigate('SearchEntry' as never);
+    } else if (tabId === 'cart') {
+      setActiveTab('cart');
     } else if (tabId === 'messages') {
       // Navigate to Messages screen (when created)
       console.log('Navigate to Messages');
@@ -46,6 +49,8 @@ const HomeScreen: React.FC = () => {
       {/* Render different screens based on active tab */}
       {activeTab === 'profile' ? (
         <ProfileScreen navigation={navigation} />
+      ) : activeTab === 'cart' ? (
+        <CartScreen onBackPress={() => setActiveTab('home')} />
       ) : (
         <>
           {/* Header Component */}
