@@ -16,6 +16,8 @@ import SearchEntry from './src/modules/search/screens/SearchEntry';
 import NotificationScreen from './src/modules/notifications/screens/NotificationScreen';
 import NotificationDetailScreen from './src/modules/notifications/screens/NotificationDetailScreen';
 import EditProfileScreen from './src/modules/profile/screens/EditProfileScreen';
+import SettingScreen from './src/modules/profile/screens/SettingScreen';
+import ProductDetailScreen from './src/modules/productdetails/screens/ProductDetailScreen';
 
 // Navigation types
 export type RootStackParamList = {
@@ -36,6 +38,8 @@ export type RootStackParamList = {
     timestamp: string;
   };
   EditProfile: undefined;
+  Settings: undefined;
+  ProductDetail: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -91,6 +95,11 @@ const App = () => {
               component={NotificationDetailScreen}
             />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+            <Stack.Screen name="Settings" component={SettingScreen} />
+            <Stack.Screen
+              name="ProductDetail"
+              component={ProductDetailScreen}
+            />
           </>
         ) : (
           <>
