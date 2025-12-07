@@ -13,11 +13,23 @@ const cardWidth = (width - 45) / 2; // Chiều rộng card (trừ margin)
 
 interface ProductCardProps {
   onPress?: () => void;
+  navigation?: any;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({onPress}) => {
+const ProductCard: React.FC<ProductCardProps> = ({onPress, navigation}) => {
+  const handlePress = () => {
+    // Nếu có onPress callback, gọi nó
+    if (onPress) {
+      onPress();
+    }
+    // Nếu có navigation, navigate tới ProductDetail
+    if (navigation) {
+      navigation.navigate('ProductDetail');
+    }
+  };
+
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress}>
+    <TouchableOpacity style={styles.container} onPress={handlePress}>
       {/* Ảnh sản phẩm */}
       <View style={styles.imageContainer}>
         <Image

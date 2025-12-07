@@ -15,11 +15,13 @@ const CARD_WIDTH = (width - 45) / 2; // Chiều rộng card với margin
 interface ProductListProps {
   categoryTitle?: string;
   onSeeMorePress?: () => void;
+  navigation?: any;
 }
 
 const ProductList: React.FC<ProductListProps> = ({
   categoryTitle = 'Bán chạy',
   onSeeMorePress,
+  navigation,
 }) => {
   // Tạo dữ liệu mẫu cho 10 sản phẩm
   const products = Array.from({length: 10}, (_, index) => ({
@@ -42,7 +44,10 @@ const ProductList: React.FC<ProductListProps> = ({
 
   const renderProduct = ({item}: {item: any}) => (
     <View style={styles.productItem}>
-      <ProductCard onPress={() => handleProductPress(item.id)} />
+      <ProductCard
+        onPress={() => handleProductPress(item.id)}
+        navigation={navigation}
+      />
     </View>
   );
 
