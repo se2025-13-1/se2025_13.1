@@ -27,6 +27,10 @@ const ProductRecommended: React.FC<ProductRecommendedProps> = ({
           if (onProductPress) {
             onProductPress(item.id);
           }
+          // Navigate to ProductDetail screen
+          if (navigation) {
+            navigation.navigate('ProductDetail', {productId: item.id});
+          }
         }}
         navigation={navigation}
       />

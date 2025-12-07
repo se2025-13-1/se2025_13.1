@@ -7,6 +7,7 @@ import ProductVariants from '../components/ProductVariants';
 import ProductDescription from '../components/ProductDescription';
 import ProductReviewList from '../components/ProductReviewList';
 import ProductRecommended from '../components/ProductRecommended';
+import ProductVariantSelector from '../components/ProductVariantSelector';
 import BottomActionBar from '../components/BottomActionBar';
 
 interface ProductDetailScreenProps {
@@ -19,6 +20,7 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
   route,
 }) => {
   const [searchValue, setSearchValue] = useState('');
+  const [showVariantSelector, setShowVariantSelector] = useState(false);
 
   const handleBackPress = () => {
     navigation?.goBack();
@@ -134,8 +136,22 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
         voucherPrice={110879}
         onChatPress={() => console.log('Chat pressed')}
         onCartPress={() => console.log('Add to cart pressed')}
-        onBuyPress={() => console.log('Buy pressed')}
+        onBuyPress={() => setShowVariantSelector(true)}
       />
+
+      {/* Product Variant Selector Overlay */}
+      {showVariantSelector && (
+        <ProductVariantSelector
+          onClose={() => setShowVariantSelector(false)}
+          onBuy={(color, size, quantity) => {
+            console.log('Buy:', {color, size, quantity});
+            setShowVariantSelector(false);
+          }}
+          price={139920}
+          originalPrice={250000}
+          stock={966}
+        />
+      )}
     </View>
   );
 };
