@@ -6,6 +6,7 @@ import ProductInfo from '../components/ProductInfo';
 import ProductVariants from '../components/ProductVariants';
 import ProductDescription from '../components/ProductDescription';
 import ProductReviewList from '../components/ProductReviewList';
+import ProductRecommended from '../components/ProductRecommended';
 import BottomActionBar from '../components/BottomActionBar';
 
 interface ProductDetailScreenProps {
@@ -113,7 +114,18 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
               verified: false,
             },
           ]}
-          onSeeAllPress={() => console.log('See all reviews pressed')}
+          onSeeAllPress={() => navigation?.navigate('ReviewList')}
+        />
+
+        {/* Separator */}
+        <View style={styles.separator} />
+
+        {/* Product Recommended */}
+        <ProductRecommended
+          navigation={navigation}
+          onProductPress={productId =>
+            console.log('Product pressed:', productId)
+          }
         />
       </ScrollView>
 
