@@ -1,24 +1,92 @@
 import React, {useState} from 'react';
-import {View, Text, StyleSheet, StatusBar, SafeAreaView} from 'react-native';
+import {
+  StyleSheet,
+  StatusBar,
+  SafeAreaView,
+  ScrollView,
+  View,
+} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 import TabBar from '../../../shared/Components/TabBar';
+import Header from '../components/Header';
+import SearchBar from '../components/SearchBar';
+import Banner from '../components/Banner';
+import Categories from '../components/Categories';
+import ProductList from '../components/ProductList';
+import ProfileScreen from '../../profile/screens/ProfileScreen';
+import CartScreen from '../../cart/screens/CartScreen';
 
 const HomeScreen: React.FC = () => {
+  const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState('home');
 
   const handleTabPress = (tabId: string) => {
     setActiveTab(tabId);
-    // TODO: Navigate to respective screens based on tabId
-    console.log('Tab pressed:', tabId);
+    if (tabId === 'search') {
+      navigation.navigate('SearchEntry' as never);
+    } else if (tabId === 'cart') {
+      setActiveTab('cart');
+    } else if (tabId === 'messages') {
+      // Navigate to Messages screen (when created)
+      console.log('Navigate to Messages');
+    } else if (tabId === 'profile') {
+      // Navigate to Profile screen (when created)
+      console.log('Navigate to Profile');
+    } else {
+      // TODO: Navigate to respective screens based on tabId
+      console.log('Tab pressed:', tabId);
+    }
+  };
+
+  const handleNotificationPress = () => {
+    navigation.navigate('Notification' as never);
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
-      <View style={styles.content}>
-        <Text style={styles.title}>Welcome to Home</Text>
-        <Text style={styles.subtitle}>You have successfully logged in!</Text>
-        <Text style={styles.activeTabText}>Current Tab: {activeTab}</Text>
-      </View>
+
+      {/* Render different screens based on active tab */}
+      {activeTab === 'profile' ? (
+        <ProfileScreen navigation={navigation} />
+      ) : activeTab === 'cart' ? (
+        <CartScreen onBackPress={() => setActiveTab('home')} />
+      ) : (
+        <>
+          {/* Header Component */}
+          <Header onNotificationPress={handleNotificationPress} />
+
+          {/* Main Content ScrollView */}
+          <ScrollView
+            style={styles.scrollView}
+            showsVerticalScrollIndicator={false}>
+            {/* SearchBar Component */}
+            <SearchBar />
+
+            {/* Banner Component */}
+            <Banner />
+
+            {/* Categories Component */}
+            <Categories />
+
+            {/* ProductList Component - Bán chạy */}
+            <ProductList
+              categoryTitle="Bán chạy"
+              onSeeMorePress={() => console.log('Navigate to best sellers')}
+              navigation={navigation}
+            />
+
+            {/* ProductList Component - Sản phẩm mới */}
+            <ProductList
+              categoryTitle="Sản phẩm mới"
+              onSeeMorePress={() => console.log('Navigate to new products')}
+              navigation={navigation}
+            />
+          </ScrollView>
+        </>
+      )}
+
+      {/* Tab Bar */}
       <TabBar activeTab={activeTab} onTabPress={handleTabPress} />
     </SafeAreaView>
   );
@@ -29,30 +97,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  content: {
+  scrollView: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666666',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  activeTabText: {
-    fontSize: 14,
-    color: '#007AFF',
-    textAlign: 'center',
-    fontWeight: '500',
   },
 });
 

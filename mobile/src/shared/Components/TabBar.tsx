@@ -32,19 +32,19 @@ const TabBar: React.FC<TabBarProps> = ({activeTab, onTabPress}) => {
       icon: require('../../assets/icons/Search.png'),
     },
     {
-      id: 'favorite',
-      label: 'Yêu thích',
-      icon: require('../../assets/icons/Heart.png'),
-    },
-    {
       id: 'cart',
       label: 'Giỏ hàng',
       icon: require('../../assets/icons/Cart.png'),
     },
     {
+      id: 'messages',
+      label: 'Tin nhắn',
+      icon: require('../../assets/icons/Chat.png'),
+    },
+    {
       id: 'profile',
-      label: 'Hồ sơ',
-      icon: require('../../assets/icons/User.png'),
+      label: 'Cá nhân',
+      icon: require('../../assets/icons/UserIcon.png'),
     },
   ];
 
@@ -66,12 +66,15 @@ const TabBar: React.FC<TabBarProps> = ({activeTab, onTabPress}) => {
             source={tab.icon}
             style={[
               styles.tabIcon,
-              {tintColor: isActive ? '#007AFF' : '#8E8E93'},
+              isActive ? styles.activeTintColor : styles.inactiveTintColor,
             ]}
           />
         </View>
         <Text
-          style={[styles.tabLabel, {color: isActive ? '#007AFF' : '#8E8E93'}]}>
+          style={[
+            styles.tabLabel,
+            isActive ? styles.activeColor : styles.inactiveColor,
+          ]}>
           {tab.label}
         </Text>
       </TouchableOpacity>
@@ -120,9 +123,21 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   tabLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '500',
     textAlign: 'center',
+  },
+  activeColor: {
+    color: '#333',
+  },
+  inactiveColor: {
+    color: '#333',
+  },
+  activeTintColor: {
+    tintColor: '#333',
+  },
+  inactiveTintColor: {
+    tintColor: '#333',
   },
 });
 
