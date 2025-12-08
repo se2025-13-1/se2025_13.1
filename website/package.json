@@ -10,12 +10,16 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
   },
   "dependencies": {
+    "@google/genai": "^1.31.0",
+    "lucide-react": "^0.556.0",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "recharts": "^3.5.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
     "@tailwindcss/cli": "^4.1.16",
+    "@types/node": "^24.10.1",
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^5.0.4",
