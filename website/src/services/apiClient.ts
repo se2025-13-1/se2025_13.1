@@ -185,14 +185,11 @@ class ApiClient {
   }
 
   // ORDERS ENDPOINTS
-  async getOrders(): Promise<ApiResponse<any[]>> {
-    const result = await this.request<any[]>("/orders");
+
+  async getOrders(id: string): Promise<ApiResponse<any>> {
+    const result = await this.request<any[]>("/orders/admin/all");
     console.log("getOrders response:", result);
     return result;
-  }
-
-  async getOrder(id: string): Promise<ApiResponse<any>> {
-    return this.request(`/orders/${id}`);
   }
 
   async updateOrderStatus(
