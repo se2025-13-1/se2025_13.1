@@ -1,0 +1,5 @@
+{
+  "name": "Fashion Admin Dashboard",
+  "description": "Admin portal for se2025_13.1 Fashion E-commerce. Manage products, variants, orders, and view revenue analytics.",
+  "requestFramePermissions": []
+}

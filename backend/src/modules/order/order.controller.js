@@ -66,4 +66,13 @@ export const OrderController = {
       return res.status(400).json({ error: err.message });
     }
   },
+
+  async listAll(req, res) {
+    try {
+      const orders = await OrderService.getAllOrders(req.query);
+      return res.json({ orders });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  },
 };

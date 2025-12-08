@@ -198,10 +198,20 @@ export const ProductRepository = {
   },
 
   async delete(id) {
-    const res = await pgPool.query(
-      `DELETE FROM products WHERE id = $1 RETURNING id`,
-      [id]
-    );
+    // Thay vì DELETE (xóa vĩnh viễn), ta dùng UPDATE để ẩn sản phẩm (Soft Delete)
+    // 1. Set is_active = false (để không hiện ra ngoài nữa)
+    // 2. Sửa slug (để sau này có thể tạo lại sản phẩm mới cùng tên mà không bị lỗi trùng slug)
+    const query = `
+      UPDATE products 
+      SET 
+        is_active = false,
+        slug = slug || '-deleted-' || EXTRACT(EPOCH FROM NOW())::text,
+        updated_at = NOW()
+      WHERE id = $1 
+      RETURNING id
+    `;
+
+    const res = await pgPool.query(query, [id]);
     return res.rows[0] || null;
   },
 
