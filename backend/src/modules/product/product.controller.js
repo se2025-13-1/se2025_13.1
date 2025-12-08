@@ -8,7 +8,10 @@ export const ProductController = {
         name: req.body.name,
         slug: req.body.slug, // Có thể null, service tự lo
         description: req.body.description || req.body.short_description,
-        base_price: req.body.price, // Frontend gửi 'price', DB lưu 'base_price'
+        base_price:
+          req.body.base_price !== undefined
+            ? req.body.base_price
+            : req.body.price, // Frontend gửi 'price', DB lưu 'base_price'
         category_id: req.body.category_id || req.body.category, // Hỗ trợ cả 2 key
         is_active: req.body.is_active,
 
@@ -75,7 +78,7 @@ export const ProductController = {
       if (body.name) payload.name = body.name;
       if (body.description || body.short_description)
         payload.description = body.description || body.short_description;
-      if (body.price) payload.base_price = body.price;
+      if (body.base_price !== undefined) payload.base_price = body.base_price;
       if (body.is_active !== undefined) payload.is_active = body.is_active;
       if (body.category || body.category_id)
         payload.category_id = body.category_id || body.category;
