@@ -145,4 +145,12 @@ export const OrderService = {
   async cancelOrder(orderId, userId) {
     return await OrderRepository.cancelOrder(orderId, userId);
   },
+
+  async getAllOrders(query) {
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    return await OrderRepository.findAll({ limit, offset });
+  },
 };

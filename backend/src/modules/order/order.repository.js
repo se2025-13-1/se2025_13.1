@@ -178,4 +178,22 @@ export const OrderRepository = {
       client.release();
     }
   },
+
+  async findAll({ limit = 20, offset = 0 }) {
+    const query = `
+      SELECT 
+        o.id, 
+        o.total_amount, 
+        o.status, 
+        o.created_at, 
+        o.shipping_info, -- Lấy thông tin người nhận từ JSONB
+        u.email as user_email -- Lấy thêm email người đặt
+      FROM orders o
+      LEFT JOIN auth_users u ON o.user_id = u.id
+      ORDER BY o.created_at DESC 
+      LIMIT $1 OFFSET $2
+    `;
+    const res = await pgPool.query(query, [limit, offset]);
+    return res.rows;
+  },
 };
