@@ -15,6 +15,7 @@ import Categories from '../components/Categories';
 import ProductList from '../components/ProductList';
 import ProfileScreen from '../../profile/screens/ProfileScreen';
 import CartScreen from '../../cart/screens/CartScreen';
+import ChatScreen from '../../chat/screens/ChatScreen';
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -27,11 +28,11 @@ const HomeScreen: React.FC = () => {
     } else if (tabId === 'cart') {
       setActiveTab('cart');
     } else if (tabId === 'messages') {
-      // Navigate to Messages screen (when created)
-      console.log('Navigate to Messages');
+      // Navigate to Chat screen
+      setActiveTab('messages');
     } else if (tabId === 'profile') {
       // Navigate to Profile screen (when created)
-      console.log('Navigate to Profile');
+      setActiveTab('profile');
     } else {
       // TODO: Navigate to respective screens based on tabId
       console.log('Tab pressed:', tabId);
@@ -51,6 +52,8 @@ const HomeScreen: React.FC = () => {
         <ProfileScreen navigation={navigation} />
       ) : activeTab === 'cart' ? (
         <CartScreen onBackPress={() => setActiveTab('home')} />
+      ) : activeTab === 'messages' ? (
+        <ChatScreen navigation={navigation} />
       ) : (
         <>
           {/* Header Component */}
