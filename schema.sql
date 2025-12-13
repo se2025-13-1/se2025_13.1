@@ -259,7 +259,33 @@ CREATE TABLE reviews (
 );
 
 -- ======================================================================================
--- 8. TẠO INDEX & TRIGGER (TỐI ƯU HIỆU NĂNG)
+-- 8. MODULE NOTIFICATION (THÔNG BÁO)
+-- ======================================================================================
+
+-- 1. Bảng lưu Token thiết bị
+CREATE TABLE IF NOT EXISTS user_devices (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth_users(id) ON DELETE CASCADE,
+  fcm_token TEXT NOT NULL,
+  platform VARCHAR(20), -- 'ios', 'android'
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(fcm_token) -- Một token chỉ lưu 1 lần
+);
+
+-- 2. Bảng lưu nội dung thông báo
+CREATE TABLE IF NOT EXISTS notifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth_users(id) ON DELETE CASCADE,
+  title VARCHAR(255) NOT NULL,
+  body TEXT,
+  type VARCHAR(50), -- 'order', 'promo'
+  data JSONB,       -- Dữ liệu để navigate: { "orderId": "..." }
+  is_read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ======================================================================================
+-- 9. TẠO INDEX & TRIGGER (TỐI ƯU HIỆU NĂNG)
 -- ======================================================================================
 
 -- Index cho khóa ngoại (Tăng tốc độ JOIN)

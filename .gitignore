@@ -20,6 +20,12 @@ yarn.lock
 .env.example.local
 
 # ───────────────────────────────
+# Backend
+# ───────────────────────────────
+backend/service-account.json
+backend/node_modules/
+
+# ───────────────────────────────
 # Docker
 # ───────────────────────────────
 docker/.env

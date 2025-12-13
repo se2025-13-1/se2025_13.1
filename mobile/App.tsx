@@ -3,7 +3,7 @@ import React, {useState, useEffect} from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 
-// Import Screens
+// Import Screens (Giữ nguyên)
 import SplashScreen from './src/modules/splash/screens/SplashScreen';
 import WelcomeScreen from './src/modules/welcome/screens/WelcomeScreen';
 import LoginScreen from './src/modules/auth/screens/LoginScreen';
@@ -21,8 +21,18 @@ import ProductDetailScreen from './src/modules/productdetails/screens/ProductDet
 import ReviewListScreen from './src/modules/reviews/screens/ReviewListScreen';
 import PaymentScreen from './src/modules/payment/screens/PaymentScreen';
 import PaymentMethodScreen from './src/modules/payment/screens/PaymentMethodScreen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Navigation types
+// 👇 1. IMPORT SERVICE THÔNG BÁO (THÊM MỚI)
+import {
+  requestUserPermission,
+  getFCMToken,
+  notificationListener,
+} from './src/modules/notifications/service/notificationService';
+// Bạn có thể cần import AsyncStorage nếu bạn lưu token đăng nhập ở đó
+// import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Navigation types (Giữ nguyên)
 export type RootStackParamList = {
   Splash: undefined;
   Welcome: undefined;
@@ -56,32 +66,56 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const App = () => {
-  const [isLoading, setIsLoading] = useState(false); // Tắt loading để không hiển thị splash
-  const [isAuthenticated, setIsAuthenticated] = useState(true); // Đặt authenticated = true để vào Home ngay
+  const [isLoading, setIsLoading] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
 
+  // 👇 EFFECT XỬ LÝ THÔNG BÁO (ĐÃ SỬA LOGIC LẤY TOKEN)
   useEffect(() => {
-    // Simulate checking authentication status
-    const checkAuthStatus = async () => {
-      try {
-        // Here you would check if user is logged in
-        // For now, we'll just set loading to false
-        setTimeout(() => {
-          setIsLoading(false);
-        }, 2000); // Show splash for 2 seconds
-      } catch (error) {
-        setIsLoading(false);
+    const initNotification = async () => {
+      if (isAuthenticated) {
+        // A. Xin quyền
+        const hasPermission = await requestUserPermission();
+
+        // B. LẤY TOKEN THẬT TỪ STORAGE 🟢
+        try {
+          const userToken = await AsyncStorage.getItem('accessToken');
+
+          if (!userToken) {
+            console.log('⚠️ Chưa tìm thấy token trong bộ nhớ');
+            return;
+          }
+
+          // C. Gửi FCM Token kèm User Token lên Server
+          if (hasPermission) {
+            await getFCMToken(userToken);
+          }
+        } catch (error) {
+          console.error('Lỗi khi lấy token từ storage:', error);
+        }
+
+        // D. Lắng nghe thông báo
+        const unsubscribe = notificationListener();
+        return () => unsubscribe();
       }
     };
 
-    checkAuthStatus();
-  }, []);
-
+    initNotification();
+  }, [isAuthenticated]);
   const handleSplashFinish = () => {
     setIsLoading(false);
   };
 
   const handleLogin = () => {
     setIsAuthenticated(true);
+  };
+
+  const handleLogout = async () => {
+    // 1. Xóa token khỏi bộ nhớ
+    await AsyncStorage.removeItem('accessToken');
+    await AsyncStorage.removeItem('user');
+
+    // 2. Cập nhật state để văng ra màn hình Login
+    setIsAuthenticated(false);
   };
 
   return (
@@ -120,6 +154,7 @@ const App = () => {
           </>
         ) : (
           <>
+            {/* Các màn hình Auth giữ nguyên */}
             <Stack.Screen name="Welcome">
               {props => (
                 <WelcomeScreen
@@ -161,7 +196,7 @@ const App = () => {
             <Stack.Screen name="ForgotPassword">
               {props => {
                 const handleSendCode = (email: string) => {
-                  const otp = '123456'; // This would come from your backend
+                  const otp = '123456';
                   props.navigation.navigate('ResetPassword', {email, otp});
                 };
 
@@ -194,8 +229,7 @@ const App = () => {
                 const {email} = props.route.params;
 
                 const handleVerifyCode = (_code: string) => {
-                  // Handle verification logic here
-                  handleLogin(); // Auto login after verification
+                  handleLogin();
                 };
 
                 return (
@@ -215,5 +249,4 @@ const App = () => {
   );
 };
 
-// PHẢI CÓ DÒNG NÀY
 export default App;
