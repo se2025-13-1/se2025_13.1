@@ -234,4 +234,121 @@ export const ProductRepository = {
     const res = await pgPool.query(query, [variantIds]);
     return res.rows;
   },
+
+  async searchAndFilter({
+    keyword,
+    category_id,
+    min_price,
+    max_price,
+    min_rating,
+    sort_by,
+    sort_order,
+    limit = 20,
+    offset = 0,
+  }) {
+    const client = await pgPool.connect();
+    try {
+      // 1. Khởi tạo điều kiện cơ bản
+      const conditions = ["p.is_active = true"];
+      const values = [];
+      let idx = 1;
+
+      // 2. Xây dựng điều kiện động (Dynamic Where)
+
+      // Tìm theo tên hoặc slug (Keyword)
+      if (keyword) {
+        conditions.push(`(p.name ILIKE $${idx} OR p.slug ILIKE $${idx})`);
+        values.push(`%${keyword}%`);
+        idx++;
+      }
+
+      // Lọc theo danh mục
+      if (category_id) {
+        conditions.push(`p.category_id = $${idx}`);
+        values.push(category_id);
+        idx++;
+      }
+
+      // Lọc theo khoảng giá
+      if (min_price) {
+        conditions.push(`p.base_price >= $${idx}`);
+        values.push(min_price);
+        idx++;
+      }
+      if (max_price) {
+        conditions.push(`p.base_price <= $${idx}`);
+        values.push(max_price);
+        idx++;
+      }
+
+      // Lọc theo đánh giá (VD: 4 sao trở lên)
+      if (min_rating) {
+        conditions.push(`p.rating_average >= $${idx}`);
+        values.push(min_rating);
+        idx++;
+      }
+
+      // 3. Xử lý Sắp xếp (Sorting)
+      let orderByClause = "ORDER BY p.created_at DESC"; // Mặc định: Mới nhất
+
+      if (sort_by) {
+        const direction = sort_order === "asc" ? "ASC" : "DESC";
+        switch (sort_by) {
+          case "price":
+            orderByClause = `ORDER BY p.base_price ${direction}`;
+            break;
+          case "rating":
+            orderByClause = `ORDER BY p.rating_average ${direction}`;
+            break;
+          case "sold": // Sắp xếp theo số lượng bán (review_count tạm thay thế hoặc cột sold nếu có)
+            orderByClause = `ORDER BY p.review_count ${direction}`;
+            break;
+          case "name":
+            orderByClause = `ORDER BY p.name ${direction}`;
+            break;
+          // Mặc định giữ nguyên created_at
+        }
+      }
+
+      // 4. Ghép câu lệnh SQL
+      const whereClause =
+        conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
+      // Query lấy dữ liệu (Kèm ảnh thumbnail ưu tiên ảnh chung)
+      const dataQuery = `
+        SELECT 
+          p.id, p.name, p.slug, p.base_price, p.rating_average, p.review_count,
+          c.name as category_name,
+          (
+            SELECT image_url FROM product_images pi 
+            WHERE pi.product_id = p.id 
+            ORDER BY (CASE WHEN pi.color_ref IS NULL THEN 0 ELSE 1 END) ASC LIMIT 1
+          ) as thumbnail
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        ${whereClause}
+        ${orderByClause}
+        LIMIT $${idx} OFFSET $${idx + 1}
+      `;
+      // Query đếm tổng (để phân trang)
+      const countQuery = `
+        SELECT COUNT(*) as total 
+        FROM products p 
+        ${whereClause}
+      `;
+
+      // Chạy song song 2 query
+      const [dataRes, countRes] = await Promise.all([
+        client.query(dataQuery, [...values, limit, offset]),
+        client.query(countQuery, values),
+      ]);
+
+      return {
+        products: dataRes.rows,
+        total: parseInt(countRes.rows[0].total),
+      };
+    } finally {
+      client.release();
+    }
+  },
 };
