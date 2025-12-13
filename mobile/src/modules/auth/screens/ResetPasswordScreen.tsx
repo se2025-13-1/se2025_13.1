@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import {AuthApi} from '@services/authApi';
+import {AuthApi} from '../services/authApi';
 
 interface ResetPasswordProps {
   email: string;
