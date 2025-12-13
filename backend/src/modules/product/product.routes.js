@@ -26,6 +26,7 @@ router.get("/:id", ProductController.getDetail);
 router.use(requireAuth, requireAdmin);
 
 router.post("/", ProductController.create);
+router.get("/", ProductController.search);
 router.put("/:id", ProductController.update);
 router.delete("/:id", ProductController.remove);
 

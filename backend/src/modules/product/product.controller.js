@@ -50,21 +50,13 @@ export const ProductController = {
     }
   },
 
-  async list(req, res) {
+  async search(req, res) {
     try {
-      const { page = 1, limit = 20, q, category, category_id } = req.query;
-
-      const rows = await ProductService.listProducts({
-        page: Number(page),
-        limit: Number(limit),
-        q,
-        category_id: category_id || category, // Mapping query param cũ
-      });
-
-      return res.json({ products: rows });
+      // req.query sẽ chứa: { q, category_id, min_price, sort_by, ... }
+      const result = await ProductService.searchProducts(req.query);
+      return res.json(result);
     } catch (err) {
-      console.error(err);
-      return res.status(500).json({ error: "List products failed" });
+      return res.status(500).json({ error: err.message });
     }
   },
 

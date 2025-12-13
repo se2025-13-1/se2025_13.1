@@ -270,6 +270,9 @@ CREATE INDEX idx_orders_user ON orders(user_id);
 CREATE INDEX idx_order_items_order ON order_items(order_id);
 CREATE INDEX idx_cart_items_cart ON cart_items(cart_id);
 CREATE INDEX idx_reviews_product ON reviews(product_id);
+CREATE INDEX IF NOT EXISTS idx_products_price ON products(base_price);
+CREATE INDEX IF NOT EXISTS idx_products_rating ON products(rating_average);
+CREATE INDEX IF NOT EXISTS idx_products_created_at ON products(created_at);
 
 -- Index cho tìm kiếm
 CREATE INDEX idx_products_name_trigram ON products USING gin (name gin_trgm_ops);
