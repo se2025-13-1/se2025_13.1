@@ -48,5 +48,44 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	
+	<!-- Facebook Configuration -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>fblogin</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<!-- TODO: Replace YOUR_FACEBOOK_APP_ID with your actual Facebook App ID -->
+				<string>fbYOUR_FACEBOOK_APP_ID</string>
+			</array>
+		</dict>
+	</array>
+	<key>FacebookAppID</key>
+	<!-- TODO: Replace YOUR_FACEBOOK_APP_ID with your actual Facebook App ID -->
+	<string>YOUR_FACEBOOK_APP_ID</string>
+	<key>FacebookClientToken</key>
+	<!-- TODO: Replace YOUR_FACEBOOK_CLIENT_TOKEN with your actual Facebook Client Token -->
+	<string>YOUR_FACEBOOK_CLIENT_TOKEN</string>
+	<key>FacebookDisplayName</key>
+	<string>mobile</string>
+	
+	<!-- Google Sign-In Configuration -->
+	<!-- TODO: Add your REVERSED_CLIENT_ID from GoogleService-Info.plist here -->
+	<!-- 
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>google</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>YOUR_REVERSED_CLIENT_ID</string>
+			</array>
+		</dict>
+	</array>
+	-->
+	
 </dict>
 </plist>

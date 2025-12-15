@@ -43,6 +43,24 @@ const HomeScreen: React.FC = () => {
     navigation.navigate('Notification' as never);
   };
 
+  const handleLoginPress = () => {
+    navigation.navigate('Login' as never);
+  };
+
+  const handleRegisterPress = () => {
+    navigation.navigate('SignUp' as never);
+  };
+
+  const handleGoogleLoginPress = () => {
+    console.log('Google login pressed');
+    // Implement Google login logic
+  };
+
+  const handleFacebookLoginPress = () => {
+    console.log('Facebook login pressed');
+    // Implement Facebook login logic
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
@@ -53,11 +71,20 @@ const HomeScreen: React.FC = () => {
       ) : activeTab === 'cart' ? (
         <CartScreen onBackPress={() => setActiveTab('home')} />
       ) : activeTab === 'messages' ? (
-        <ChatScreen navigation={navigation} />
+        <ChatScreen
+          navigation={navigation}
+          onBackPress={() => setActiveTab('home')}
+        />
       ) : (
         <>
           {/* Header Component */}
-          <Header onNotificationPress={handleNotificationPress} />
+          <Header
+            onNotificationPress={handleNotificationPress}
+            onLogin={handleLoginPress}
+            onRegister={handleRegisterPress}
+            onGoogleLogin={handleGoogleLoginPress}
+            onFacebookLogin={handleFacebookLoginPress}
+          />
 
           {/* Main Content ScrollView */}
           <ScrollView
@@ -90,7 +117,14 @@ const HomeScreen: React.FC = () => {
       )}
 
       {/* Tab Bar */}
-      <TabBar activeTab={activeTab} onTabPress={handleTabPress} />
+      <TabBar
+        activeTab={activeTab}
+        onTabPress={handleTabPress}
+        onLogin={handleLoginPress}
+        onRegister={handleRegisterPress}
+        onGoogleLogin={handleGoogleLoginPress}
+        onFacebookLogin={handleFacebookLoginPress}
+      />
     </SafeAreaView>
   );
 };

@@ -2,6 +2,10 @@
 import React, {useState, useEffect} from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import {AuthProvider} from './src/contexts/AuthContext';
+import {isAuthenticated as checkIsAuthenticated} from './src/services/tokenService';
+import {initializeGoogleSignIn} from './src/services/googleService';
+import {initializeFacebookSDK} from './src/services/facebookService';
 
 // Import Screens
 import SplashScreen from './src/modules/splash/screens/SplashScreen';
@@ -56,162 +60,269 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const App = () => {
-  const [isLoading, setIsLoading] = useState(false); // Tắt loading để không hiển thị splash
-  const [isAuthenticated, setIsAuthenticated] = useState(true); // Đặt authenticated = true để vào Home ngay
+  const [isLoading, setIsLoading] = useState(true); // Show splash initially
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // User not authenticated initially
+  const [hasStarted, setHasStarted] = useState(false); // Track if user has started using app
 
   useEffect(() => {
-    // Simulate checking authentication status
-    const checkAuthStatus = async () => {
+    // Initialize Social SDKs and check auth status on app startup
+    const initializeApp = async () => {
       try {
-        // Here you would check if user is logged in
-        // For now, we'll just set loading to false
-        setTimeout(() => {
-          setIsLoading(false);
-        }, 2000); // Show splash for 2 seconds
-      } catch (error) {
+        // Initialize social SDKs first
+        console.log('Initializing social SDKs...');
+        initializeGoogleSignIn();
+        initializeFacebookSDK();
+
+        // First, show splash for 2 seconds for visual effect
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Check if there's a stored token
+        const authenticated = await checkIsAuthenticated();
+
+        if (authenticated) {
+          // User has a valid token, skip to app
+          setIsAuthenticated(true);
+          setHasStarted(true);
+        } else {
+          // User not authenticated, show welcome screen
+          setHasStarted(false);
+        }
+
         setIsLoading(false);
+      } catch (error) {
+        console.error('App initialization failed:', error);
+        setIsLoading(false);
+        setHasStarted(false);
       }
     };
 
-    checkAuthStatus();
+    initializeApp();
   }, []);
 
   const handleSplashFinish = () => {
     setIsLoading(false);
   };
 
+  const handleGetStarted = () => {
+    setHasStarted(true); // User can now access app features
+  };
+
   const handleLogin = () => {
     setIsAuthenticated(true);
+    setHasStarted(true); // Ensure user can access app features after login
   };
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-          gestureEnabled: true,
-          gestureDirection: 'horizontal',
-        }}>
-        {isLoading ? (
-          <Stack.Screen name="Splash">
-            {props => <SplashScreen {...props} onFinish={handleSplashFinish} />}
-          </Stack.Screen>
-        ) : isAuthenticated ? (
-          <>
-            <Stack.Screen name="Home" component={HomeScreen} />
-            <Stack.Screen name="SearchEntry" component={SearchEntry} />
-            <Stack.Screen name="Notification" component={NotificationScreen} />
-            <Stack.Screen
-              name="NotificationDetail"
-              component={NotificationDetailScreen}
-            />
-            <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-            <Stack.Screen name="Settings" component={SettingScreen} />
-            <Stack.Screen
-              name="ProductDetail"
-              component={ProductDetailScreen}
-            />
-            <Stack.Screen name="ReviewList" component={ReviewListScreen} />
-            <Stack.Screen name="Payment" component={PaymentScreen} />
-            <Stack.Screen
-              name="PaymentMethod"
-              component={PaymentMethodScreen}
-            />
-          </>
-        ) : (
-          <>
-            <Stack.Screen name="Welcome">
+    <AuthProvider>
+      <NavigationContainer>
+        <Stack.Navigator
+          screenOptions={{
+            headerShown: false,
+            gestureEnabled: true,
+            gestureDirection: 'horizontal',
+          }}>
+          {isLoading ? (
+            <Stack.Screen name="Splash">
               {props => (
-                <WelcomeScreen
-                  {...props}
-                  onLogin={() => props.navigation.navigate('Login')}
-                  onSignUp={() => props.navigation.navigate('SignUp')}
-                />
+                <SplashScreen {...props} onFinish={handleSplashFinish} />
               )}
             </Stack.Screen>
-            <Stack.Screen name="Login">
-              {props => (
-                <LoginScreen
-                  {...props}
-                  onBack={() => props.navigation.goBack()}
-                  onSignUp={() => props.navigation.navigate('SignUp')}
-                  onForgotPassword={() =>
-                    props.navigation.navigate('ForgotPassword')
-                  }
-                  onLoginSuccess={handleLogin}
-                />
-              )}
-            </Stack.Screen>
-            <Stack.Screen name="SignUp">
-              {props => {
-                const handleSignUpVerify = (email: string) => {
-                  props.navigation.navigate('VerificationPassword', {email});
-                };
-
-                return (
-                  <SignUpScreen
+          ) : hasStarted ? (
+            <>
+              <Stack.Screen name="Home" component={HomeScreen} />
+              <Stack.Screen name="SearchEntry" component={SearchEntry} />
+              <Stack.Screen
+                name="Notification"
+                component={NotificationScreen}
+              />
+              <Stack.Screen
+                name="NotificationDetail"
+                component={NotificationDetailScreen}
+              />
+              <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+              <Stack.Screen name="Settings" component={SettingScreen} />
+              <Stack.Screen
+                name="ProductDetail"
+                component={ProductDetailScreen}
+              />
+              <Stack.Screen name="ReviewList" component={ReviewListScreen} />
+              <Stack.Screen name="Payment" component={PaymentScreen} />
+              <Stack.Screen
+                name="PaymentMethod"
+                component={PaymentMethodScreen}
+              />
+              {/* Auth screens still available if user wants to login */}
+              <Stack.Screen name="Login">
+                {props => (
+                  <LoginScreen
                     {...props}
                     onBack={() => props.navigation.goBack()}
-                    onLogin={() => props.navigation.navigate('Login')}
-                    _onVerify={handleSignUpVerify}
+                    onSignUp={() => props.navigation.navigate('SignUp')}
+                    onForgotPassword={() =>
+                      props.navigation.navigate('ForgotPassword')
+                    }
+                    onLoginSuccess={handleLogin}
                   />
-                );
-              }}
-            </Stack.Screen>
-            <Stack.Screen name="ForgotPassword">
-              {props => {
-                const handleSendCode = (email: string) => {
-                  const otp = '123456'; // This would come from your backend
-                  props.navigation.navigate('ResetPassword', {email, otp});
-                };
+                )}
+              </Stack.Screen>
+              <Stack.Screen name="SignUp">
+                {props => {
+                  const handleSignUpVerify = (email: string) => {
+                    props.navigation.navigate('VerificationPassword', {email});
+                  };
 
-                return (
-                  <ForgotPasswordScreen
+                  return (
+                    <SignUpScreen
+                      {...props}
+                      onBack={() => props.navigation.goBack()}
+                      onLogin={() => props.navigation.navigate('Login')}
+                      _onVerify={handleSignUpVerify}
+                    />
+                  );
+                }}
+              </Stack.Screen>
+              <Stack.Screen name="ForgotPassword">
+                {props => {
+                  const handleSendCode = (email: string) => {
+                    const otp = '123456'; // This would come from your backend
+                    props.navigation.navigate('ResetPassword', {email, otp});
+                  };
+
+                  return (
+                    <ForgotPasswordScreen
+                      {...props}
+                      onBack={() => props.navigation.goBack()}
+                      onSendCode={handleSendCode}
+                    />
+                  );
+                }}
+              </Stack.Screen>
+              <Stack.Screen name="ResetPassword">
+                {props => {
+                  const {email, otp} = props.route.params;
+
+                  return (
+                    <ResetPasswordScreen
+                      {...props}
+                      email={email}
+                      otp={otp}
+                      onBack={() => props.navigation.goBack()}
+                      onPasswordReset={() => props.navigation.navigate('Login')}
+                    />
+                  );
+                }}
+              </Stack.Screen>
+              <Stack.Screen name="VerificationPassword">
+                {props => {
+                  const {email} = props.route.params;
+
+                  const handleVerifyCode = (_code: string) => {
+                    // Handle verification logic here
+                    handleLogin(); // Auto login after verification
+                  };
+
+                  return (
+                    <VerificationPasswordScreen
+                      {...props}
+                      email={email}
+                      onBack={() => props.navigation.goBack()}
+                      onVerifyCode={handleVerifyCode}
+                    />
+                  );
+                }}
+              </Stack.Screen>
+            </>
+          ) : (
+            <>
+              <Stack.Screen name="Welcome">
+                {props => (
+                  <WelcomeScreen {...props} onGetStarted={handleGetStarted} />
+                )}
+              </Stack.Screen>
+              <Stack.Screen name="Login">
+                {props => (
+                  <LoginScreen
                     {...props}
                     onBack={() => props.navigation.goBack()}
-                    onSendCode={handleSendCode}
+                    onSignUp={() => props.navigation.navigate('SignUp')}
+                    onForgotPassword={() =>
+                      props.navigation.navigate('ForgotPassword')
+                    }
+                    onLoginSuccess={handleLogin}
                   />
-                );
-              }}
-            </Stack.Screen>
-            <Stack.Screen name="ResetPassword">
-              {props => {
-                const {email, otp} = props.route.params;
+                )}
+              </Stack.Screen>
+              <Stack.Screen name="SignUp">
+                {props => {
+                  const handleSignUpVerify = (email: string) => {
+                    props.navigation.navigate('VerificationPassword', {email});
+                  };
 
-                return (
-                  <ResetPasswordScreen
-                    {...props}
-                    email={email}
-                    otp={otp}
-                    onBack={() => props.navigation.goBack()}
-                    onPasswordReset={() => props.navigation.navigate('Login')}
-                  />
-                );
-              }}
-            </Stack.Screen>
-            <Stack.Screen name="VerificationPassword">
-              {props => {
-                const {email} = props.route.params;
+                  return (
+                    <SignUpScreen
+                      {...props}
+                      onBack={() => props.navigation.goBack()}
+                      onLogin={() => props.navigation.navigate('Login')}
+                      _onVerify={handleSignUpVerify}
+                    />
+                  );
+                }}
+              </Stack.Screen>
+              <Stack.Screen name="ForgotPassword">
+                {props => {
+                  const handleSendCode = (email: string) => {
+                    const otp = '123456'; // This would come from your backend
+                    props.navigation.navigate('ResetPassword', {email, otp});
+                  };
 
-                const handleVerifyCode = (_code: string) => {
-                  // Handle verification logic here
-                  handleLogin(); // Auto login after verification
-                };
+                  return (
+                    <ForgotPasswordScreen
+                      {...props}
+                      onBack={() => props.navigation.goBack()}
+                      onSendCode={handleSendCode}
+                    />
+                  );
+                }}
+              </Stack.Screen>
+              <Stack.Screen name="ResetPassword">
+                {props => {
+                  const {email, otp} = props.route.params;
 
-                return (
-                  <VerificationPasswordScreen
-                    {...props}
-                    email={email}
-                    onBack={() => props.navigation.goBack()}
-                    onVerifyCode={handleVerifyCode}
-                  />
-                );
-              }}
-            </Stack.Screen>
-          </>
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+                  return (
+                    <ResetPasswordScreen
+                      {...props}
+                      email={email}
+                      otp={otp}
+                      onBack={() => props.navigation.goBack()}
+                      onPasswordReset={() => props.navigation.navigate('Login')}
+                    />
+                  );
+                }}
+              </Stack.Screen>
+              <Stack.Screen name="VerificationPassword">
+                {props => {
+                  const {email} = props.route.params;
+
+                  const handleVerifyCode = (_code: string) => {
+                    // Handle verification logic here
+                    handleLogin(); // Auto login after verification
+                  };
+
+                  return (
+                    <VerificationPasswordScreen
+                      {...props}
+                      email={email}
+                      onBack={() => props.navigation.goBack()}
+                      onVerifyCode={handleVerifyCode}
+                    />
+                  );
+                }}
+              </Stack.Screen>
+            </>
+          )}
+        </Stack.Navigator>
+      </NavigationContainer>
+    </AuthProvider>
   );
 };
 

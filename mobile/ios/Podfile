@@ -23,6 +23,13 @@ target 'mobile' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
+  # Google Sign-In
+  pod 'GoogleSignIn'
+  
+  # Facebook SDK
+  pod 'FBSDKCoreKit'
+  pod 'FBSDKLoginKit'
+
   target 'mobileTests' do
     inherit! :complete
     # Pods for testing

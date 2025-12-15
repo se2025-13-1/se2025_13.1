@@ -40,6 +40,22 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
     navigation?.navigate('Notification');
   };
 
+  const handleLoginPress = () => {
+    navigation?.navigate('Login');
+  };
+
+  const handleRegisterPress = () => {
+    navigation?.navigate('SignUp');
+  };
+
+  const handleGoogleLoginPress = () => {
+    console.log('Google login pressed');
+  };
+
+  const handleFacebookLoginPress = () => {
+    console.log('Facebook login pressed');
+  };
+
   return (
     <View style={styles.container}>
       {/* Product Header */}
@@ -49,6 +65,10 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
         onNotificationPress={handleNotificationPress}
         searchValue={searchValue}
         onSearchChange={handleSearchChange}
+        onLogin={handleLoginPress}
+        onRegister={handleRegisterPress}
+        onGoogleLogin={handleGoogleLoginPress}
+        onFacebookLogin={handleFacebookLoginPress}
       />
 
       {/* Product Details Content */}
@@ -137,6 +157,10 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
         onChatPress={() => console.log('Chat pressed')}
         onCartPress={() => console.log('Add to cart pressed')}
         onBuyPress={() => setShowVariantSelector(true)}
+        onLogin={handleLoginPress}
+        onRegister={handleRegisterPress}
+        onGoogleLogin={handleGoogleLoginPress}
+        onFacebookLogin={handleFacebookLoginPress}
       />
 
       {/* Product Variant Selector Overlay */}

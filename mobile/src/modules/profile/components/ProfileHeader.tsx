@@ -7,6 +7,11 @@ interface ProfileHeaderProps {
   avatarUrl?: string;
   onEditPress?: () => void;
   onSettingsPress?: () => void;
+  onCartPress?: () => void;
+  onChatPress?: () => void;
+  isAuthenticated?: boolean;
+  onLoginPress?: () => void;
+  onSignUpPress?: () => void;
 }
 
 const ProfileHeader: React.FC<ProfileHeaderProps> = ({
@@ -15,57 +20,108 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   avatarUrl,
   onEditPress,
   onSettingsPress,
+  onCartPress,
+  onChatPress,
+  isAuthenticated = false,
+  onLoginPress,
+  onSignUpPress,
 }) => {
-  return (
-    <View style={styles.container}>
-      {/* Left Section - Avatar and User Info */}
-      <View style={styles.leftSection}>
-        {/* Avatar Container */}
-        <View style={styles.avatarContainer}>
-          <Image
-            source={
-              avatarUrl
-                ? {uri: avatarUrl}
-                : require('../../../assets/icons/UserIcon.png')
-            }
-            style={styles.avatar}
-          />
-          {/* Edit Button */}
-          <TouchableOpacity
-            style={styles.editButton}
-            onPress={onEditPress}
-            activeOpacity={0.7}>
+  // Authenticated User Layout
+  if (isAuthenticated) {
+    return (
+      <View style={styles.authenticatedContainer}>
+        {/* Left Section - Avatar and User Info */}
+        <View style={styles.leftSection}>
+          {/* Avatar Container */}
+          <View style={styles.avatarContainer}>
             <Image
-              source={require('../../../assets/icons/Edit.png')}
-              style={styles.editIcon}
+              source={
+                avatarUrl
+                  ? {uri: avatarUrl}
+                  : require('../../../assets/icons/UserIcon.png')
+              }
+              style={styles.avatar}
             />
+            {/* Edit Button */}
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={onEditPress}
+              activeOpacity={0.7}>
+              <Image
+                source={require('../../../assets/icons/Edit.png')}
+                style={styles.editIcon}
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* User Info */}
+          <View style={styles.userInfo}>
+            <Text style={styles.userName}>{userName}</Text>
+            <Text style={styles.phoneNumber}>{phoneNumber}</Text>
+          </View>
+        </View>
+
+        {/* Right Section - Settings Button */}
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={onSettingsPress}
+          activeOpacity={0.7}>
+          <Image
+            source={require('../../../assets/icons/Settings.png')}
+            style={styles.settingsIcon}
+          />
+          <Text style={styles.settingsLabel}>Cài đặt</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Not Authenticated Layout
+  return (
+    <View style={styles.unauthenticatedContainer}>
+      {/* Top Section - Notification Text */}
+      <View style={styles.notificationSection}>
+        <Text style={styles.notificationText}>
+          Đăng nhập, có hỏi ưu đãi cho đơn đầu!
+        </Text>
+      </View>
+
+      {/* Bottom Section - Login/SignUp Buttons and Settings */}
+      <View style={styles.buttonSection}>
+        <View style={styles.authButtons}>
+          <TouchableOpacity
+            style={styles.loginButtonUnauth}
+            onPress={onLoginPress}
+            activeOpacity={0.7}>
+            <Text style={styles.loginButtonTextUnauth}>Đăng nhập</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.signUpButtonUnauth}
+            onPress={onSignUpPress}
+            activeOpacity={0.7}>
+            <Text style={styles.signUpButtonTextUnauth}>Đăng ký</Text>
           </TouchableOpacity>
         </View>
 
-        {/* User Info */}
-        <View style={styles.userInfo}>
-          <Text style={styles.userName}>{userName}</Text>
-          <Text style={styles.phoneNumber}>{phoneNumber}</Text>
-        </View>
+        {/* Settings Button */}
+        <TouchableOpacity
+          style={styles.settingsButtonUnauth}
+          onPress={onSettingsPress}
+          activeOpacity={0.7}>
+          <Image
+            source={require('../../../assets/icons/Settings.png')}
+            style={styles.settingsIconUnauth}
+          />
+          <Text style={styles.settingsLabelUnauth}>Cài đặt</Text>
+        </TouchableOpacity>
       </View>
-
-      {/* Right Section - Settings Button */}
-      <TouchableOpacity
-        style={styles.settingsButton}
-        onPress={onSettingsPress}
-        activeOpacity={0.7}>
-        <Image
-          source={require('../../../assets/icons/Settings.png')}
-          style={styles.settingsIcon}
-        />
-        <Text style={styles.settingsLabel}>Cài đặt</Text>
-      </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  // ========== Authenticated Styles ==========
+  authenticatedContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -139,6 +195,78 @@ const styles = StyleSheet.create({
   },
   settingsLabel: {
     fontSize: 12,
+    fontWeight: '500',
+    color: '#333333',
+  },
+
+  // ========== Unauthenticated Styles ==========
+  unauthenticatedContainer: {
+    backgroundColor: '#FFF0F5',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  notificationSection: {
+    marginBottom: 12,
+  },
+  notificationText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333333',
+    textAlign: 'center',
+  },
+  buttonSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  authButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    flex: 1,
+  },
+  loginButtonUnauth: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: '#E91E63',
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loginButtonTextUnauth: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  signUpButtonUnauth: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: 'transparent',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#CCCCCC',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  signUpButtonTextUnauth: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#666666',
+  },
+  settingsButtonUnauth: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
+  },
+  settingsIconUnauth: {
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
+    marginBottom: 4,
+  },
+  settingsLabelUnauth: {
+    fontSize: 11,
     fontWeight: '500',
     color: '#333333',
   },

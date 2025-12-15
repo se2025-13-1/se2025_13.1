@@ -1,5 +1,5 @@
-import React, {useState} from 'react';
-import {View, Text, StyleSheet, TouchableOpacity, Image} from 'react-native';
+import React from 'react';
+import {View, Text, StyleSheet, Image} from 'react-native';
 
 interface ProductInfoProps {
   price?: number;
@@ -7,8 +7,6 @@ interface ProductInfoProps {
   rating?: number;
   reviewCount?: number;
   soldCount?: number;
-  isFavorite?: boolean;
-  onFavoritePress?: () => void;
 }
 
 const ProductInfo: React.FC<ProductInfoProps> = ({
@@ -17,16 +15,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
   rating = 4.5,
   reviewCount = 9500,
   soldCount = 1250,
-  isFavorite = false,
-  onFavoritePress,
 }) => {
-  const [favorite, setFavorite] = useState(isFavorite);
-
-  const handleFavoritePress = () => {
-    setFavorite(!favorite);
-    onFavoritePress?.();
-  };
-
   const formatPrice = (price: number) => {
     return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   };
@@ -40,23 +29,9 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Price and Favorite */}
+      {/* Price */}
       <View style={styles.priceContainer}>
         <Text style={styles.price}>{formatPrice(price)}₫</Text>
-
-        {/* Favorite Button */}
-        <TouchableOpacity
-          style={styles.favoriteButton}
-          onPress={handleFavoritePress}>
-          <Image
-            source={
-              favorite
-                ? require('../../../assets/icons/HeartFilled.png')
-                : require('../../../assets/icons/Heart.png')
-            }
-            style={styles.favoriteIcon}
-          />
-        </TouchableOpacity>
       </View>
 
       {/* Product Name */}
@@ -106,7 +81,6 @@ const styles = StyleSheet.create({
   priceContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     marginBottom: 8,
   },
   productName: {
@@ -154,16 +128,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '400',
     color: '#666666',
-  },
-  favoriteButton: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    padding: 4,
-  },
-  favoriteIcon: {
-    width: 24,
-    height: 24,
-    resizeMode: 'contain',
   },
 });
 

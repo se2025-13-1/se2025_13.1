@@ -1,4 +1,5 @@
 import {AppConfig} from '../../../config/AppConfig';
+import {getAccessToken} from '../../../services/tokenService';
 
 const BASE_URL = AppConfig.BASE_URL;
 
@@ -69,7 +70,7 @@ export const AuthApi = {
   },
 
   loginGoogle: async (accessToken: string) => {
-    const res = await fetch(`${BASE_URL}/api/auth/login/google`, {
+    const res = await fetch(`${BASE_URL}/api/auth/google`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({access_token: accessToken}),
@@ -82,7 +83,7 @@ export const AuthApi = {
   },
 
   loginFacebook: async (accessToken: string) => {
-    const res = await fetch(`${BASE_URL}/api/auth/login/facebook`, {
+    const res = await fetch(`${BASE_URL}/api/auth/facebook`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({access_token: accessToken}),
@@ -92,5 +93,40 @@ export const AuthApi = {
       throw new Error(json.error || 'Đăng nhập Facebook thất bại');
     }
     return json;
+  },
+
+  getProfile: async () => {
+    try {
+      const token = await getAccessToken();
+      if (!token) {
+        throw new Error('No access token found');
+      }
+
+      console.log(
+        'Fetching profile with token:',
+        token.substring(0, 20) + '...',
+      );
+
+      const res = await fetch(`${BASE_URL}/api/auth/me`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log('Profile response status:', res.status);
+      const json = await res.json();
+
+      if (!res.ok) {
+        console.error('Profile fetch error:', res.status, json);
+        throw new Error(json.error || 'Lỗi lấy thông tin cá nhân');
+      }
+
+      return json;
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+      throw error;
+    }
   },
 };

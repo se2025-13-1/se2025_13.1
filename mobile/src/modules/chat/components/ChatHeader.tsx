@@ -24,15 +24,15 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({onBackPress}) => {
     }
 
     // Nếu không có callback, cố gắng goBack
-    if (navigation.canGoBack?.()) {
-      navigation.goBack();
-    } else {
-      // Nếu không thể goBack, navigate về Home
-      try {
+    try {
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      } else {
+        // Nếu không thể goBack, navigate về Home
         navigation.navigate('Home');
-      } catch (error) {
-        console.log('Không thể navigate về Home');
       }
+    } catch (error) {
+      console.log('Lỗi navigation:', error);
     }
   };
 
