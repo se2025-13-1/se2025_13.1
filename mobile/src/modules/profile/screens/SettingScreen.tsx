@@ -1,4 +1,6 @@
 import React from 'react';
+import {Alert} from 'react-native';
+import {useAuth} from '../../../contexts/AuthContext';
 import {
   View,
   Text,
@@ -45,6 +47,8 @@ const SETTING_ITEMS: SettingItem[] = [
 ];
 
 const SettingScreen: React.FC<SettingScreenProps> = ({navigation}) => {
+  const {logout} = useAuth();
+
   const handleBack = () => {
     navigation?.goBack();
   };
@@ -54,9 +58,34 @@ const SettingScreen: React.FC<SettingScreenProps> = ({navigation}) => {
     // TODO: Implement navigation for each setting
   };
 
-  const handleLogout = () => {
-    console.log('Logout pressed');
-    // TODO: Implement logout logic
+  const handleLogout = async () => {
+    Alert.alert('Confirm Logout', 'Are you sure you want to log out?', [
+      {
+        text: 'Cancel',
+        onPress: () => {},
+        style: 'cancel',
+      },
+      {
+        text: 'Logout',
+        onPress: async () => {
+          try {
+            // Logout using context
+            await logout();
+            console.log('✅ Logged out successfully');
+
+            // Navigate back to Home screen
+            navigation?.reset({
+              index: 0,
+              routes: [{name: 'Home'}],
+            });
+          } catch (error) {
+            console.error('❌ Logout error:', error);
+            Alert.alert('Error', 'Failed to logout. Please try again.');
+          }
+        },
+        style: 'destructive',
+      },
+    ]);
   };
 
   const handleDeleteAccount = () => {

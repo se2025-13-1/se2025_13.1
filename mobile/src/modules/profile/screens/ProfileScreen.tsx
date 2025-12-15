@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   ScrollView,
@@ -9,17 +9,43 @@ import {
 import ProfileHeader from '../components/ProfileHeader';
 import MyOder from '../components/MyOder';
 import UserUtility from '../components/UserUtility';
+import {useAuth} from '../../../contexts/AuthContext';
 
 interface ProfileScreenProps {
   navigation?: any;
 }
 
 const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
+  const {isAuthenticated, user} = useAuth();
   const [userProfile, setUserProfile] = useState({
-    userName: 'Nguyễn Văn A',
-    phoneNumber: '0987654321',
+    userName: 'Người dùng',
+    phoneNumber: '',
     avatarUrl: '',
   });
+
+  // Update profile when auth state or user changes
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      console.log('User data:', user); // Debug log
+      // Backend returns full_name, also check fullName for fallback
+      let displayName = user.fullName || user.full_name || user.name;
+      if (!displayName && user.email) {
+        displayName = user.email.split('@')[0];
+      }
+
+      setUserProfile({
+        userName: displayName || 'Người dùng',
+        phoneNumber: user.phone || user.phoneNumber || '',
+        avatarUrl: user.avatarUrl || user.avatar_url || '',
+      });
+    } else {
+      setUserProfile({
+        userName: 'Người dùng',
+        phoneNumber: '',
+        avatarUrl: '',
+      });
+    }
+  }, [isAuthenticated, user]);
 
   const handleEditPress = () => {
     console.log('Edit avatar pressed');
@@ -30,6 +56,26 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
     console.log('Settings pressed');
     navigation?.navigate('Settings');
     // TODO: Implement settings navigation
+  };
+
+  const handleCartPress = () => {
+    console.log('Cart pressed');
+    // TODO: Navigate to cart screen
+  };
+
+  const handleChatPress = () => {
+    console.log('Chat pressed');
+    // TODO: Navigate to chat screen
+  };
+
+  const handleLoginPress = () => {
+    console.log('Login pressed');
+    navigation?.navigate('Login');
+  };
+
+  const handleSignUpPress = () => {
+    console.log('Sign up pressed');
+    navigation?.navigate('SignUp');
   };
 
   const handleViewHistoryPress = () => {
@@ -52,6 +98,31 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
     // TODO: Navigate to utility details
   };
 
+  const handleGoogleLoginPress = () => {
+    console.log('Google login pressed');
+    // TODO: Implement Google login
+  };
+
+  const handleFacebookLoginPress = () => {
+    console.log('Facebook login pressed');
+    // TODO: Implement Facebook login
+  };
+
+  const handleNavigateToCart = () => {
+    console.log('Navigate to cart');
+    // TODO: Navigate to cart screen
+  };
+
+  const handleNavigateToChat = () => {
+    console.log('Navigate to chat');
+    // TODO: Navigate to chat screen
+  };
+
+  const handleNavigateToNotifications = () => {
+    console.log('Navigate to notifications');
+    // TODO: Navigate to notifications screen
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -64,6 +135,11 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
           avatarUrl={userProfile.avatarUrl}
           onEditPress={handleEditPress}
           onSettingsPress={handleSettingsPress}
+          onCartPress={handleCartPress}
+          onChatPress={handleChatPress}
+          isAuthenticated={isAuthenticated}
+          onLoginPress={handleLoginPress}
+          onSignUpPress={handleSignUpPress}
         />
 
         {/* Divider */}
@@ -82,6 +158,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
         <UserUtility
           onViewMorePress={handleViewMoreUtilitiesPress}
           onUtilityPress={handleUtilityPress}
+          onLogin={handleLoginPress}
+          onRegister={handleSignUpPress}
+          onGoogleLogin={handleGoogleLoginPress}
+          onFacebookLogin={handleFacebookLoginPress}
+          onNavigateToCart={handleNavigateToCart}
+          onNavigateToChat={handleNavigateToChat}
+          onNavigateToNotifications={handleNavigateToNotifications}
         />
       </ScrollView>
     </View>

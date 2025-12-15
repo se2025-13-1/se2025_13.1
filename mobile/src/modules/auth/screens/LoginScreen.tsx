@@ -1,4 +1,18 @@
 import React, {useState} from 'react';
+import {useNavigation} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {AppConfig} from '../../../config/AppConfig';
+import {saveTokens, saveUser} from '../../../services/tokenService';
+import {useAuth} from '../../../contexts/AuthContext';
+import {
+  initializeGoogleSignIn,
+  handleGoogleSignIn,
+} from '../../../services/googleService';
+import {
+  initializeFacebookSDK,
+  handleFacebookLogin,
+} from '../../../services/facebookService';
+import {RootStackParamList} from '../../../../App';
 import {
   View,
   Text,
@@ -8,6 +22,7 @@ import {
   TextInput,
   Alert,
   ScrollView,
+  Image,
 } from 'react-native';
 
 interface LoginScreenProps {
@@ -17,17 +32,26 @@ interface LoginScreenProps {
   onLoginSuccess?: () => void;
 }
 
+type LoginScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  'Login'
+>;
+
 const LoginScreen: React.FC<LoginScreenProps> = ({
   onBack,
   onSignUp,
   onForgotPassword,
   onLoginSuccess,
 }) => {
+  const navigation = useNavigation<LoginScreenNavigationProp>();
+  const {setUser, setIsAuthenticated} = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState<string | null>(null);
 
   const validateEmail = (emailInput: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -50,23 +74,212 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
 
     setErrors(newErrors);
 
-    // If no errors, show success
+    // If no errors, call API
     if (Object.keys(newErrors).length === 0) {
-      setIsSuccess(true);
-      setTimeout(() => {
-        if (onLoginSuccess) {
-          onLoginSuccess();
-        } else {
-          Alert.alert('Success', 'Login successful!', [
-            {text: 'OK', onPress: onBack},
-          ]);
-        }
-      }, 1500);
+      setIsLoading(true);
+
+      fetch(`${AppConfig.BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      })
+        .then(async res => {
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.error || 'Login failed');
+          }
+          // Success - Save tokens and update context
+          if (data.accessToken) {
+            try {
+              await saveTokens(
+                data.accessToken,
+                data.refreshToken,
+                data.expiresIn,
+              );
+
+              // Save user info if available
+              if (data.user) {
+                // Backend returns full_name (snake_case), handle both cases
+                const userFullName =
+                  data.user.full_name ||
+                  data.user.fullName ||
+                  data.user.name ||
+                  '';
+                await saveUser({
+                  id: data.user.id,
+                  email: data.user.email,
+                  fullName: userFullName,
+                  avatarUrl: data.user.avatar_url || data.user.avatarUrl,
+                });
+                // Update global auth context with fullName
+                setUser({
+                  ...data.user,
+                  fullName: userFullName,
+                });
+                setIsAuthenticated(true);
+              }
+            } catch (storageError) {
+              console.error('Failed to save tokens:', storageError);
+            }
+          }
+
+          setIsLoading(false);
+          setIsSuccess(true);
+          // Navigate to Home screen immediately
+          navigation.reset({
+            index: 0,
+            routes: [{name: 'Home'}],
+          });
+        })
+        .catch(err => {
+          console.error('Login error:', err);
+          setIsLoading(false);
+          // Phân biệt loại lỗi
+          let errorMessage = 'Login failed. Please try again.';
+          if (err instanceof TypeError) {
+            errorMessage = 'Network error. Please check your connection.';
+          } else if (err.message) {
+            errorMessage = err.message;
+          }
+          setErrors({submit: errorMessage});
+        });
     }
   };
 
-  const handleSocialLogin = (provider: string) => {
-    Alert.alert('Coming Soon', `${provider} login will be available soon!`);
+  const handleSocialLogin = async (provider: string) => {
+    try {
+      setSocialLoading(provider);
+      let accessToken: string | null = null;
+      let userInfo: any = null;
+
+      // Get access token from provider SDK
+      if (provider === 'Google') {
+        try {
+          const googleResult = await handleGoogleSignIn();
+          if (googleResult) {
+            // Use accessToken for backend verification, not idToken
+            accessToken = googleResult.accessToken;
+            userInfo = googleResult.userInfo;
+          } else {
+            setSocialLoading(null);
+            return; // User cancelled
+          }
+        } catch (error) {
+          console.error('Google Sign-In error:', error);
+          Alert.alert(
+            'Google Sign-In Error',
+            (error instanceof Error ? error.message : String(error)) ||
+              'Google Sign-In failed. Please check your configuration.',
+          );
+          setSocialLoading(null);
+          return;
+        }
+      } else if (provider === 'Facebook') {
+        try {
+          const facebookResult = await handleFacebookLogin();
+          if (facebookResult) {
+            accessToken = facebookResult.accessToken;
+            userInfo = facebookResult.userInfo;
+          } else {
+            setSocialLoading(null);
+            return; // User cancelled
+          }
+        } catch (error) {
+          console.error('Facebook Login error:', error);
+          Alert.alert(
+            'Setup Required',
+            'Facebook SDK not configured. Please check your configuration in facebookService.ts',
+          );
+          setSocialLoading(null);
+          return;
+        }
+      }
+
+      if (!accessToken) {
+        Alert.alert(
+          'Authentication Error',
+          `Failed to get ${provider} access token. Please try again or contact support.`,
+        );
+        setSocialLoading(null);
+        return;
+      }
+
+      console.log(`${provider} access token obtained, calling backend...`);
+
+      // Call backend API
+      fetch(`${AppConfig.BASE_URL}/api/auth/${provider.toLowerCase()}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({access_token: accessToken}),
+      })
+        .then(async res => {
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.error || `${provider} login failed`);
+          }
+          // Success - Save tokens and update context
+          if (data.accessToken) {
+            try {
+              await saveTokens(
+                data.accessToken,
+                data.refreshToken,
+                data.expiresIn,
+              );
+
+              // Save user info if available
+              if (data.user) {
+                const userFullName = data.user.fullName || data.user.name || '';
+                await saveUser({
+                  id: data.user.id,
+                  email: data.user.email,
+                  fullName: userFullName,
+                  avatarUrl: data.user.avatarUrl,
+                });
+                // Update global auth context with fullName
+                setUser({
+                  ...data.user,
+                  fullName: userFullName,
+                });
+                setIsAuthenticated(true);
+              }
+            } catch (storageError) {
+              console.error('Failed to save tokens:', storageError);
+            }
+          }
+
+          setSocialLoading(null);
+          setIsSuccess(true);
+          // Navigate to Home screen immediately
+          navigation.reset({
+            index: 0,
+            routes: [{name: 'Home'}],
+          });
+        })
+        .catch(err => {
+          console.error(`${provider} login error:`, err);
+          setSocialLoading(null);
+          let errorMessage = `${provider} login failed. Please try again.`;
+          if (err instanceof TypeError) {
+            errorMessage = 'Network error. Please check your connection.';
+          } else if (err.message) {
+            errorMessage = err.message;
+          }
+          setErrors({submit: errorMessage});
+        });
+    } catch (err: any) {
+      setSocialLoading(null);
+      console.error(`${provider} login error:`, err);
+      let errorMessage = `${provider} login failed. Please try again.`;
+      if (err instanceof TypeError) {
+        errorMessage = 'Network error. Please check your connection.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      setErrors({submit: errorMessage});
+    }
   };
 
   const handleForgotPassword = () => {
@@ -95,7 +308,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
+          <Image
+            source={require('../../../assets/icons/Back.png')}
+            style={styles.backIcon}
+          />
         </TouchableOpacity>
       </View>
 
@@ -165,7 +381,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
               <TouchableOpacity
                 style={styles.eyeButton}
                 onPress={() => setShowPassword(!showPassword)}>
-                <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '🙈'}</Text>
+                <Image
+                  source={
+                    showPassword
+                      ? require('../../../assets/icons/Hide.png')
+                      : require('../../../assets/icons/Show.png')
+                  }
+                  style={styles.eyeIcon}
+                />
               </TouchableOpacity>
             </View>
             {errors.password && (
@@ -188,17 +411,44 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
             </Text>
           </TouchableOpacity>
 
+          {/* Error Message */}
+          {errors.submit && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorMessage}>{errors.submit}</Text>
+            </View>
+          )}
+
           {/* Login Button */}
           <TouchableOpacity
-            style={[styles.loginButton, isSuccess && styles.loginButtonSuccess]}
+            style={[
+              styles.loginButton,
+              isLoading && styles.loginButtonLoading,
+              isSuccess && styles.loginButtonSuccess,
+              email &&
+                validateEmail(email) &&
+                password &&
+                !isLoading &&
+                !isSuccess &&
+                styles.loginButtonGlow,
+            ]}
             onPress={handleLogin}
-            disabled={isSuccess}>
+            disabled={isLoading || isSuccess}>
             <Text
               style={[
                 styles.loginButtonText,
                 isSuccess && styles.loginButtonTextSuccess,
+                email &&
+                  validateEmail(email) &&
+                  password &&
+                  !isLoading &&
+                  !isSuccess &&
+                  styles.loginButtonGlowText,
               ]}>
-              {isSuccess ? 'Login Successful!' : 'Login'}
+              {isLoading
+                ? 'Logging in...'
+                : isSuccess
+                ? 'Login Successful!'
+                : 'Login'}
             </Text>
           </TouchableOpacity>
 
@@ -211,17 +461,43 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
 
           {/* Social Buttons */}
           <TouchableOpacity
-            style={styles.socialButton}
-            onPress={() => handleSocialLogin('Google')}>
-            <Text style={styles.socialButtonText}>📧 Login with Google</Text>
+            style={[
+              styles.socialButton,
+              socialLoading === 'Google' && styles.socialButtonLoading,
+            ]}
+            onPress={() => handleSocialLogin('Google')}
+            disabled={socialLoading !== null}>
+            <View style={styles.socialButtonContent}>
+              <Image
+                source={require('../../../assets/icons/Google.png')}
+                style={styles.socialIcon}
+              />
+              <Text style={styles.socialButtonText}>
+                {socialLoading === 'Google'
+                  ? 'Signing in...'
+                  : 'Login with Google'}
+              </Text>
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.facebookButton}
-            onPress={() => handleSocialLogin('Facebook')}>
-            <Text style={styles.facebookButtonText}>
-              📘 Login with Facebook
-            </Text>
+            style={[
+              styles.facebookButton,
+              socialLoading === 'Facebook' && styles.facebookButtonLoading,
+            ]}
+            onPress={() => handleSocialLogin('Facebook')}
+            disabled={socialLoading !== null}>
+            <View style={styles.socialButtonContent}>
+              <Image
+                source={require('../../../assets/icons/Facebook.png')}
+                style={styles.socialIcon}
+              />
+              <Text style={styles.facebookButtonText}>
+                {socialLoading === 'Facebook'
+                  ? 'Signing in...'
+                  : 'Login with Facebook'}
+              </Text>
+            </View>
           </TouchableOpacity>
 
           {/* Sign Up Link */}
@@ -249,10 +525,10 @@ const styles = StyleSheet.create({
   backButton: {
     alignSelf: 'flex-start',
   },
-  backButtonText: {
-    fontSize: 16,
-    color: '#000000',
-    fontWeight: '500',
+  backIcon: {
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
   },
   content: {
     flex: 1,
@@ -325,7 +601,9 @@ const styles = StyleSheet.create({
     width: 24,
   },
   eyeIcon: {
-    fontSize: 18,
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
   },
   errorText: {
     fontSize: 12,
@@ -361,12 +639,29 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textDecorationLine: 'underline',
   },
+  errorContainer: {
+    backgroundColor: '#FFF5F5',
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF4444',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+    borderRadius: 4,
+  },
+  errorMessage: {
+    fontSize: 14,
+    color: '#FF4444',
+    fontWeight: '500',
+  },
   loginButton: {
     backgroundColor: '#E0E0E0',
     paddingVertical: 18,
     borderRadius: 8,
     alignItems: 'center',
     marginBottom: 24,
+  },
+  loginButtonLoading: {
+    backgroundColor: '#B0B0B0',
   },
   loginButtonSuccess: {
     backgroundColor: '#000000',
@@ -378,6 +673,21 @@ const styles = StyleSheet.create({
   },
   loginButtonTextSuccess: {
     color: '#FFFFFF',
+  },
+  loginButtonGlow: {
+    backgroundColor: '#FF6B35',
+    shadowColor: '#FF6B35',
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 0.8,
+    shadowRadius: 12,
+    elevation: 12,
+  },
+  loginButtonGlowText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   divider: {
     flexDirection: 'row',
@@ -400,8 +710,24 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 12,
     backgroundColor: '#FFFFFF',
+  },
+  socialButtonLoading: {
+    opacity: 0.6,
+    backgroundColor: '#F5F5F5',
+  },
+  socialButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  socialIcon: {
+    width: 24,
+    height: 24,
+    marginRight: 12,
+    resizeMode: 'contain',
   },
   socialButtonText: {
     fontSize: 16,
@@ -413,7 +739,12 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 24,
+  },
+  facebookButtonLoading: {
+    opacity: 0.6,
+    backgroundColor: '#1566D9',
   },
   facebookButtonText: {
     fontSize: 16,

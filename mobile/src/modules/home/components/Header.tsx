@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -7,14 +7,34 @@ import {
   Alert,
   Image,
 } from 'react-native';
+import {useAuth} from '../../../contexts/AuthContext';
+import RequireAuth from '../../auth/components/RequireAuth';
 
 interface HeaderProps {
   onNotificationPress?: () => void;
   onChatPress?: () => void;
+  onLogin?: () => void;
+  onRegister?: () => void;
+  onGoogleLogin?: () => void;
+  onFacebookLogin?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({onNotificationPress, onChatPress}) => {
+const Header: React.FC<HeaderProps> = ({
+  onNotificationPress,
+  onChatPress,
+  onLogin,
+  onRegister,
+  onGoogleLogin,
+  onFacebookLogin,
+}) => {
+  const {isAuthenticated} = useAuth();
+  const [showRequireAuth, setShowRequireAuth] = useState(false);
+
   const handleNotificationPress = () => {
+    if (!isAuthenticated) {
+      setShowRequireAuth(true);
+      return;
+    }
     if (onNotificationPress) {
       onNotificationPress();
     } else {
@@ -22,12 +42,28 @@ const Header: React.FC<HeaderProps> = ({onNotificationPress, onChatPress}) => {
     }
   };
 
-  const handleChatPress = () => {
-    if (onChatPress) {
-      onChatPress();
-    } else {
-      Alert.alert('Chat', 'Chưa có tin nhắn mới');
-    }
+  const handleCloseRequireAuth = () => {
+    setShowRequireAuth(false);
+  };
+
+  const handleLoginPress = () => {
+    setShowRequireAuth(false);
+    onLogin?.();
+  };
+
+  const handleRegisterPress = () => {
+    setShowRequireAuth(false);
+    onRegister?.();
+  };
+
+  const handleGoogleLoginPress = () => {
+    setShowRequireAuth(false);
+    onGoogleLogin?.();
+  };
+
+  const handleFacebookLoginPress = () => {
+    setShowRequireAuth(false);
+    onFacebookLogin?.();
   };
 
   return (
@@ -48,6 +84,17 @@ const Header: React.FC<HeaderProps> = ({onNotificationPress, onChatPress}) => {
           />
         </TouchableOpacity>
       </View>
+
+      {/* RequireAuth Modal */}
+      <RequireAuth
+        visible={showRequireAuth}
+        onClose={handleCloseRequireAuth}
+        feature="notification"
+        onLogin={handleLoginPress}
+        onRegister={handleRegisterPress}
+        onGoogleLogin={handleGoogleLoginPress}
+        onFacebookLogin={handleFacebookLoginPress}
+      />
     </View>
   );
 };

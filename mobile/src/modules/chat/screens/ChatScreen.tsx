@@ -12,9 +12,10 @@ import MessageInput from '../components/MessageInput';
 
 interface ChatScreenProps {
   navigation?: any;
+  onBackPress?: () => void;
 }
 
-const ChatScreen: React.FC<ChatScreenProps> = ({navigation}) => {
+const ChatScreen: React.FC<ChatScreenProps> = ({navigation, onBackPress}) => {
   const [messages, setMessages] = useState<
     Array<{
       id: string;
@@ -57,10 +58,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({navigation}) => {
   ]);
 
   const handleBackPress = () => {
-    if (navigation?.canGoBack?.()) {
-      navigation.goBack();
-    } else {
-      navigation?.navigate('Home');
+    try {
+      if (navigation && navigation.canGoBack()) {
+        navigation.goBack();
+      } else if (navigation) {
+        navigation.navigate('Home');
+      }
+    } catch (error) {
+      console.log('Lỗi khi goBack:', error);
     }
   };
 
@@ -88,7 +93,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({navigation}) => {
   return (
     <View style={styles.container}>
       {/* Chat Header */}
-      <ChatHeader onBackPress={handleBackPress} />
+      <ChatHeader onBackPress={onBackPress} />
 
       {/* Messages List */}
       <ScrollView

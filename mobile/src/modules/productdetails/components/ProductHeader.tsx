@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   TextInput,
   Image,
 } from 'react-native';
+import {useAuth} from '../../../contexts/AuthContext';
+import RequireAuth from '../../auth/components/RequireAuth';
 
 interface ProductHeaderProps {
   onBackPress?: () => void;
@@ -14,6 +16,10 @@ interface ProductHeaderProps {
   onNotificationPress?: () => void;
   searchValue?: string;
   onSearchChange?: (text: string) => void;
+  onLogin?: () => void;
+  onRegister?: () => void;
+  onGoogleLogin?: () => void;
+  onFacebookLogin?: () => void;
 }
 
 const ProductHeader: React.FC<ProductHeaderProps> = ({
@@ -22,7 +28,45 @@ const ProductHeader: React.FC<ProductHeaderProps> = ({
   onNotificationPress,
   searchValue = '',
   onSearchChange,
+  onLogin,
+  onRegister,
+  onGoogleLogin,
+  onFacebookLogin,
 }) => {
+  const {isAuthenticated} = useAuth();
+  const [showRequireAuth, setShowRequireAuth] = useState(false);
+
+  const handleNotificationPress = () => {
+    if (!isAuthenticated) {
+      setShowRequireAuth(true);
+      return;
+    }
+    onNotificationPress?.();
+  };
+
+  const handleCloseRequireAuth = () => {
+    setShowRequireAuth(false);
+  };
+
+  const handleLoginPress = () => {
+    setShowRequireAuth(false);
+    onLogin?.();
+  };
+
+  const handleRegisterPress = () => {
+    setShowRequireAuth(false);
+    onRegister?.();
+  };
+
+  const handleGoogleLoginPress = () => {
+    setShowRequireAuth(false);
+    onGoogleLogin?.();
+  };
+
+  const handleFacebookLoginPress = () => {
+    setShowRequireAuth(false);
+    onFacebookLogin?.();
+  };
   return (
     <View style={styles.container}>
       {/* Back Button */}
@@ -51,13 +95,24 @@ const ProductHeader: React.FC<ProductHeaderProps> = ({
 
       {/* Notification Button */}
       <TouchableOpacity
-        onPress={onNotificationPress}
+        onPress={handleNotificationPress}
         style={styles.notificationButton}>
         <Image
           source={require('../../../assets/icons/Bell.png')}
           style={styles.notificationIcon}
         />
       </TouchableOpacity>
+
+      {/* RequireAuth Modal */}
+      <RequireAuth
+        visible={showRequireAuth}
+        onClose={handleCloseRequireAuth}
+        feature="notification"
+        onLogin={handleLoginPress}
+        onRegister={handleRegisterPress}
+        onGoogleLogin={handleGoogleLoginPress}
+        onFacebookLogin={handleFacebookLoginPress}
+      />
     </View>
   );
 };

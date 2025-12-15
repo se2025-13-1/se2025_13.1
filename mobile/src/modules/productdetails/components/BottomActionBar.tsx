@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   Image,
   ViewStyle,
 } from 'react-native';
+import {useAuth} from '../../../contexts/AuthContext';
+import RequireAuth from '../../auth/components/RequireAuth';
 
 interface BottomActionBarProps {
   onFavoritePress?: () => void;
@@ -15,6 +17,10 @@ interface BottomActionBarProps {
   onBuyPress?: () => void;
   voucherPrice?: number;
   buyLabelSize?: number;
+  onLogin?: () => void;
+  onRegister?: () => void;
+  onGoogleLogin?: () => void;
+  onFacebookLogin?: () => void;
 }
 
 const BottomActionBar: React.FC<BottomActionBarProps> = ({
@@ -24,7 +30,52 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
   onBuyPress,
   voucherPrice = 110879,
   buyLabelSize = 14,
+  onLogin,
+  onRegister,
+  onGoogleLogin,
+  onFacebookLogin,
 }) => {
+  const {isAuthenticated} = useAuth();
+  const [showRequireAuth, setShowRequireAuth] = useState(false);
+  const [selectedFeature, setSelectedFeature] = useState<
+    'cart' | 'chat' | 'notification'
+  >('cart');
+
+  const handleAuthRequiredAction = (
+    feature: 'cart' | 'chat' | 'notification',
+    callback?: () => void,
+  ) => {
+    if (!isAuthenticated) {
+      setSelectedFeature(feature);
+      setShowRequireAuth(true);
+      return;
+    }
+    callback?.();
+  };
+
+  const handleCloseRequireAuth = () => {
+    setShowRequireAuth(false);
+  };
+
+  const handleLoginPress = () => {
+    setShowRequireAuth(false);
+    onLogin?.();
+  };
+
+  const handleRegisterPress = () => {
+    setShowRequireAuth(false);
+    onRegister?.();
+  };
+
+  const handleGoogleLoginPress = () => {
+    setShowRequireAuth(false);
+    onGoogleLogin?.();
+  };
+
+  const handleFacebookLoginPress = () => {
+    setShowRequireAuth(false);
+    onFacebookLogin?.();
+  };
   const formatPrice = (price: number) => {
     return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   };
@@ -36,7 +87,9 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
         {/* Favorite Button */}
         <TouchableOpacity
           style={[styles.actionButton, styles.smallButton]}
-          onPress={onFavoritePress}
+          onPress={() =>
+            handleAuthRequiredAction('notification', onFavoritePress)
+          }
           activeOpacity={0.7}>
           <Image
             source={require('../../../assets/icons/Heart.png')}
@@ -51,7 +104,7 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
         {/* Chat Button */}
         <TouchableOpacity
           style={[styles.actionButton, styles.smallButton]}
-          onPress={onChatPress}
+          onPress={() => handleAuthRequiredAction('chat', onChatPress)}
           activeOpacity={0.7}>
           <Image
             source={require('../../../assets/icons/Chat.png')}
@@ -66,7 +119,7 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
         {/* Cart Button */}
         <TouchableOpacity
           style={[styles.actionButton, styles.cartButton]}
-          onPress={onCartPress}
+          onPress={() => handleAuthRequiredAction('cart', onCartPress)}
           activeOpacity={0.7}>
           <Image
             source={require('../../../assets/icons/AddToCart.png')}
@@ -79,7 +132,7 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
       {/* Right Section - Buy Button */}
       <TouchableOpacity
         style={styles.buyButton}
-        onPress={onBuyPress}
+        onPress={() => handleAuthRequiredAction('cart', onBuyPress)}
         activeOpacity={0.7}>
         <View style={styles.buyContent}>
           <Text style={[styles.buyLabel, {fontSize: buyLabelSize}]}>
@@ -87,6 +140,17 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
           </Text>
         </View>
       </TouchableOpacity>
+
+      {/* RequireAuth Modal */}
+      <RequireAuth
+        visible={showRequireAuth}
+        onClose={handleCloseRequireAuth}
+        feature={selectedFeature}
+        onLogin={handleLoginPress}
+        onRegister={handleRegisterPress}
+        onGoogleLogin={handleGoogleLoginPress}
+        onFacebookLogin={handleFacebookLoginPress}
+      />
     </View>
   );
 };

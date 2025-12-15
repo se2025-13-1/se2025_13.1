@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
   View,
   TouchableOpacity,
@@ -7,6 +7,8 @@ import {
   SafeAreaView,
 } from 'react-native';
 import {Image} from 'react-native';
+import {useAuth} from '../../contexts/AuthContext';
+import RequireAuth from '../../modules/auth/components/RequireAuth';
 
 interface TabItem {
   id: string;
@@ -17,9 +19,25 @@ interface TabItem {
 interface TabBarProps {
   activeTab: string;
   onTabPress: (tabId: string) => void;
+  onLogin?: () => void;
+  onRegister?: () => void;
+  onGoogleLogin?: () => void;
+  onFacebookLogin?: () => void;
 }
 
-const TabBar: React.FC<TabBarProps> = ({activeTab, onTabPress}) => {
+const TabBar: React.FC<TabBarProps> = ({
+  activeTab,
+  onTabPress,
+  onLogin,
+  onRegister,
+  onGoogleLogin,
+  onFacebookLogin,
+}) => {
+  const {isAuthenticated} = useAuth();
+  const [showRequireAuth, setShowRequireAuth] = useState(false);
+  const [selectedFeature, setSelectedFeature] = useState<
+    'chat' | 'notification' | 'cart'
+  >('cart');
   const tabs: TabItem[] = [
     {
       id: 'home',
@@ -48,6 +66,43 @@ const TabBar: React.FC<TabBarProps> = ({activeTab, onTabPress}) => {
     },
   ];
 
+  const handleTabPress = (tabId: string) => {
+    // Kiểm tra nếu là cart hoặc messages và người dùng chưa đăng nhập
+    if ((tabId === 'cart' || tabId === 'messages') && !isAuthenticated) {
+      const feature = tabId === 'cart' ? 'cart' : 'chat';
+      setSelectedFeature(feature);
+      setShowRequireAuth(true);
+      return;
+    }
+
+    // Nếu đã đăng nhập hoặc không phải cart/messages, thực hiện navigation bình thường
+    onTabPress(tabId);
+  };
+
+  const handleCloseRequireAuth = () => {
+    setShowRequireAuth(false);
+  };
+
+  const handleLoginPress = () => {
+    setShowRequireAuth(false);
+    onLogin?.();
+  };
+
+  const handleRegisterPress = () => {
+    setShowRequireAuth(false);
+    onRegister?.();
+  };
+
+  const handleGoogleLoginPress = () => {
+    setShowRequireAuth(false);
+    onGoogleLogin?.();
+  };
+
+  const handleFacebookLoginPress = () => {
+    setShowRequireAuth(false);
+    onFacebookLogin?.();
+  };
+
   const renderTabItem = (tab: TabItem) => {
     const isActive = activeTab === tab.id;
 
@@ -55,7 +110,7 @@ const TabBar: React.FC<TabBarProps> = ({activeTab, onTabPress}) => {
       <TouchableOpacity
         key={tab.id}
         style={styles.tabItem}
-        onPress={() => onTabPress(tab.id)}
+        onPress={() => handleTabPress(tab.id)}
         activeOpacity={0.7}>
         <View
           style={[
@@ -84,6 +139,17 @@ const TabBar: React.FC<TabBarProps> = ({activeTab, onTabPress}) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.tabBar}>{tabs.map(renderTabItem)}</View>
+
+      {/* RequireAuth Modal */}
+      <RequireAuth
+        visible={showRequireAuth}
+        onClose={handleCloseRequireAuth}
+        feature={selectedFeature}
+        onLogin={handleLoginPress}
+        onRegister={handleRegisterPress}
+        onGoogleLogin={handleGoogleLoginPress}
+        onFacebookLogin={handleFacebookLoginPress}
+      />
     </SafeAreaView>
   );
 };

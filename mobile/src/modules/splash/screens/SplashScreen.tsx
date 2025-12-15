@@ -1,5 +1,5 @@
 import React, {useEffect, useRef} from 'react';
-import {View, StyleSheet, StatusBar, Animated} from 'react-native';
+import {View, StyleSheet, StatusBar, Animated, Image} from 'react-native';
 
 interface SplashScreenProps {
   onFinish: () => void;
@@ -7,21 +7,20 @@ interface SplashScreenProps {
 
 const SplashScreen: React.FC<SplashScreenProps> = ({onFinish}) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.5)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Animation sequence
+    // Animation sequence - fade in and scale up the logo
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 800,
+        duration: 600,
         useNativeDriver: true,
       }),
-      Animated.spring(scaleAnim, {
+      Animated.timing(scaleAnim, {
         toValue: 1,
-        tension: 50,
-        friction: 7,
+        duration: 600,
         useNativeDriver: true,
       }),
     ]).start();
@@ -35,10 +34,10 @@ const SplashScreen: React.FC<SplashScreenProps> = ({onFinish}) => {
       }),
     ).start();
 
-    // Navigate to welcome screen after 2 seconds
+    // Navigate to welcome screen after 3 seconds
     const timer = setTimeout(() => {
       onFinish();
-    }, 2000);
+    }, 3000);
 
     return () => clearTimeout(timer);
   }, [fadeAnim, scaleAnim, rotateAnim, onFinish]);
@@ -50,9 +49,9 @@ const SplashScreen: React.FC<SplashScreenProps> = ({onFinish}) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar backgroundColor="#000000" barStyle="light-content" />
+      <StatusBar backgroundColor="#1a1a1a" barStyle="light-content" />
 
-      {/* Main Logo */}
+      {/* Main Logo with Splash Icon */}
       <Animated.View
         style={[
           styles.logoContainer,
@@ -61,12 +60,11 @@ const SplashScreen: React.FC<SplashScreenProps> = ({onFinish}) => {
             transform: [{scale: scaleAnim}],
           },
         ]}>
-        <View style={styles.logo}>
-          <View style={styles.cross}>
-            <View style={styles.crossHorizontal} />
-            <View style={styles.crossVertical} />
-          </View>
-        </View>
+        <Image
+          source={require('../../../assets/icons/Splash.png')}
+          style={styles.splashIcon}
+          resizeMode="contain"
+        />
       </Animated.View>
 
       {/* Loading Indicator */}
@@ -86,52 +84,30 @@ const SplashScreen: React.FC<SplashScreenProps> = ({onFinish}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#1a1a1a',
     justifyContent: 'center',
     alignItems: 'center',
   },
   logoContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 100,
+    marginBottom: 120,
   },
-  logo: {
+  splashIcon: {
     width: 120,
     height: 120,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cross: {
-    position: 'relative',
-  },
-  crossHorizontal: {
-    width: 60,
-    height: 12,
-    backgroundColor: '#000000',
-    borderRadius: 6,
-  },
-  crossVertical: {
-    width: 12,
-    height: 60,
-    backgroundColor: '#000000',
-    borderRadius: 6,
-    position: 'absolute',
-    top: -24,
-    left: 24,
   },
   loadingContainer: {
     position: 'absolute',
     bottom: 100,
   },
   loadingCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-    borderTopColor: 'transparent',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 4,
+    borderColor: '#ffffff',
+    borderTopColor: 'rgba(255, 255, 255, 0.3)',
   },
 });
 

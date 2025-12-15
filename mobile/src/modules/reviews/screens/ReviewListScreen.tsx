@@ -77,6 +77,22 @@ const ReviewListScreen: React.FC = () => {
     console.log('Notification pressed');
   };
 
+  const handleLoginPress = () => {
+    navigation.navigate('Login' as never);
+  };
+
+  const handleRegisterPress = () => {
+    navigation.navigate('SignUp' as never);
+  };
+
+  const handleGoogleLoginPress = () => {
+    console.log('Google login pressed');
+  };
+
+  const handleFacebookLoginPress = () => {
+    console.log('Facebook login pressed');
+  };
+
   const renderReviewItem = ({item}: {item: Review}) => (
     <ReviewItem
       id={item.id}
@@ -128,6 +144,10 @@ const ReviewListScreen: React.FC = () => {
         onChatPress={() => console.log('Chat pressed')}
         onCartPress={() => console.log('Add to cart pressed')}
         onBuyPress={() => console.log('Buy pressed')}
+        onLogin={handleLoginPress}
+        onRegister={handleRegisterPress}
+        onGoogleLogin={handleGoogleLoginPress}
+        onFacebookLogin={handleFacebookLoginPress}
       />
     </View>
   );
