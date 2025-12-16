@@ -10,26 +10,36 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useRoute} from '@react-navigation/native';
 import AddressInput, {AddressData} from '../components/AddressInput';
 import DefaultAddressToggle from '../components/DefaultAddressToggle';
 import {AddressApi} from '../services/addressApi';
+import {AddressItemData} from '../components/AddressItem';
 
-const AddAddressScreen: React.FC = () => {
+interface RouteParams {
+  address: AddressItemData;
+}
+
+const EditAddressScreen: React.FC = () => {
   const navigation = useNavigation<any>();
-  const [addressData, setAddressData] = useState<AddressData>({
-    fullName: '',
-    phoneNumber: '',
-    province: '',
-    district: '',
-    ward: '',
-    specificAddress: '',
-  });
-  const [isDefault, setIsDefault] = useState(false);
-  const [isFormValid, setIsFormValid] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const route = useRoute<any>();
+  const {address: initialAddress} = route.params as RouteParams;
 
-  // Validate form
+  const [addressData, setAddressData] = useState<AddressData>({
+    fullName: initialAddress.fullName,
+    phoneNumber: initialAddress.phoneNumber,
+    province: initialAddress.province,
+    district: initialAddress.district,
+    ward: initialAddress.ward,
+    specificAddress: initialAddress.specificAddress,
+  });
+
+  const [isDefault, setIsDefault] = useState(initialAddress.isDefault || false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFormValid, setIsFormValid] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+
+  // Check if form is valid and has changes
   useEffect(() => {
     const isValid =
       addressData.fullName.trim() !== '' &&
@@ -41,10 +51,22 @@ const AddAddressScreen: React.FC = () => {
       addressData.specificAddress.trim() !== '';
 
     setIsFormValid(isValid);
-  }, [addressData]);
+
+    // Check if there are changes
+    const addressChanged =
+      addressData.fullName !== initialAddress.fullName ||
+      addressData.phoneNumber !== initialAddress.phoneNumber ||
+      addressData.province !== initialAddress.province ||
+      addressData.district !== initialAddress.district ||
+      addressData.ward !== initialAddress.ward ||
+      addressData.specificAddress !== initialAddress.specificAddress;
+
+    const defaultChanged = isDefault !== (initialAddress.isDefault || false);
+
+    setHasChanges(addressChanged || defaultChanged);
+  }, [addressData, isDefault]);
 
   const isValidPhoneNumber = (phone: string): boolean => {
-    // Vietnamese phone number validation (10 digits, starts with 0)
     const phoneRegex = /^0[0-9]{9}$/;
     return phoneRegex.test(phone);
   };
@@ -57,7 +79,43 @@ const AddAddressScreen: React.FC = () => {
     navigation.goBack();
   };
 
-  const handleSubmit = () => {
+  const handleDeleteAddress = () => {
+    Alert.alert('Xóa địa chỉ', 'Bạn có chắc muốn xóa địa chỉ này?', [
+      {
+        text: 'Hủy',
+        onPress: () => {},
+        style: 'cancel',
+      },
+      {
+        text: 'Xóa',
+        onPress: async () => {
+          await deleteAddress();
+        },
+        style: 'destructive',
+      },
+    ]);
+  };
+
+  const deleteAddress = async () => {
+    setIsLoading(true);
+    try {
+      await AddressApi.deleteAddress(initialAddress.id);
+
+      Alert.alert('Thành công', 'Địa chỉ đã được xóa', [
+        {
+          text: 'OK',
+          onPress: () => navigation.goBack(),
+        },
+      ]);
+    } catch (error: any) {
+      console.error('Error deleting address:', error);
+      Alert.alert('Lỗi', error.message || 'Không thể xóa địa chỉ');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveAddress = async () => {
     if (!isFormValid) {
       Alert.alert(
         'Lỗi',
@@ -66,14 +124,18 @@ const AddAddressScreen: React.FC = () => {
       return;
     }
 
-    // Call API to save address
-    saveAddress();
+    if (!hasChanges) {
+      Alert.alert('Thông báo', 'Không có thay đổi nào cần lưu');
+      return;
+    }
+
+    await saveAddress();
   };
 
   const saveAddress = async () => {
     setIsLoading(true);
     try {
-      const response = await AddressApi.createAddress({
+      const response = await AddressApi.updateAddress(initialAddress.id, {
         fullName: addressData.fullName,
         phoneNumber: addressData.phoneNumber,
         province: addressData.province,
@@ -83,19 +145,19 @@ const AddAddressScreen: React.FC = () => {
         isDefault: isDefault,
       });
 
-      console.log('Address saved:', response);
+      console.log('Address updated:', response);
 
-      Alert.alert('Thành công', 'Địa chỉ đã được thêm thành công!', [
+      Alert.alert('Thành công', 'Địa chỉ đã được cập nhật!', [
         {
           text: 'OK',
           onPress: () => navigation.goBack(),
         },
       ]);
     } catch (error: any) {
-      console.error('Error saving address:', error);
+      console.error('Error updating address:', error);
       Alert.alert(
         'Lỗi',
-        error.message || 'Không thể lưu địa chỉ. Vui lòng thử lại.',
+        error.message || 'Không thể cập nhật địa chỉ. Vui lòng thử lại.',
       );
     } finally {
       setIsLoading(false);
@@ -112,7 +174,7 @@ const AddAddressScreen: React.FC = () => {
             style={styles.backIcon}
           />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Thêm địa chỉ</Text>
+        <Text style={styles.headerTitle}>Sửa địa chỉ</Text>
         <View style={styles.spacer} />
       </View>
 
@@ -122,7 +184,10 @@ const AddAddressScreen: React.FC = () => {
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}>
         {/* Address Input Component */}
-        <AddressInput onAddressChange={handleAddressChange} />
+        <AddressInput
+          onAddressChange={handleAddressChange}
+          initialAddress={addressData}
+        />
 
         {/* Default Address Toggle */}
         <View style={styles.toggleContainer}>
@@ -130,26 +195,28 @@ const AddAddressScreen: React.FC = () => {
         </View>
       </ScrollView>
 
-      {/* Submit Button - Fixed at bottom */}
+      {/* Action Buttons */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={handleDeleteAddress}
+          disabled={isLoading}>
+          <Text style={styles.deleteButtonText}>XÓA ĐỊA CHỈ</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           style={[
-            styles.submitButton,
-            (!isFormValid || isLoading) && styles.submitButtonDisabled,
+            styles.saveButton,
+            (!isFormValid || !hasChanges || isLoading) &&
+              styles.saveButtonDisabled,
           ]}
-          onPress={handleSubmit}
-          disabled={!isFormValid || isLoading}
-          activeOpacity={isFormValid && !isLoading ? 0.8 : 1}>
+          onPress={handleSaveAddress}
+          disabled={!isFormValid || !hasChanges || isLoading}
+          activeOpacity={isFormValid && hasChanges && !isLoading ? 0.8 : 1}>
           {isLoading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text
-              style={[
-                styles.submitButtonText,
-                (!isFormValid || isLoading) && styles.submitButtonTextDisabled,
-              ]}>
-              HOÀN THÀNH
-            </Text>
+            <Text style={styles.saveButtonText}>LƯU ĐỊA CHỈ</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -207,25 +274,38 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
+    flexDirection: 'row',
+    gap: 12,
   },
-  submitButton: {
-    backgroundColor: '#4caf50',
+  deleteButton: {
+    flex: 1,
+    backgroundColor: '#ff6b6b',
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
   },
-  submitButtonDisabled: {
-    backgroundColor: '#ccc',
-  },
-  submitButtonText: {
+  deleteButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
     letterSpacing: 0.5,
   },
-  submitButtonTextDisabled: {
-    color: '#999',
+  saveButton: {
+    flex: 1,
+    backgroundColor: '#4caf50',
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  saveButtonDisabled: {
+    backgroundColor: '#ccc',
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
 });
 
-export default AddAddressScreen;
+export default EditAddressScreen;
