@@ -101,6 +101,7 @@ CREATE TABLE products (
   -- Cache thống kê (Để hiển thị nhanh ngoài danh sách)
   rating_average NUMERIC(3, 1) DEFAULT 0, -- VD: 4.5
   review_count INT DEFAULT 0,             -- VD: 100
+  sold_count INT DEFAULT 0,
   
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
@@ -299,6 +300,7 @@ CREATE INDEX idx_reviews_product ON reviews(product_id);
 CREATE INDEX IF NOT EXISTS idx_products_price ON products(base_price);
 CREATE INDEX IF NOT EXISTS idx_products_rating ON products(rating_average);
 CREATE INDEX IF NOT EXISTS idx_products_created_at ON products(created_at);
+CREATE INDEX IF NOT EXISTS idx_products_sold_count ON products(sold_count);
 
 -- Index cho tìm kiếm
 CREATE INDEX idx_products_name_trigram ON products USING gin (name gin_trgm_ops);
