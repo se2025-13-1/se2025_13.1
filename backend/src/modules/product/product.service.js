@@ -106,4 +106,48 @@ export const ProductService = {
 
     return rows;
   },
+
+  async searchProducts(query) {
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    // Tạo Cache Key dựa trên tham số tìm kiếm
+    // VD: products:search:{"q":"ao","min_price":"100"}
+    const cacheKey = `products:search:${JSON.stringify(query)}`;
+
+    if (redisClient) {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    }
+
+    const { products, total } = await ProductRepository.searchAndFilter({
+      keyword: query.q, // ?q=...
+      category_id: query.category_id,
+      min_price: query.min_price,
+      max_price: query.max_price,
+      min_rating: query.rating, // ?rating=4
+      sort_by: query.sort_by, // ?sort_by=price
+      sort_order: query.sort_order, // ?sort_order=asc
+      limit,
+      offset,
+    });
+
+    const result = {
+      data: products,
+      pagination: {
+        page,
+        limit,
+        total_items: total,
+        total_pages: Math.ceil(total / limit),
+      },
+    };
+
+    // Cache ngắn hạn (60s) vì giá và tồn kho có thể đổi
+    if (redisClient) {
+      await redisClient.set(cacheKey, JSON.stringify(result), { EX: 60 });
+    }
+
+    return result;
+  },
 };
