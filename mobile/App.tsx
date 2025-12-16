@@ -7,7 +7,7 @@ import {isAuthenticated as checkIsAuthenticated} from './src/services/tokenServi
 import {initializeGoogleSignIn} from './src/services/googleService';
 import {initializeFacebookSDK} from './src/services/facebookService';
 
-// Import Screens
+// Import Screens (Giữ nguyên)
 import SplashScreen from './src/modules/splash/screens/SplashScreen';
 import WelcomeScreen from './src/modules/welcome/screens/WelcomeScreen';
 import LoginScreen from './src/modules/auth/screens/LoginScreen';
@@ -28,8 +28,18 @@ import ProductDetailScreen from './src/modules/productdetails/screens/ProductDet
 import ReviewListScreen from './src/modules/reviews/screens/ReviewListScreen';
 import PaymentScreen from './src/modules/payment/screens/PaymentScreen';
 import PaymentMethodScreen from './src/modules/payment/screens/PaymentMethodScreen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Navigation types
+// 👇 1. IMPORT SERVICE THÔNG BÁO (THÊM MỚI)
+import {
+  requestUserPermission,
+  getFCMToken,
+  notificationListener,
+} from './src/modules/notifications/service/notificationService';
+// Bạn có thể cần import AsyncStorage nếu bạn lưu token đăng nhập ở đó
+// import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Navigation types (Giữ nguyên)
 export type RootStackParamList = {
   Splash: undefined;
   Welcome: undefined;
@@ -70,6 +80,7 @@ const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false); // User not authenticated initially
   const [hasStarted, setHasStarted] = useState(false); // Track if user has started using app
 
+  // 👇 EFFECT XỬ LÝ THÔNG BÁO (ĐÃ SỬA LOGIC LẤY TOKEN)
   useEffect(() => {
     // Initialize Social SDKs and check auth status on app startup
     const initializeApp = async () => {
@@ -116,6 +127,15 @@ const App = () => {
   const handleLogin = () => {
     setIsAuthenticated(true);
     setHasStarted(true); // Ensure user can access app features after login
+  };
+
+  const handleLogout = async () => {
+    // 1. Xóa token khỏi bộ nhớ
+    await AsyncStorage.removeItem('accessToken');
+    await AsyncStorage.removeItem('user');
+
+    // 2. Cập nhật state để văng ra màn hình Login
+    setIsAuthenticated(false);
   };
 
   return (
@@ -179,7 +199,6 @@ const App = () => {
                   const handleSignUpVerify = (email: string) => {
                     props.navigation.navigate('VerificationPassword', {email});
                   };
-
                   return (
                     <SignUpScreen
                       {...props}
@@ -296,7 +315,6 @@ const App = () => {
               <Stack.Screen name="ResetPassword">
                 {props => {
                   const {email, otp} = props.route.params;
-
                   return (
                     <ResetPasswordScreen
                       {...props}
@@ -335,5 +353,4 @@ const App = () => {
   );
 };
 
-// PHẢI CÓ DÒNG NÀY
 export default App;

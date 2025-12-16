@@ -24,6 +24,7 @@ import {
   ScrollView,
   Image,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface LoginScreenProps {
   onBack: () => void;
@@ -300,6 +301,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
       Alert.alert('Sign Up', 'Redirecting to Sign Up screen...');
     }
   };
+
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>

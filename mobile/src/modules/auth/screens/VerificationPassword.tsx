@@ -11,7 +11,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import {AuthApi} from '@services/authApi';
+import {AuthApi} from '../services/authApi';
 
 interface VerificationPasswordProps {
   onBack: () => void;
