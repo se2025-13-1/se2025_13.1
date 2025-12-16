@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {Alert} from 'react-native';
 import {useAuth} from '../../../contexts/AuthContext';
 import {
@@ -10,6 +10,7 @@ import {
   SafeAreaView,
   Image,
 } from 'react-native';
+import RequireAuth from '../../auth/components/RequireAuth';
 
 interface SettingScreenProps {
   navigation?: any;
@@ -47,7 +48,8 @@ const SETTING_ITEMS: SettingItem[] = [
 ];
 
 const SettingScreen: React.FC<SettingScreenProps> = ({navigation}) => {
-  const {logout} = useAuth();
+  const {logout, isAuthenticated} = useAuth();
+  const [requireAuthVisible, setRequireAuthVisible] = useState(false);
 
   const handleBack = () => {
     navigation?.goBack();
@@ -55,7 +57,33 @@ const SettingScreen: React.FC<SettingScreenProps> = ({navigation}) => {
 
   const handleSettingPress = (itemId: string, title: string) => {
     console.log(`Setting pressed: ${itemId} - ${title}`);
-    // TODO: Implement navigation for each setting
+
+    // Account-related items that require authentication
+    const accountItems = ['2', '3', '4'];
+
+    if (accountItems.includes(itemId)) {
+      // Check if user is authenticated
+      if (!isAuthenticated) {
+        setRequireAuthVisible(true);
+        return;
+      }
+
+      // Navigate to appropriate screen based on itemId
+      switch (itemId) {
+        case '2':
+          // Tài khoản & Bảo mật
+          navigation?.navigate('AccountSecurity');
+          break;
+        case '3':
+          // Địa Chỉ - Navigate to AddressList instead of AddAddress
+          navigation?.navigate('AddressList');
+          break;
+        case '4':
+          // Tài khoản / Thẻ Ngân hàng
+          navigation?.navigate('PaymentMethod');
+          break;
+      }
+    }
   };
 
   const handleLogout = async () => {
@@ -179,6 +207,21 @@ const SettingScreen: React.FC<SettingScreenProps> = ({navigation}) => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Require Auth Modal */}
+      <RequireAuth
+        visible={requireAuthVisible}
+        onClose={() => setRequireAuthVisible(false)}
+        feature="cart"
+        onLogin={() => {
+          setRequireAuthVisible(false);
+          navigation?.navigate('Login');
+        }}
+        onRegister={() => {
+          setRequireAuthVisible(false);
+          navigation?.navigate('SignUp');
+        }}
+      />
     </SafeAreaView>
   );
 };
