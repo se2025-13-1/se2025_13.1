@@ -52,10 +52,11 @@ export const ProductController = {
 
   async search(req, res) {
     try {
-      // req.query sẽ chứa: { q, category_id, min_price, sort_by, ... }
+      // req.query chứa: { q, category_id, min_price, sort_by, page, limit ... }
       const result = await ProductService.searchProducts(req.query);
       return res.json(result);
     } catch (err) {
+      console.error(err);
       return res.status(500).json({ error: err.message });
     }
   },

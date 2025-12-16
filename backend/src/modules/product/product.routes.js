@@ -13,7 +13,7 @@ const router = express.Router();
 // 1. PUBLIC ROUTES (Guest Browsing)
 // ==========================================
 // Khách vãng lai xem thoải mái
-router.get("/", ProductController.list);
+router.get("/", ProductController.search);
 router.get("/:id", ProductController.getDetail);
 
 // ==========================================

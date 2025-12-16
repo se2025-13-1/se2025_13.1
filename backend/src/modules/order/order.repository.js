@@ -38,12 +38,12 @@ export const OrderRepository = {
 
       // BƯỚC 2: Xử lý từng sản phẩm (Tạo Order Item + Trừ kho)
       for (const item of items) {
-        // 2.1 Trừ tồn kho (Atomic Update để tránh Race Condition)
+        // 2.1 Trừ tồn kho (Giữ nguyên code cũ)
         const updateStockQuery = `
           UPDATE product_variants 
           SET stock_quantity = stock_quantity - $1
           WHERE id = $2 AND stock_quantity >= $1
-          RETURNING id
+          RETURNING id, product_id -- 👈 Lấy thêm product_id để update sold_count
         `;
         const stockRes = await client.query(updateStockQuery, [
           item.quantity,
@@ -51,10 +51,16 @@ export const OrderRepository = {
         ]);
 
         if (stockRes.rows.length === 0) {
-          throw new Error(
-            `Sản phẩm ${item.product_name} (Size: ${item.variant_info.size}, Màu: ${item.variant_info.color}) không đủ hàng hoặc đã hết.`
-          );
+          throw new Error(`Sản phẩm ${item.product_name} không đủ hàng.`);
         }
+
+        const productId = stockRes.rows[0].product_id;
+
+        // 👇 2.1.5 (MỚI): Tăng số lượng đã bán cho Sản phẩm cha
+        await client.query(
+          `UPDATE products SET sold_count = sold_count + $1 WHERE id = $2`,
+          [item.quantity, productId]
+        );
 
         // 2.2 Tạo Order Item
         const insertItemQuery = `
@@ -169,7 +175,10 @@ export const OrderRepository = {
         );
       }
 
-      await client.query("COMMIT");
+      await client.query(
+        `UPDATE products SET sold_count = sold_count - $1 WHERE id = $2`,
+        [item.quantity, item.product_id]
+      );
       return { message: "Đã hủy đơn hàng thành công" };
     } catch (err) {
       await client.query("ROLLBACK");
