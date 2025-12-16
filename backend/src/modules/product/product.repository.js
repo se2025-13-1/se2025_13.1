@@ -300,13 +300,15 @@ export const ProductRepository = {
           case "rating":
             orderByClause = `ORDER BY p.rating_average ${direction}`;
             break;
-          case "sold": // Sắp xếp theo số lượng bán (review_count tạm thay thế hoặc cột sold nếu có)
-            orderByClause = `ORDER BY p.review_count ${direction}`;
+
+          // 👇 SỬA CASE NÀY: Dùng cột sold_count trực tiếp
+          case "sold":
+            orderByClause = `ORDER BY p.sold_count ${direction}`;
             break;
+
           case "name":
             orderByClause = `ORDER BY p.name ${direction}`;
             break;
-          // Mặc định giữ nguyên created_at
         }
       }
 
