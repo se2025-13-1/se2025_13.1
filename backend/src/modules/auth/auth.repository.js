@@ -128,4 +128,97 @@ export const AuthRepository = {
       throw err;
     }
   },
+
+  // 5. Find user by Firebase UID
+  async findByFirebaseUid(firebaseUid) {
+    const query = `
+      SELECT 
+        u.id, u.email, u.role,
+        p.full_name, p.avatar_url, p.gender, p.birthday, p.phone,
+        (
+          SELECT json_agg(json_build_object(
+            'id', a.id,
+            'recipient_name', a.recipient_name,
+            'phone', a.recipient_phone,
+            'full_address', a.address_detail || ', ' || a.ward || ', ' || a.district || ', ' || a.province,
+            'province', a.province,
+            'district', a.district,
+            'ward', a.ward,
+            'is_default', a.is_default
+          ))
+          FROM user_addresses a
+          WHERE a.user_id = u.id
+        ) as addresses
+      FROM auth_users u
+      LEFT JOIN user_profiles p ON u.id = p.user_id
+      LEFT JOIN auth_providers ap ON u.id = ap.user_id
+      WHERE ap.provider = 'firebase' AND ap.provider_user_id = $1
+      LIMIT 1
+    `;
+    const res = await pgPool.query(query, [firebaseUid]);
+    return res.rows[0];
+  },
+
+  // 6. Link Firebase UID to existing user
+  async linkFirebaseUid(userId, firebaseUid) {
+    const query = `
+      INSERT INTO auth_providers (user_id, provider, provider_user_id)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (provider, provider_user_id) 
+      DO UPDATE SET user_id = $1
+      RETURNING id, user_id, provider, provider_user_id
+    `;
+    const res = await pgPool.query(query, [userId, "firebase", firebaseUid]);
+    return res.rows[0];
+  },
+
+  // 7. Create user from Firebase info
+  async createUserFromFirebase({
+    firebaseUid,
+    email,
+    fullName,
+    avatarUrl = null,
+    role = "customer",
+  }) {
+    const client = await pgPool.connect();
+    try {
+      await client.query("BEGIN");
+
+      // Insert into auth_users (no password_hash for Firebase users)
+      const userRes = await client.query(
+        `INSERT INTO auth_users (email, password_hash, role, is_active) 
+         VALUES ($1, NULL, $2, true) 
+         RETURNING id, email, role`,
+        [email, role]
+      );
+      const newUser = userRes.rows[0];
+
+      // Insert into user_profiles
+      await client.query(
+        `INSERT INTO user_profiles (user_id, full_name, avatar_url) 
+         VALUES ($1, $2, $3)`,
+        [newUser.id, fullName, avatarUrl]
+      );
+
+      // Insert into auth_providers (link Firebase)
+      await client.query(
+        `INSERT INTO auth_providers (user_id, provider, provider_user_id) 
+         VALUES ($1, $2, $3)`,
+        [newUser.id, "firebase", firebaseUid]
+      );
+
+      await client.query("COMMIT");
+
+      return {
+        ...newUser,
+        full_name: fullName,
+        avatar_url: avatarUrl,
+      };
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+  },
 };

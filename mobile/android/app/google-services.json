@@ -1,26 +1,44 @@
 {
   "project_info": {
-    "project_number": "516762477740",
-    "project_id": "fashion-app-6f0f0",
-    "storage_bucket": "fashion-app-6f0f0.firebasestorage.app"
+    "project_number": "790984624622",
+    "project_id": "se2025-44d9c",
+    "storage_bucket": "se2025-44d9c.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:516762477740:android:e8028021b8f62887dbeb09",
+        "mobilesdk_app_id": "1:790984624622:android:a4d3a431bc7cc76acd26ff",
         "android_client_info": {
           "package_name": "com.mobile"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "790984624622-iei96uqmd3vsfo3ecsvc8thkrl06lfq6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mobile",
+            "certificate_hash": "199efdb94a38727f12e4e0caffd1fc58838ed639"
+          }
+        },
+        {
+          "client_id": "790984624622-tvlp3fsnvsskvqf5hdqit34q2ps7gt9g.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyDRF0duELqw4Dd9Ilo1snnZ3sn5Msaf2uQ"
+          "current_key": "AIzaSyD0Ux0tx7AI016EaAJ_T_7FG-RENDiPwoc"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "790984624622-tvlp3fsnvsskvqf5hdqit34q2ps7gt9g.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

@@ -58,4 +58,29 @@ export const VoucherService = {
       discountAmount: Math.floor(discountAmount), // Làm tròn số nguyên
     };
   },
+
+  // Admin: Get all vouchers
+  async getAllVouchers() {
+    return await VoucherRepository.findAll();
+  },
+
+  // Admin: Get single voucher
+  async getVoucherById(id) {
+    return await VoucherRepository.findById(id);
+  },
+
+  // Admin: Create voucher
+  async createVoucher(data) {
+    return await VoucherRepository.create(data);
+  },
+
+  // Admin: Update voucher
+  async updateVoucher(id, data) {
+    return await VoucherRepository.update(id, data);
+  },
+
+  // Admin: Delete voucher
+  async deleteVoucher(id) {
+    return await VoucherRepository.delete(id);
+  },
 };

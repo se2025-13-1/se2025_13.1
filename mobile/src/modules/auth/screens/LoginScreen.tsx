@@ -4,10 +4,7 @@ import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {AppConfig} from '../../../config/AppConfig';
 import {saveTokens, saveUser} from '../../../services/tokenService';
 import {useAuth} from '../../../contexts/AuthContext';
-import {
-  initializeGoogleSignIn,
-  handleGoogleSignIn,
-} from '../../../services/googleService';
+import {FirebaseGoogleService} from '../../../services/firebaseGoogleService';
 import {
   initializeFacebookSDK,
   handleFacebookLogin,
@@ -153,32 +150,45 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
   const handleSocialLogin = async (provider: string) => {
     try {
       setSocialLoading(provider);
-      let accessToken: string | null = null;
-      let userInfo: any = null;
 
-      // Get access token from provider SDK
+      // GOOGLE LOGIN FLOW
       if (provider === 'Google') {
         try {
-          const googleResult = await handleGoogleSignIn();
-          if (googleResult) {
-            // Use accessToken for backend verification, not idToken
-            accessToken = googleResult.accessToken;
-            userInfo = googleResult.userInfo;
-          } else {
-            setSocialLoading(null);
-            return; // User cancelled
+          const user = await FirebaseGoogleService.signIn();
+          if (user) {
+            // Success - Update global auth context
+            setUser(user);
+            setIsAuthenticated(true);
+            setIsSuccess(true);
+
+            if (onLoginSuccess) {
+              onLoginSuccess();
+            } else {
+              // Navigate to Home screen immediately
+              navigation.reset({
+                index: 0,
+                routes: [{name: 'Home'}],
+              });
+            }
           }
         } catch (error) {
           console.error('Google Sign-In error:', error);
           Alert.alert(
             'Google Sign-In Error',
             (error instanceof Error ? error.message : String(error)) ||
-              'Google Sign-In failed. Please check your configuration.',
+              'Google Sign-In failed.',
           );
+        } finally {
           setSocialLoading(null);
-          return;
         }
-      } else if (provider === 'Facebook') {
+        return;
+      }
+
+      // FACEBOOK LOGIN FLOW (Existing logic)
+      let accessToken: string | null = null;
+      let userInfo: any = null;
+
+      if (provider === 'Facebook') {
         try {
           const facebookResult = await handleFacebookLogin();
           if (facebookResult) {
@@ -210,7 +220,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
 
       console.log(`${provider} access token obtained, calling backend...`);
 
-      // Call backend API
+      // Call backend API for Facebook
       fetch(`${AppConfig.BASE_URL}/api/auth/${provider.toLowerCase()}`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -301,7 +311,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
       Alert.alert('Sign Up', 'Redirecting to Sign Up screen...');
     }
   };
-
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>

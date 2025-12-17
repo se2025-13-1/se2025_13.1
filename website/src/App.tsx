@@ -3,6 +3,8 @@ import Layout from "./components/Layout";
 import Dashboard from "./components/Dashboard";
 import ProductList from "./components/ProductList";
 import OrderList from "./components/OrderList";
+import CategoryList from "./components/CategoryList";
+import VoucherList from "./components/VoucherList";
 import LoginPage from "./components/LoginPage";
 import { useAuth } from "./contexts/AuthContext";
 import "./App.css";
@@ -20,23 +22,15 @@ const AppContent: React.FC = () => {
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard":
-        return <Dashboard />; // ✅ Không truyền props nữa
+        return <Dashboard />;
       case "products":
-        return <ProductList />; // ✅ Không truyền props nữa
+        return <ProductList />;
       case "orders":
-        return <OrderList />; // ✅ Không truyền props nữa (Xem Bước 2)
+        return <OrderList />;
       case "categories":
-        return (
-          <div className="flex flex-col items-center justify-center h-96 text-slate-400">
-            <div className="bg-slate-100 p-4 rounded-full mb-4">
-              <span className="text-4xl">🏷️</span>
-            </div>
-            <h2 className="text-xl font-semibold text-slate-600">
-              Categories Management
-            </h2>
-            <p>Feature implementation for hierarchical category tree.</p>
-          </div>
-        );
+        return <CategoryList />;
+      case "vouchers":
+        return <VoucherList />;
       default:
         return (
           <div className="p-10 text-center text-slate-500">

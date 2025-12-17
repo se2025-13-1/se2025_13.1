@@ -16,15 +16,19 @@ import {
   XCircle,
   Wand2,
   ChevronDown,
+  ChevronRight,
   Menu,
   X,
   LogIn,
-  // 👇 Bổ sung 2 icon này cho tính năng Upload
   Upload,
   Image,
   Users,
   AlertCircle,
   Eye,
+  Ticket,
+  Percent,
+  DollarSign,
+  Calendar,
 } from "lucide-react";
 
 export {
@@ -46,12 +50,16 @@ export {
   XCircle,
   Wand2,
   ChevronDown,
+  ChevronRight,
   Menu,
   X,
-  // 👇 Export ra để dùng
   Upload,
   Image,
   Users,
   AlertCircle,
   Eye,
+  Ticket,
+  Percent,
+  DollarSign,
+  Calendar,
 };
