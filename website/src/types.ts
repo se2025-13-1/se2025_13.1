@@ -66,10 +66,12 @@ export interface Product {
   is_active: boolean;
   rating_average?: number;
   review_count?: number;
+  sold_count?: number;
   created_at?: string;
   updated_at?: string;
   variants: ProductVariant[];
-  images: ProductImage[]; // Thêm mảng images
+  images: ProductImage[];
+  order_items?: OrderItem[];
 }
 
 export interface OrderItem {
@@ -87,12 +89,14 @@ export interface OrderItem {
 }
 
 export interface ShippingInfo {
-  recipient_name: string;
-  recipient_phone: string;
-  province: string;
-  district: string;
-  ward: string;
-  address_detail: string;
+  name?: string;
+  phone?: string;
+  recipient_name?: string;
+  recipient_phone?: string;
+  province?: string;
+  district?: string;
+  ward?: string;
+  address_detail?: string;
 }
 
 export interface Order {

@@ -1,9 +1,9 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import axios from "axios";
 
 import { AuthRepository } from "./auth.repository.js";
 import { redisClient } from "../../config/redis.js";
+import { firebaseAuth } from "../../config/firebase.js";
 import { sendVerificationEmail } from "../../config/email.js"; // Tạm thời chưa dùng đến
 
 const JWT_SECRET = process.env.JWT_SECRET || "secret";
@@ -46,9 +46,9 @@ export const AuthService = {
     const user = await AuthRepository.findByEmail(email);
     if (!user) throw new Error("Email hoặc mật khẩu không đúng");
 
-    // Nếu user đăng ký bằng Google thì không có pass
+    // Nếu user không có password hash (chỉ có khi dùng local auth)
     if (!user.password_hash)
-      throw new Error("Vui lòng đăng nhập bằng Google/Facebook");
+      throw new Error("Vui lòng đăng nhập bằng email/password");
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) throw new Error("Email hoặc mật khẩu không đúng");
@@ -70,94 +70,6 @@ export const AuthService = {
     const updated = await AuthRepository.updateProfile(userId, payload);
     if (!updated) throw new Error("Update failed");
     return updated;
-  },
-
-  // 3. Hàm xử lý chung cho Social Login (Tránh lặp code)
-  async handleSocialLogin({
-    provider,
-    providerUserId,
-    email,
-    fullName,
-    avatarUrl,
-    accessToken,
-  }) {
-    // A. Kiểm tra provider đã link chưa
-    const linkedProvider = await AuthRepository.findProvider(
-      provider,
-      providerUserId
-    );
-
-    let user;
-
-    if (linkedProvider) {
-      // Đã link -> Lấy user gốc
-      user = await AuthRepository.findById(linkedProvider.user_id);
-    } else {
-      // Chưa link -> Kiểm tra email có tồn tại không
-      user = await AuthRepository.findByEmail(email);
-
-      if (!user) {
-        // Chưa có user -> Tạo user mới (Không password)
-        user = await AuthRepository.createUser({
-          email,
-          fullName,
-          avatarUrl,
-          passwordHash: null,
-        });
-      }
-
-      // Link provider vào user
-      await AuthRepository.linkProvider({
-        userId: user.id,
-        provider,
-        providerUserId,
-        accessToken,
-      });
-    }
-
-    const tokens = generateTokens(user);
-    return { user, ...tokens };
-  },
-
-  // 4. Login Google
-  async loginGoogle(googleAccessToken) {
-    // Verify token với Google Server
-    const { data } = await axios.get(
-      "https://www.googleapis.com/oauth2/v3/userinfo",
-      {
-        headers: { Authorization: `Bearer ${googleAccessToken}` },
-      }
-    );
-
-    if (!data.email) throw new Error("Google Token không hợp lệ");
-
-    return await this.handleSocialLogin({
-      provider: "google",
-      providerUserId: data.sub,
-      email: data.email,
-      fullName: data.name,
-      avatarUrl: data.picture,
-      accessToken: googleAccessToken,
-    });
-  },
-
-  // 5. Login Facebook
-  async loginFacebook(fbAccessToken) {
-    const { data } = await axios.get(
-      `https://graph.facebook.com/me?fields=id,name,email,picture&access_token=${fbAccessToken}`
-    );
-
-    if (!data.email)
-      throw new Error("Facebook Token không hợp lệ hoặc không có email");
-
-    return await this.handleSocialLogin({
-      provider: "facebook",
-      providerUserId: data.id,
-      email: data.email,
-      fullName: data.name,
-      avatarUrl: data.picture?.data?.url,
-      accessToken: fbAccessToken,
-    });
   },
 
   // --- Các hàm tiện ích khác (Forgot Password) ---
@@ -193,5 +105,68 @@ export const AuthService = {
     if (redisClient) await redisClient.del(`reset_otp:${email}`);
 
     return { message: "Đặt lại mật khẩu thành công" };
+  },
+
+  // 5. Verify Firebase Google ID Token
+  async verifyFirebaseGoogle(idToken) {
+    try {
+      if (!firebaseAuth) {
+        throw new Error("Firebase not configured");
+      }
+
+      // Step 1: Verify ID Token with Firebase
+      const decodedToken = await firebaseAuth.verifyIdToken(idToken);
+
+      // Step 2: Extract user info from decoded token
+      const { uid, email, name, picture } = decodedToken;
+
+      if (!email) {
+        throw new Error("Email not provided by Google account");
+      }
+
+      // Step 3: Check if user already exists by Firebase UID
+      const existingUser = await AuthRepository.findByFirebaseUid(uid);
+
+      if (existingUser) {
+        // User already registered - just login
+        const tokens = generateTokens(existingUser);
+        return { user: existingUser, ...tokens };
+      }
+
+      // Step 4: Check if email already exists (from local auth)
+      const userWithEmail = await AuthRepository.findByEmail(email);
+
+      let user;
+      if (userWithEmail) {
+        // Email exists from local auth - link Firebase to existing user
+        user = userWithEmail;
+        await AuthRepository.linkFirebaseUid(user.id, uid);
+      } else {
+        // New user - Create with Firebase info
+        user = await AuthRepository.createUserFromFirebase({
+          firebaseUid: uid,
+          email,
+          fullName: name || "Google User",
+          avatarUrl: picture || null,
+        });
+      }
+
+      // Step 5: Generate JWT tokens
+      const tokens = generateTokens(user);
+
+      // Step 6: Return response
+      return { user, ...tokens };
+    } catch (error) {
+      if (error.code === "auth/id-token-expired") {
+        throw new Error("Google ID Token expired");
+      }
+      if (error.code === "auth/id-token-revoked") {
+        throw new Error("Google ID Token revoked");
+      }
+      if (error.code === "auth/invalid-id-token") {
+        throw new Error("Invalid Google ID Token");
+      }
+      throw error;
+    }
   },
 };

@@ -8,13 +8,14 @@ const router = express.Router();
 router.post("/register", AuthController.register);
 router.post("/login", AuthController.login);
 
+// Auth Firebase
+router.post("/firebase", AuthController.firebaseGoogle);
+
 // Protected
 router.get("/me", requireAuth, AuthController.getMe);
-router.put("/profile", requireAuth, AuthController.updateProfile); // 👈 Route mới
+router.put("/profile", requireAuth, AuthController.updateProfile);
 
-// Auth Social
-router.post("/google", AuthController.loginGoogle);
-router.post("/facebook", AuthController.loginFacebook);
+// Auth Social (Removed - Use local email/password authentication)
 
 // Password Management
 router.post("/forgot-password", AuthController.forgotPassword);

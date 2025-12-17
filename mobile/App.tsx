@@ -4,7 +4,7 @@ import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {AuthProvider} from './src/contexts/AuthContext';
 import {isAuthenticated as checkIsAuthenticated} from './src/services/tokenService';
-import {initializeGoogleSignIn} from './src/services/googleService';
+import {FirebaseGoogleService} from './src/services/firebaseGoogleService';
 import {initializeFacebookSDK} from './src/services/facebookService';
 
 // Import Screens (Giữ nguyên)
@@ -87,7 +87,7 @@ const App = () => {
       try {
         // Initialize social SDKs first
         console.log('Initializing social SDKs...');
-        initializeGoogleSignIn();
+        FirebaseGoogleService.configure();
         initializeFacebookSDK();
 
         // First, show splash for 2 seconds for visual effect
@@ -204,6 +204,7 @@ const App = () => {
                       {...props}
                       onBack={() => props.navigation.goBack()}
                       onLogin={() => props.navigation.navigate('Login')}
+                      onLoginSuccess={handleLogin}
                       _onVerify={handleSignUpVerify}
                     />
                   );
@@ -291,6 +292,7 @@ const App = () => {
                       {...props}
                       onBack={() => props.navigation.goBack()}
                       onLogin={() => props.navigation.navigate('Login')}
+                      onLoginSuccess={handleLogin}
                       _onVerify={handleSignUpVerify}
                     />
                   );

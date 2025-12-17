@@ -95,6 +95,15 @@ const ProductList: React.FC = () => {
     return generalImg ? generalImg.image_url : product.images[0].image_url;
   };
 
+  // Helper để tính tổng kho hàng
+  const getTotalStock = (product: Product) => {
+    if (!product.variants) return 0;
+    return product.variants.reduce(
+      (sum, v) => sum + (v.stock_quantity || 0),
+      0
+    );
+  };
+
   if (isFormOpen) {
     return (
       <ProductForm
@@ -166,7 +175,10 @@ const ProductList: React.FC = () => {
                     Price
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    Variants
+                    Stock
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    Sold
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                     Status
@@ -216,8 +228,21 @@ const ProductList: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
                         ${Number(product.base_price).toLocaleString()}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm">
+                          <span
+                            className={`font-semibold ${
+                              getTotalStock(product) > 0
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }`}
+                          >
+                            {getTotalStock(product)}
+                          </span>
+                        </div>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                        {product.variants?.length || 0} variants
+                        {product.sold_count || 0}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span

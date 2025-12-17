@@ -319,7 +319,7 @@ export const ProductRepository = {
       // Query lấy dữ liệu (Kèm ảnh thumbnail ưu tiên ảnh chung)
       const dataQuery = `
         SELECT 
-          p.id, p.name, p.slug, p.base_price, p.rating_average, p.review_count,
+          p.id, p.name, p.slug, p.base_price, p.rating_average, p.review_count, p.is_active, p.sold_count,
           c.name as category_name,
           (
             SELECT image_url FROM product_images pi 

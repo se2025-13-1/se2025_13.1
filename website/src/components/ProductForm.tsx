@@ -47,6 +47,18 @@ const ProductForm: React.FC<ProductFormProps> = ({
   const [vPrice, setVPrice] = useState("");
   const [vStock, setVStock] = useState("10");
 
+  // --- HELPER: Get category display name with parent info ---
+  const getCategoryDisplay = (cat: Category) => {
+    if (!cat.parent_id) {
+      return `${cat.name} (Parent)`;
+    }
+    const parent = categories.find((c) => c.id === cat.parent_id);
+    if (parent) {
+      return `→ ${cat.name} (${parent.name})`;
+    }
+    return `→ ${cat.name} (Subcategory)`;
+  };
+
   // --- 2. EFFECTS ---
   useEffect(() => {
     const fetchCats = async () => {
@@ -199,7 +211,10 @@ const ProductForm: React.FC<ProductFormProps> = ({
             {/* Danh mục */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
-                Category *
+                Category *{" "}
+                <span className="text-xs text-slate-500">
+                  (Choose a parent or subcategory)
+                </span>
               </label>
               <select
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg outline-none"
@@ -209,10 +224,20 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 <option value="">Select Category</option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name}
+                    {getCategoryDisplay(c)}
                   </option>
                 ))}
               </select>
+              {categoryId && (
+                <p className="text-xs text-slate-500 mt-1">
+                  Selected:{" "}
+                  <strong>
+                    {getCategoryDisplay(
+                      categories.find((c) => c.id === categoryId) as Category
+                    )}
+                  </strong>
+                </p>
+              )}
             </div>
 
             {/* Giá gốc */}

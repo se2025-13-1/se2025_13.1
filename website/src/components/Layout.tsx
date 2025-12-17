@@ -8,6 +8,7 @@ import {
   LogOut,
   Menu,
   X,
+  Ticket,
 } from "./Icons";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -95,6 +96,7 @@ const Layout: React.FC<LayoutProps> = ({
           <NavItem id="products" label="Products" icon={Package} />
           <NavItem id="orders" label="Orders" icon={ShoppingCart} />
           <NavItem id="categories" label="Categories" icon={Tag} />
+          <NavItem id="vouchers" label="Vouchers" icon={Ticket} />
           <div className="pt-8 mt-8 border-t border-slate-100">
             <NavItem id="settings" label="Settings" icon={Settings} />
             <button
@@ -122,16 +124,17 @@ const Layout: React.FC<LayoutProps> = ({
           <div className="flex items-center ml-auto space-x-4">
             <div className="text-right hidden sm:block">
               <p className="text-sm font-semibold text-slate-800">
-                {user?.name || "Admin"}
+                {user?.email || "Admin"}
               </p>
-              <p className="text-xs text-slate-500">{user?.email}</p>
+              <p className="text-xs text-slate-500">{user?.role}</p>
             </div>
             <div className="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-sm">
-              {user?.name
-                ?.split(" ")
-                .map((n) => n[0])
-                .join("")
-                .toUpperCase() || "AD"}
+              {user?.email
+                ?.split("@")[0]
+                .split("")
+                .slice(0, 2)
+                .map((n: string) => n.toUpperCase())
+                .join("") || "AD"}
             </div>
           </div>
         </header>

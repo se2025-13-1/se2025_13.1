@@ -81,12 +81,15 @@ class ApiClient {
       }
 
       // Chuẩn hóa dữ liệu trả về
-      // Backend trả về { product: ... } hoặc { categories: ... } hoặc { data: ... }
+      // Backend trả về { product: ... } hoặc { categories: ... } hoặc { vouchers: [...] } hoặc { voucher: {...} } hoặc { data: ... }
       let responseData = body;
       if (body?.data) responseData = body.data;
       else if (body?.product) responseData = body.product;
       else if (body?.products) responseData = body.products;
       else if (body?.categories) responseData = body.categories;
+      else if (body?.voucher) responseData = body.voucher;
+      else if (body?.vouchers) responseData = body.vouchers;
+      else if (body?.orders) responseData = body.orders;
       else if (body?.url) responseData = body.url; // Cho upload
 
       return {
@@ -147,10 +150,46 @@ class ApiClient {
     return null;
   }
 
-  // CATEGORIES (Mới thêm)
+  // CATEGORIES ENDPOINTS
   async getCategories(): Promise<ApiResponse<any[]>> {
     // Gọi endpoint lấy danh sách phẳng (flat) để hiển thị dropdown
     return this.request<any[]>("/categories/flat");
+  }
+
+  async getCategoryTree(): Promise<ApiResponse<any[]>> {
+    // Lấy danh mục dạng cây (hierarchical)
+    return this.request<any[]>("/categories");
+  }
+
+  async createCategory(data: {
+    name: string;
+    parent_id?: string | null;
+    image_url?: string;
+  }): Promise<ApiResponse<any>> {
+    return this.request("/categories", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateCategory(
+    id: string,
+    data: {
+      name?: string;
+      parent_id?: string | null;
+      image_url?: string;
+    }
+  ): Promise<ApiResponse<any>> {
+    return this.request(`/categories/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteCategory(id: string): Promise<ApiResponse<any>> {
+    return this.request(`/categories/${id}`, {
+      method: "DELETE",
+    });
   }
 
   // PRODUCTS ENDPOINTS
@@ -212,6 +251,58 @@ class ApiClient {
 
   async getTopProducts(): Promise<ApiResponse<any>> {
     return this.request("/statistics/top-products");
+  }
+
+  // VOUCHERS ENDPOINTS
+  async getVouchers(): Promise<ApiResponse<any[]>> {
+    return this.request<any[]>("/vouchers");
+  }
+
+  async getVoucher(id: string): Promise<ApiResponse<any>> {
+    return this.request(`/vouchers/${id}`);
+  }
+
+  async createVoucher(data: {
+    code: string;
+    description?: string;
+    discount_type: "percent" | "fixed";
+    discount_value: number;
+    min_order_value?: number;
+    max_discount_amount?: number;
+    start_date?: string;
+    end_date?: string;
+    usage_limit?: number;
+  }): Promise<ApiResponse<any>> {
+    return this.request("/vouchers", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateVoucher(
+    id: string,
+    data: Partial<any>
+  ): Promise<ApiResponse<any>> {
+    return this.request(`/vouchers/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteVoucher(id: string): Promise<ApiResponse<any>> {
+    return this.request(`/vouchers/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  async checkVoucher(
+    code: string,
+    total_amount: number
+  ): Promise<ApiResponse<any>> {
+    return this.request("/vouchers/check", {
+      method: "POST",
+      body: JSON.stringify({ code, total_amount }),
+    });
   }
 }
 

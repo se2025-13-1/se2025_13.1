@@ -57,34 +57,6 @@ export const AuthController = {
     }
   },
 
-  // Đăng nhập Google
-  async loginGoogle(req, res) {
-    try {
-      const { access_token } = req.body;
-      if (!access_token)
-        return res.status(400).json({ error: "Thiếu access_token" });
-
-      const result = await AuthService.loginGoogle(access_token);
-      return res.json(result);
-    } catch (err) {
-      return res.status(400).json({ error: err.message });
-    }
-  },
-
-  // Đăng nhập Facebook
-  async loginFacebook(req, res) {
-    try {
-      const { access_token } = req.body;
-      if (!access_token)
-        return res.status(400).json({ error: "Thiếu access_token" });
-
-      const result = await AuthService.loginFacebook(access_token);
-      return res.json(result);
-    } catch (err) {
-      return res.status(400).json({ error: err.message });
-    }
-  },
-
   // Quên mật khẩu
   async forgotPassword(req, res) {
     try {
@@ -119,6 +91,25 @@ export const AuthController = {
       return res.json(result);
     } catch (err) {
       return res.status(400).json({ error: err.message });
+    }
+  },
+
+  // Firebase Google Sign-Up/Login
+  async firebaseGoogle(req, res) {
+    try {
+      const { idToken } = req.body;
+
+      if (!idToken) {
+        return res.status(400).json({ error: "Missing idToken" });
+      }
+
+      const result = await AuthService.verifyFirebaseGoogle(idToken);
+      return res.status(201).json(result);
+    } catch (err) {
+      console.error("Firebase verification error:", err);
+      return res.status(401).json({
+        error: err.message || "Firebase verification failed",
+      });
     }
   },
 };

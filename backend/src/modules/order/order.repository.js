@@ -194,6 +194,8 @@ export const OrderRepository = {
         o.id, 
         o.total_amount, 
         o.status, 
+        o.payment_method,
+        o.payment_status,
         o.created_at, 
         o.shipping_info, -- Lấy thông tin người nhận từ JSONB
         u.email as user_email -- Lấy thêm email người đặt

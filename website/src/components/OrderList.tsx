@@ -12,7 +12,7 @@ const OrderList: React.FC = () => {
   const fetchOrders = async () => {
     setIsLoading(true);
     try {
-      const res = await apiClient.getOrders();
+      const res = await apiClient.getOrders("");
       if (res.data && Array.isArray(res.data)) {
         setOrders(res.data);
       }
@@ -47,7 +47,7 @@ const OrderList: React.FC = () => {
   const filteredOrders = orders.filter(
     (order) =>
       order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.shipping_info?.recipient_name
+      order.shipping_info?.name
         ?.toLowerCase()
         .includes(searchTerm.toLowerCase())
   );
@@ -122,6 +122,12 @@ const OrderList: React.FC = () => {
                     Total
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    Payment Method
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    Payment Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">
@@ -136,9 +142,9 @@ const OrderList: React.FC = () => {
                       #{order.id.slice(0, 8)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
-                      {order.shipping_info?.recipient_name || "Unknown"}
+                      {order.shipping_info?.name || "Unknown"}
                       <div className="text-xs text-slate-500">
-                        {order.shipping_info?.recipient_phone}
+                        {order.shipping_info?.phone}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
@@ -146,6 +152,24 @@ const OrderList: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
                       ${Number(order.total_amount).toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                      <span className="capitalize">
+                        {order.payment_method || "N/A"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                          order.payment_status === "paid"
+                            ? "bg-green-100 text-green-800"
+                            : order.payment_status === "pending"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {order.payment_status?.toUpperCase() || "N/A"}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
