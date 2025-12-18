@@ -18,6 +18,12 @@ export const AddressApi = {
   createAddress: async (data: AddressPayload) => {
     try {
       const token = await getAccessToken();
+      console.log('CreateAddress - Token:', token ? 'Found' : 'Not found');
+
+      if (!token) {
+        throw new Error('Bạn cần đăng nhập lại');
+      }
+
       const res = await fetch(`${BASE_URL}/api/addresses`, {
         method: 'POST',
         headers: {
@@ -36,9 +42,14 @@ export const AddressApi = {
       });
 
       const json = await res.json();
+      console.log('CreateAddress - Response status:', res.status);
+      console.log('CreateAddress - Response:', json);
 
       if (!res.ok) {
-        throw new Error(json.error || 'Lỗi khi thêm địa chỉ');
+        if (res.status === 401) {
+          throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại');
+        }
+        throw new Error(json.error || json.message || 'Lỗi khi thêm địa chỉ');
       }
 
       return json;
@@ -51,6 +62,16 @@ export const AddressApi = {
   getAddresses: async () => {
     try {
       const token = await getAccessToken();
+      console.log(
+        'GetAddresses - Token:',
+        token ? 'Found (' + token.substring(0, 20) + '...)' : 'Not found',
+      );
+
+      if (!token) {
+        throw new Error('Token không tìm thấy - Bạn cần đăng nhập lại');
+      }
+
+      console.log('GetAddresses - Calling API:', `${BASE_URL}/api/addresses`);
       const res = await fetch(`${BASE_URL}/api/addresses`, {
         method: 'GET',
         headers: {
@@ -60,13 +81,24 @@ export const AddressApi = {
       });
 
       const json = await res.json();
+      console.log('GetAddresses - Response status:', res.status);
+      console.log('GetAddresses - Response:', json);
 
       if (!res.ok) {
-        throw new Error(json.error || 'Lỗi khi lấy danh sách địa chỉ');
+        // ❌ 401: Token không hợp lệ trên server
+        if (res.status === 401) {
+          console.error('GetAddresses - 401 Unauthorized:', json);
+          throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại');
+        }
+        // Lỗi khác
+        throw new Error(
+          json.error || json.message || 'Lỗi khi lấy danh sách địa chỉ',
+        );
       }
 
       return json;
     } catch (error: any) {
+      console.error('GetAddresses - Error:', error);
       throw new Error(error.message || 'Lỗi kết nối');
     }
   },

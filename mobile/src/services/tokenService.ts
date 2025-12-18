@@ -52,12 +52,15 @@ export const getTokens = async (): Promise<StoredToken | null> => {
 
     const parsed = JSON.parse(tokenData);
 
-    // Check if token is expired
-    if (parsed.expiresAt && parsed.expiresAt < Date.now()) {
-      console.log('⚠️ Token expired, clearing...');
-      await clearTokens();
-      return null;
-    }
+    // ✅ KHÔNG tự động xóa token dựa trên expiresAt
+    // Lý do: Backend có thể sử dụng session, JWT TTL khác, hoặc không kiểm tra expiry
+    // Để server quyết định khi nhận lỗi 401, lúc đó mới xóa token
+    //
+    // if (parsed.expiresAt && parsed.expiresAt < Date.now()) {
+    //   console.log('⚠️ Token expired, clearing...');
+    //   await clearTokens();
+    //   return null;
+    // }
 
     return parsed;
   } catch (error) {

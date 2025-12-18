@@ -11,6 +11,7 @@ export interface CartItemData {
   price: number;
   discount?: string;
   quantity: number;
+  variant_id?: string;
 }
 
 interface CartListProps {

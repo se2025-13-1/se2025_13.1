@@ -9,9 +9,12 @@ export const StatisticsService = {
     if (redisClient) {
       const cachedData = await redisClient.get(cacheKey);
       if (cachedData) {
+        console.log("✅ Cache hit for dashboard stats");
         return JSON.parse(cachedData);
       }
     }
+
+    console.log("🔄 Cache miss, fetching from database...");
 
     // 2. Nếu không có Cache, gọi DB
     const stats = await StatisticsRepository.getDashboardStats();
@@ -19,6 +22,7 @@ export const StatisticsService = {
     // 3. Lưu Cache (TTL: 300 giây = 5 phút)
     if (redisClient) {
       await redisClient.set(cacheKey, JSON.stringify(stats), { EX: 300 });
+      console.log("💾 Cached dashboard stats for 5 minutes");
     }
 
     return stats;

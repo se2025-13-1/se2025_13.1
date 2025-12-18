@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -6,13 +6,15 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import CartHeader from '../components/CartHeader';
 import CartList, {CartItemData} from '../components/CartList';
 import CartRecommend from '../components/CartRecommend';
 import CartBottomBar from '../components/CartBottomBar';
 import EmptyCart from '../components/EmptyCart';
+import {CartApi, CartItem} from '../services/cartApi';
 
 interface CartScreenProps {
   onBackPress?: () => void;
@@ -20,53 +22,107 @@ interface CartScreenProps {
 
 const CartScreen: React.FC<CartScreenProps> = ({onBackPress}) => {
   const navigation = useNavigation<any>();
-  const [cartItems, setCartItems] = useState<CartItemData[]>([
-    // Mock data từ ProductCard
-    {
-      id: '1',
-      image:
-        'https://via.placeholder.com/150x150/f0f0f0/666666?text=Túi+đựng+đồ',
-      name: 'Túi đựng đồ da nữ thời trang cao cấp',
-      size: 'Đen, Size L',
-      originalPrice: 80000,
-      price: 50000,
-      discount: '12.12',
-      quantity: 1,
-    },
-    {
-      id: '2',
-      image: 'https://via.placeholder.com/150x150/f0f0f0/666666?text=Sản+Phẩm',
-      name: 'Túi đựng đồ da nữ thời trang cao cấp',
-      size: 'Nâu, Size M',
-      price: 50000,
-      quantity: 2,
-    },
-  ]);
+  const [cartItems, setCartItems] = useState<CartItemData[]>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load cart khi screen được focus
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('[CartScreen] useFocusEffect triggered - calling loadCart()');
+      loadCart();
+    }, []),
+  );
+
+  const loadCart = async () => {
+    console.log('[CartScreen] loadCart() started');
+    setIsLoading(true);
+    setError(null);
+    try {
+      console.log('[CartScreen] Calling CartApi.getCart()...');
+      const response = await CartApi.getCart();
+      console.log('[CartScreen] CartApi.getCart() response:', response);
+
+      // Map API response to CartItemData format
+      const formattedItems: CartItemData[] =
+        response.items?.map((item: CartItem) => ({
+          id: item.id,
+          image:
+            item.image_url ||
+            'https://via.placeholder.com/150x150/f0f0f0/666666?text=No+Image',
+          name: item.product_name,
+          size:
+            item.color && item.size
+              ? `${item.color}, Size ${item.size}`
+              : 'N/A',
+          price: item.price,
+          quantity: item.quantity,
+          variant_id: item.variant_id,
+        })) || [];
+
+      console.log('[CartScreen] Formatted items:', formattedItems);
+      setCartItems(formattedItems);
+    } catch (err: any) {
+      console.error('[CartScreen] Error loading cart:', err);
+      setError(err.message || 'Không thể tải giỏ hàng');
+      Alert.alert('Lỗi', err.message || 'Không thể tải giỏ hàng');
+    } finally {
+      setIsLoading(false);
+      console.log('[CartScreen] loadCart() finished');
+    }
+  };
 
   const handleChatPress = () => {
     Alert.alert('Thông báo', 'Chức năng thông báo chưa được triển khai');
   };
 
   const handleBackPress = () => {
-    // Nếu có callback, gọi nó (set activeTab về home)
     if (onBackPress) {
       onBackPress();
     } else {
-      // Fallback: navigate về Home
       navigation.navigate('Home');
     }
   };
 
-  const handleItemRemove = (id: string) => {
-    setCartItems(cartItems.filter(item => item.id !== id));
-    setSelectedItems(selectedItems.filter(itemId => itemId !== id));
+  const handleItemRemove = async (id: string) => {
+    try {
+      setIsLoading(true);
+      await CartApi.removeItem(id);
+
+      setCartItems(cartItems.filter(item => item.id !== id));
+      setSelectedItems(selectedItems.filter(itemId => itemId !== id));
+
+      Alert.alert('Thành công', 'Sản phẩm đã được xóa');
+    } catch (err: any) {
+      console.error('Error removing item:', err);
+      Alert.alert('Lỗi', err.message || 'Không thể xóa sản phẩm');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleQuantityChange = (id: string, quantity: number) => {
-    setCartItems(
-      cartItems.map(item => (item.id === id ? {...item, quantity} : item)),
-    );
+  const handleQuantityChange = async (id: string, quantity: number) => {
+    try {
+      if (quantity <= 0) {
+        handleItemRemove(id);
+        return;
+      }
+
+      setIsLoading(true);
+      await CartApi.updateItemQuantity(id, quantity);
+
+      setCartItems(
+        cartItems.map(item => (item.id === id ? {...item, quantity} : item)),
+      );
+    } catch (err: any) {
+      console.error('Error updating quantity:', err);
+      Alert.alert('Lỗi', err.message || 'Không thể cập nhật số lượng');
+      // Reload cart nếu có lỗi
+      await loadCart();
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSelectionChange = (ids: string[]) => {
@@ -75,10 +131,8 @@ const CartScreen: React.FC<CartScreenProps> = ({onBackPress}) => {
 
   const handleSelectAll = (selected: boolean) => {
     if (selected) {
-      // Select all items
       setSelectedItems(cartItems.map(item => item.id));
     } else {
-      // Deselect all items
       setSelectedItems([]);
     }
   };
@@ -89,12 +143,10 @@ const CartScreen: React.FC<CartScreenProps> = ({onBackPress}) => {
       return;
     }
 
-    // Get selected cart items for checkout
     const selectedCartItems = cartItems.filter(item =>
       selectedItems.includes(item.id),
     );
 
-    // Navigate to PaymentScreen with selected items
     navigation.navigate('Payment', {
       cartItems: selectedCartItems,
       totalPrice: selectedCartItems.reduce(
@@ -123,6 +175,14 @@ const CartScreen: React.FC<CartScreenProps> = ({onBackPress}) => {
         .reduce((sum, item) => sum + item.price * item.quantity, 0)
     : cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
+  if (isLoading && cartItems.length === 0) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color="#0066cc" />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <CartHeader
@@ -146,11 +206,9 @@ const CartScreen: React.FC<CartScreenProps> = ({onBackPress}) => {
               onSelectionChange={handleSelectionChange}
             />
 
-            {/* Recommended Products - Only show if cart is not empty */}
             {cartItems.length > 0 && <CartRecommend navigation={navigation} />}
           </ScrollView>
 
-          {/* Bottom Bar */}
           <CartBottomBar
             totalPrice={
               selectedItems.length
@@ -182,6 +240,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

@@ -10,18 +10,17 @@ const router = express.Router();
 
 router.use(requireAuth);
 
+// 👇 ADMIN ROUTES (Đặt trước User Routes để tránh conflict)
+// GET /api/orders/admin/all -> Lấy tất cả đơn
+router.get("/admin/all", requireAdmin, OrderController.listAll);
+// GET /api/orders/admin/:id -> Lấy chi tiết đơn (không cần check user_id)
+router.get("/admin/:id", requireAdmin, OrderController.detailAdmin);
+
 // User Routes
 router.post("/", OrderController.create);
 router.get("/", OrderController.list); // API cũ: Lấy đơn của chính mình
 router.get("/:id", OrderController.detail);
 router.put("/:id/cancel", OrderController.cancel);
-
-// 👇 ADMIN ROUTES (Thêm đoạn này)
-// GET /api/orders/admin/all -> Lấy tất cả đơn
-router.get("/admin/all", requireAdmin, OrderController.listAll);
-
-// PUT /api/orders/:id/status -> Cập nhật trạng thái (Admin)
-// Bạn nên viết thêm hàm updateStatus trong Controller/Service tương tự
-// router.put("/:id/status", requireAdmin, OrderController.updateStatus);
+router.put("/:id/complete", OrderController.complete);
 
 export default router;

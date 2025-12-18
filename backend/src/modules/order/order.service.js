@@ -90,7 +90,7 @@ export const OrderService = {
       return { ...item, total_price: total };
     });
 
-    const shippingFee = 30000;
+    const shippingFee = 0;
 
     // 👇 TÍCH HỢP VOUCHER TẠI ĐÂY 👇
     let discountAmount = 0;
@@ -142,8 +142,18 @@ export const OrderService = {
     return order;
   },
 
+  async getOrderDetailAdmin(orderId) {
+    const order = await OrderRepository.findByIdAdmin(orderId);
+    if (!order) throw new Error("Đơn hàng không tìm thấy");
+    return order;
+  },
+
   async cancelOrder(orderId, userId) {
     return await OrderRepository.cancelOrder(orderId, userId);
+  },
+
+  async completeOrder(orderId, userId) {
+    return await OrderRepository.completeOrder(orderId, userId);
   },
 
   async getAllOrders(query) {
