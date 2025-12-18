@@ -83,6 +83,8 @@ export const ProductRepository = {
     const query = `
       SELECT 
         p.*,
+        p.rating_average,
+        p.review_count,
         c.name as category_name,
         COALESCE((
           SELECT json_agg(json_build_object(
@@ -198,15 +200,10 @@ export const ProductRepository = {
   },
 
   async delete(id) {
-    // Thay vì DELETE (xóa vĩnh viễn), ta dùng UPDATE để ẩn sản phẩm (Soft Delete)
-    // 1. Set is_active = false (để không hiện ra ngoài nữa)
-    // 2. Sửa slug (để sau này có thể tạo lại sản phẩm mới cùng tên mà không bị lỗi trùng slug)
+    // Hard Delete: Xóa toàn bộ product, variants, images, reviews, etc.
+    // Vì có ON DELETE CASCADE, xóa product sẽ tự xóa child records
     const query = `
-      UPDATE products 
-      SET 
-        is_active = false,
-        slug = slug || '-deleted-' || EXTRACT(EPOCH FROM NOW())::text,
-        updated_at = NOW()
+      DELETE FROM products 
       WHERE id = $1 
       RETURNING id
     `;
@@ -316,15 +313,15 @@ export const ProductRepository = {
       const whereClause =
         conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
-      // Query lấy dữ liệu (Kèm ảnh thumbnail ưu tiên ảnh chung)
+      // Query lấy dữ liệu (Chỉ lấy thông tin cơ bản, variants và images sẽ join riêng)
       const dataQuery = `
         SELECT 
           p.id, p.name, p.slug, p.base_price, p.rating_average, p.review_count, p.is_active, p.sold_count,
           c.name as category_name,
           (
             SELECT image_url FROM product_images pi 
-            WHERE pi.product_id = p.id 
-            ORDER BY (CASE WHEN pi.color_ref IS NULL THEN 0 ELSE 1 END) ASC LIMIT 1
+            WHERE pi.product_id = p.id AND pi.color_ref IS NULL
+            LIMIT 1
           ) as thumbnail
         FROM products p
         LEFT JOIN categories c ON p.category_id = c.id
@@ -332,6 +329,7 @@ export const ProductRepository = {
         ${orderByClause}
         LIMIT $${idx} OFFSET $${idx + 1}
       `;
+
       // Query đếm tổng (để phân trang)
       const countQuery = `
         SELECT COUNT(*) as total 
@@ -345,8 +343,69 @@ export const ProductRepository = {
         client.query(countQuery, values),
       ]);
 
+      // Nếu có products, lấy variants và images riêng
+      let products = dataRes.rows;
+      if (products.length > 0) {
+        const productIds = products.map((p) => p.id);
+
+        // Lấy tất cả variants của các product này
+        const variantsRes = await client.query(
+          `SELECT product_id, id, sku, color, size, price, stock_quantity 
+           FROM product_variants 
+           WHERE product_id = ANY($1)
+           ORDER BY product_id`,
+          [productIds]
+        );
+
+        // Lấy tất cả images của các product này
+        const imagesRes = await client.query(
+          `SELECT product_id, id, image_url, color_ref, display_order 
+           FROM product_images 
+           WHERE product_id = ANY($1)
+           ORDER BY product_id, 
+            (CASE WHEN color_ref IS NULL THEN 0 ELSE 1 END) ASC,
+            display_order ASC`,
+          [productIds]
+        );
+
+        // Map variants và images vào products
+        const variantsByProduct = {};
+        const imagesByProduct = {};
+
+        variantsRes.rows.forEach((v) => {
+          if (!variantsByProduct[v.product_id])
+            variantsByProduct[v.product_id] = [];
+          variantsByProduct[v.product_id].push({
+            id: v.id,
+            sku: v.sku,
+            color: v.color,
+            size: v.size,
+            price: v.price,
+            stock_quantity: v.stock_quantity,
+          });
+        });
+
+        imagesRes.rows.forEach((img) => {
+          if (!imagesByProduct[img.product_id])
+            imagesByProduct[img.product_id] = [];
+          imagesByProduct[img.product_id].push({
+            id: img.id,
+            image_url: img.image_url,
+            color_ref: img.color_ref,
+            display_order: img.display_order,
+          });
+        });
+
+        // Gắn variants và images vào products
+        products = products.map((p) => ({
+          ...p,
+          variants: variantsByProduct[p.id] || [],
+          images: imagesByProduct[p.id] || [],
+        }));
+      }
+
       return {
-        products: dataRes.rows,
+        products,
         total: parseInt(countRes.rows[0].total),
       };
     } finally {

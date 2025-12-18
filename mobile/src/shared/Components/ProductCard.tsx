@@ -12,21 +12,39 @@ const {width} = Dimensions.get('window');
 const cardWidth = (width - 45) / 2; // Chiều rộng card (trừ margin)
 
 interface ProductCardProps {
+  product?: {
+    id: string;
+    name: string;
+    thumbnail?: string;
+    base_price: number;
+    sold_count?: number;
+  };
   onPress?: () => void;
   navigation?: any;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({onPress, navigation}) => {
+const ProductCard: React.FC<ProductCardProps> = ({
+  product,
+  onPress,
+  navigation,
+}) => {
   const handlePress = () => {
     // Nếu có onPress callback, gọi nó
     if (onPress) {
       onPress();
     }
     // Nếu có navigation, navigate tới ProductDetail
-    if (navigation) {
-      navigation.navigate('ProductDetail');
+    if (navigation && product?.id) {
+      navigation.navigate('ProductDetail', {productId: product.id});
     }
   };
+
+  const productName = product?.name || 'Sản phẩm';
+  const productPrice = product?.base_price || 0;
+  const productImage =
+    product?.thumbnail ||
+    'https://via.placeholder.com/150x150/f0f0f0/666666?text=Sản+Phẩm';
+  const productSold = product?.sold_count || 0;
 
   return (
     <TouchableOpacity style={styles.container} onPress={handlePress}>
@@ -34,7 +52,7 @@ const ProductCard: React.FC<ProductCardProps> = ({onPress, navigation}) => {
       <View style={styles.imageContainer}>
         <Image
           source={{
-            uri: 'https://via.placeholder.com/150x150/f0f0f0/666666?text=Sản+Phẩm',
+            uri: productImage,
           }}
           style={styles.image}
           resizeMode="cover"
@@ -44,13 +62,15 @@ const ProductCard: React.FC<ProductCardProps> = ({onPress, navigation}) => {
       {/* Tên sản phẩm */}
       <View style={styles.contentContainer}>
         <Text style={styles.productName} numberOfLines={2}>
-          Túi đựng đồ da nữ thời trang cao cấp
+          {productName}
         </Text>
 
         {/* Giá và số lượng đã bán */}
         <View style={styles.bottomContainer}>
-          <Text style={styles.price}>50.000₫</Text>
-          <Text style={styles.soldText}>Đã bán: 0</Text>
+          <Text style={styles.price}>
+            {Math.floor(productPrice).toLocaleString('vi-VN')}₫
+          </Text>
+          <Text style={styles.soldText}>Đã bán: {productSold}</Text>
         </View>
       </View>
     </TouchableOpacity>

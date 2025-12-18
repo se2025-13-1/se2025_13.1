@@ -71,11 +71,11 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
           </View>
           <View
             style={[
-              styles.checkbox,
-              selectedMethod === method.id && styles.checkboxActive,
+              styles.radioButton,
+              selectedMethod === method.id && styles.radioButtonActive,
             ]}>
             {selectedMethod === method.id && (
-              <Text style={styles.checkmark}>✓</Text>
+              <View style={styles.radioButtonInner} />
             )}
           </View>
         </TouchableOpacity>
@@ -128,24 +128,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999',
   },
-  checkbox: {
+  radioButton: {
     width: 20,
     height: 20,
-    borderRadius: 3,
+    borderRadius: 10,
     borderWidth: 2,
     borderColor: '#E0E0E0',
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 12,
   },
-  checkboxActive: {
-    backgroundColor: '#E53935',
-    borderColor: '#E53935',
+  radioButtonActive: {
+    borderColor: '#4CAF50',
   },
-  checkmark: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
+  radioButtonInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#4CAF50',
   },
   viewAllButtonInline: {
     flexDirection: 'row',

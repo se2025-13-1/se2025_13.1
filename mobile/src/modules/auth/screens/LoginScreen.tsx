@@ -5,10 +5,6 @@ import {AppConfig} from '../../../config/AppConfig';
 import {saveTokens, saveUser} from '../../../services/tokenService';
 import {useAuth} from '../../../contexts/AuthContext';
 import {FirebaseGoogleService} from '../../../services/firebaseGoogleService';
-import {
-  initializeFacebookSDK,
-  handleFacebookLogin,
-} from '../../../services/facebookService';
 import {RootStackParamList} from '../../../../App';
 import {
   View,
@@ -183,103 +179,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         }
         return;
       }
-
-      // FACEBOOK LOGIN FLOW (Existing logic)
-      let accessToken: string | null = null;
-      let userInfo: any = null;
-
-      if (provider === 'Facebook') {
-        try {
-          const facebookResult = await handleFacebookLogin();
-          if (facebookResult) {
-            accessToken = facebookResult.accessToken;
-            userInfo = facebookResult.userInfo;
-          } else {
-            setSocialLoading(null);
-            return; // User cancelled
-          }
-        } catch (error) {
-          console.error('Facebook Login error:', error);
-          Alert.alert(
-            'Setup Required',
-            'Facebook SDK not configured. Please check your configuration in facebookService.ts',
-          );
-          setSocialLoading(null);
-          return;
-        }
-      }
-
-      if (!accessToken) {
-        Alert.alert(
-          'Authentication Error',
-          `Failed to get ${provider} access token. Please try again or contact support.`,
-        );
-        setSocialLoading(null);
-        return;
-      }
-
-      console.log(`${provider} access token obtained, calling backend...`);
-
-      // Call backend API for Facebook
-      fetch(`${AppConfig.BASE_URL}/api/auth/${provider.toLowerCase()}`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({access_token: accessToken}),
-      })
-        .then(async res => {
-          const data = await res.json();
-          if (!res.ok) {
-            throw new Error(data.error || `${provider} login failed`);
-          }
-          // Success - Save tokens and update context
-          if (data.accessToken) {
-            try {
-              await saveTokens(
-                data.accessToken,
-                data.refreshToken,
-                data.expiresIn,
-              );
-
-              // Save user info if available
-              if (data.user) {
-                const userFullName = data.user.fullName || data.user.name || '';
-                await saveUser({
-                  id: data.user.id,
-                  email: data.user.email,
-                  fullName: userFullName,
-                  avatarUrl: data.user.avatarUrl,
-                });
-                // Update global auth context with fullName
-                setUser({
-                  ...data.user,
-                  fullName: userFullName,
-                });
-                setIsAuthenticated(true);
-              }
-            } catch (storageError) {
-              console.error('Failed to save tokens:', storageError);
-            }
-          }
-
-          setSocialLoading(null);
-          setIsSuccess(true);
-          // Navigate to Home screen immediately
-          navigation.reset({
-            index: 0,
-            routes: [{name: 'Home'}],
-          });
-        })
-        .catch(err => {
-          console.error(`${provider} login error:`, err);
-          setSocialLoading(null);
-          let errorMessage = `${provider} login failed. Please try again.`;
-          if (err instanceof TypeError) {
-            errorMessage = 'Network error. Please check your connection.';
-          } else if (err.message) {
-            errorMessage = err.message;
-          }
-          setErrors({submit: errorMessage});
-        });
     } catch (err: any) {
       setSocialLoading(null);
       console.error(`${provider} login error:`, err);
@@ -487,26 +386,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                 {socialLoading === 'Google'
                   ? 'Signing in...'
                   : 'Login with Google'}
-              </Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.facebookButton,
-              socialLoading === 'Facebook' && styles.facebookButtonLoading,
-            ]}
-            onPress={() => handleSocialLogin('Facebook')}
-            disabled={socialLoading !== null}>
-            <View style={styles.socialButtonContent}>
-              <Image
-                source={require('../../../assets/icons/Facebook.png')}
-                style={styles.socialIcon}
-              />
-              <Text style={styles.facebookButtonText}>
-                {socialLoading === 'Facebook'
-                  ? 'Signing in...'
-                  : 'Login with Facebook'}
               </Text>
             </View>
           </TouchableOpacity>
@@ -743,23 +622,6 @@ const styles = StyleSheet.create({
   socialButtonText: {
     fontSize: 16,
     color: '#000000',
-    fontWeight: '500',
-  },
-  facebookButton: {
-    backgroundColor: '#1877F2',
-    paddingVertical: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  facebookButtonLoading: {
-    opacity: 0.6,
-    backgroundColor: '#1566D9',
-  },
-  facebookButtonText: {
-    fontSize: 16,
-    color: '#FFFFFF',
     fontWeight: '500',
   },
   signUpLink: {

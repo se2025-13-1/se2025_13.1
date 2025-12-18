@@ -32,22 +32,6 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
         <Text style={styles.value}>{formatPrice(subtotal)}</Text>
       </View>
 
-      {/* Shipping Fee */}
-      <View style={styles.row}>
-        <Text style={styles.label}>Tổng tiền phí vận chuyển</Text>
-        <Text style={styles.value}>{formatPrice(shippingFee)}</Text>
-      </View>
-
-      {/* Shipping Discount */}
-      {shippingDiscount !== 0 && (
-        <View style={styles.row}>
-          <Text style={styles.label}>Giảm giá phí vận chuyển</Text>
-          <Text style={[styles.value, styles.discount]}>
-            {formatPrice(shippingDiscount)}
-          </Text>
-        </View>
-      )}
-
       {/* Voucher Discount */}
       {voucherDiscount !== 0 && (
         <View style={styles.row}>

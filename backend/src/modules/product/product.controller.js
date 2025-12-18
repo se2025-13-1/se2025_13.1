@@ -115,4 +115,14 @@ export const ProductController = {
       return res.status(500).json({ error: "Delete failed" });
     }
   },
+
+  async fixAllSlugs(req, res) {
+    try {
+      const result = await ProductService.fixAllSlugs();
+      return res.json(result);
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ error: err.message || "Fix slugs failed" });
+    }
+  },
 };
