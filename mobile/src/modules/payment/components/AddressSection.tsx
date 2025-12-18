@@ -23,32 +23,67 @@ interface Address {
 interface AddressSectionProps {
   onPress?: () => void;
   onSelectAddress?: (address: Address) => void;
+  selectedAddress?: Address | null;
+  refreshKey?: number;
 }
 
 const AddressSection: React.FC<AddressSectionProps> = ({
   onPress,
   onSelectAddress,
+  selectedAddress,
+  refreshKey,
 }) => {
   const [address, setAddress] = useState<Address | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Fetch default address or first address on mount
   useEffect(() => {
+    console.log('AddressSection - Mount, fetching addresses');
     fetchAddresses();
   }, []);
+
+  // Update displayed address when selectedAddress changes
+  useEffect(() => {
+    if (selectedAddress) {
+      console.log(
+        'AddressSection - selectedAddress prop changed:',
+        selectedAddress.id,
+      );
+      setAddress(selectedAddress);
+    }
+  }, [selectedAddress]);
+
+  // Call callback when address is set (only when needed)
+  useEffect(() => {
+    if (address && onSelectAddress) {
+      console.log('AddressSection - Calling onSelectAddress callback');
+      onSelectAddress(address);
+    }
+  }, [address]);
+
+  // Refresh when refreshKey changes
+  useEffect(() => {
+    if (refreshKey !== undefined) {
+      fetchAddresses();
+    }
+  }, [refreshKey]);
 
   const fetchAddresses = async () => {
     try {
       setLoading(true);
       const response = await AddressApi.getAddresses();
-      const addresses: Address[] = response.data || response;
+      const addresses: Address[] =
+        response.addresses || response.data || response;
+      console.log('AddressSection - fetched addresses:', addresses);
 
       // Find default address or use first one
       const defaultAddress =
         addresses.find((a: Address) => a.is_default) || addresses[0];
 
       if (defaultAddress) {
+        console.log('AddressSection - Setting address:', defaultAddress.id);
         setAddress(defaultAddress);
+        // Always call callback to ensure PaymentScreen has the address
         onSelectAddress?.(defaultAddress);
       }
     } catch (error) {

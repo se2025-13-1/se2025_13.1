@@ -29,6 +29,8 @@ import {
   Percent,
   DollarSign,
   Calendar,
+  MapPin,
+  CreditCard,
 } from "lucide-react";
 
 export {
@@ -62,4 +64,6 @@ export {
   Percent,
   DollarSign,
   Calendar,
+  MapPin,
+  CreditCard,
 };

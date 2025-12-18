@@ -5,7 +5,6 @@ export const StatisticsRepository = {
     const client = await pgPool.connect();
     try {
       // 1. Tính Tổng Doanh Thu (Chỉ tính đơn thành công)
-      // COALESCE để nếu không có đơn nào thì trả về 0 thay vì null
       const revenueQuery = `
         SELECT COALESCE(SUM(total_amount), 0) as total 
         FROM orders 
@@ -18,23 +17,43 @@ export const StatisticsRepository = {
       // 3. Đếm Tổng Khách Hàng (Trừ admin ra)
       const usersQuery = `SELECT COUNT(*) as total FROM auth_users WHERE role = 'customer'`;
 
-      // 4. Đếm Sản phẩm sắp hết hàng (Ví dụ: tồn kho < 10)
+      // 4. Đếm Sản phẩm sắp hết hàng (Tồn kho < 10)
       const lowStockQuery = `SELECT COUNT(*) as total FROM product_variants WHERE stock_quantity < 10`;
 
-      // Chạy song song 4 câu lệnh
-      const [revenueRes, ordersRes, usersRes, lowStockRes] = await Promise.all([
+      // 5. Đếm Tổng Số Sản Phẩm (Đếm product variants - SKU)
+      const totalProductsQuery = `SELECT COUNT(*) as total FROM product_variants`;
+
+      // 6. Đếm Tổng Số Pending Orders (Chỉ đơn đang chờ xác nhận)
+      const pendingOrdersQuery = `SELECT COUNT(*) as total FROM orders WHERE status = 'pending'`;
+
+      // Chạy song song 6 câu lệnh
+      const [
+        revenueRes,
+        ordersRes,
+        usersRes,
+        lowStockRes,
+        productsRes,
+        pendingRes,
+      ] = await Promise.all([
         client.query(revenueQuery),
         client.query(ordersQuery),
         client.query(usersQuery),
         client.query(lowStockQuery),
+        client.query(totalProductsQuery),
+        client.query(pendingOrdersQuery),
       ]);
 
-      return {
+      const result = {
         total_revenue: Number(revenueRes.rows[0].total),
         total_orders: Number(ordersRes.rows[0].total),
         total_users: Number(usersRes.rows[0].total),
         low_stock_count: Number(lowStockRes.rows[0].total),
+        total_products: Number(productsRes.rows[0].total),
+        pending_orders: Number(pendingRes.rows[0].total),
       };
+
+      console.log("📊 Dashboard Stats:", result);
+      return result;
     } finally {
       client.release();
     }

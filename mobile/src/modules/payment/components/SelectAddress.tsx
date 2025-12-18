@@ -31,6 +31,7 @@ interface SelectAddressProps {
   onClose: () => void;
   onSelectAddress: (address: Address) => void;
   onNavigateToAddAddress?: () => void;
+  refreshKey?: number;
 }
 
 const SelectAddress: React.FC<SelectAddressProps> = ({
@@ -39,6 +40,7 @@ const SelectAddress: React.FC<SelectAddressProps> = ({
   onClose,
   onSelectAddress,
   onNavigateToAddAddress,
+  refreshKey,
 }) => {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(false);
@@ -52,17 +54,32 @@ const SelectAddress: React.FC<SelectAddressProps> = ({
     }
   }, [visible]);
 
+  useEffect(() => {
+    if (visible && refreshKey !== undefined) {
+      fetchAddresses();
+    }
+  }, [refreshKey]);
+
   const fetchAddresses = async () => {
+    console.log('SelectAddress - fetchAddresses called');
     try {
       setLoading(true);
       const response = await AddressApi.getAddresses();
-      const addressList: Address[] = response.data || response;
+      console.log('SelectAddress - API response:', response);
+
+      const addressList: Address[] =
+        response.addresses || response.data || response;
+      console.log('SelectAddress - addressList:', addressList);
+      console.log('SelectAddress - addressList.length:', addressList.length);
+
       setAddresses(addressList);
 
       // Set current selected if not set
       if (!selectedId && addressList.length > 0) {
         const defaultAddr = addressList.find((a: Address) => a.is_default);
-        setSelectedId(defaultAddr?.id || addressList[0].id);
+        const newSelectedId = defaultAddr?.id || addressList[0].id;
+        console.log('SelectAddress - Setting selectedId to:', newSelectedId);
+        setSelectedId(newSelectedId);
       }
     } catch (error) {
       console.log('Error fetching addresses:', error);
@@ -151,26 +168,41 @@ const SelectAddress: React.FC<SelectAddressProps> = ({
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#E53935" />
             </View>
-          ) : addresses.length > 0 ? (
-            <ScrollView
-              style={styles.addressesList}
-              showsVerticalScrollIndicator={false}>
-              {addresses.map((addr: Address) => renderAddressItem(addr))}
-            </ScrollView>
           ) : (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>Chưa có địa chỉ nào</Text>
-              <TouchableOpacity
-                style={styles.addAddressButton}
-                onPress={() => {
-                  onClose();
-                  onNavigateToAddAddress?.();
-                }}>
-                <Text style={styles.addAddressButtonText}>
-                  Thêm địa chỉ mới
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <>
+              {console.log(
+                'SelectAddress - Rendering with addresses.length:',
+                addresses.length,
+              )}
+              {console.log('SelectAddress - addresses:', addresses)}
+              {addresses.length > 0 ? (
+                <ScrollView
+                  style={styles.addressesList}
+                  showsVerticalScrollIndicator={false}>
+                  {addresses.map((addr: Address) => {
+                    console.log(
+                      'SelectAddress - Rendering address:',
+                      addr.id,
+                      addr.recipient_name,
+                    );
+                    return renderAddressItem(addr);
+                  })}
+                </ScrollView>
+              ) : (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>Chưa có địa chỉ nào</Text>
+                  <TouchableOpacity
+                    style={styles.addAddressButton}
+                    onPress={() => {
+                      onNavigateToAddAddress?.();
+                    }}>
+                    <Text style={styles.addAddressButtonText}>
+                      Thêm địa chỉ mới
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </>
           )}
 
           {/* Footer - Confirm Button */}

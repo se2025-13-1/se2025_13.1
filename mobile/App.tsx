@@ -26,8 +26,10 @@ import AddressListScreen from './src/modules/address/screens/AddressListScreen';
 import EditAddressScreen from './src/modules/address/screens/EditAddressScreen';
 import ProductDetailScreen from './src/modules/productdetails/screens/ProductDetailScreen';
 import ReviewListScreen from './src/modules/reviews/screens/ReviewListScreen';
+import CartScreen from './src/modules/cart/screens/CartScreen';
 import PaymentScreen from './src/modules/payment/screens/PaymentScreen';
 import PaymentMethodScreen from './src/modules/payment/screens/PaymentMethodScreen';
+import OrderResultScreen from './src/modules/order/screens/OrderResultScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // 👇 1. IMPORT SERVICE THÔNG BÁO (THÊM MỚI)
@@ -64,13 +66,17 @@ export type RootStackParamList = {
   EditAddress: {address: any};
   ProductDetail: undefined;
   ReviewList: undefined;
+  Cart: undefined;
   Payment: {
-    color: string;
-    size: string;
-    quantity: number;
-    price: number;
+    product?: any;
+    variant?: any;
+    quantity?: number;
+    cartItems?: any[];
+    totalPrice?: number;
+    totalQuantity?: number;
   };
   PaymentMethod: {selectedMethod: string};
+  OrderResult: {orderId: string; items?: any[]};
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -175,11 +181,13 @@ const App = () => {
                 component={ProductDetailScreen}
               />
               <Stack.Screen name="ReviewList" component={ReviewListScreen} />
+              <Stack.Screen name="Cart" component={CartScreen} />
               <Stack.Screen name="Payment" component={PaymentScreen} />
               <Stack.Screen
                 name="PaymentMethod"
                 component={PaymentMethodScreen}
               />
+              <Stack.Screen name="OrderResult" component={OrderResultScreen} />
               {/* Auth screens still available if user wants to login */}
               <Stack.Screen name="Login">
                 {props => (

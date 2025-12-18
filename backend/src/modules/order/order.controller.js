@@ -67,10 +67,31 @@ export const OrderController = {
     }
   },
 
+  async complete(req, res) {
+    try {
+      const userId = req.user.id;
+      const { id } = req.params;
+      const result = await OrderService.completeOrder(id, userId);
+      return res.json(result);
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  },
+
   async listAll(req, res) {
     try {
       const orders = await OrderService.getAllOrders(req.query);
       return res.json({ orders });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  },
+
+  async detailAdmin(req, res) {
+    try {
+      const { id } = req.params;
+      const order = await OrderService.getOrderDetailAdmin(id);
+      return res.json({ order });
     } catch (err) {
       return res.status(500).json({ error: err.message });
     }

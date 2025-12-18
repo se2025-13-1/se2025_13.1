@@ -11,7 +11,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "secret";
 // Helper tạo token
 const generateTokens = (user) => {
   const payload = { id: user.id, email: user.email, role: user.role };
-  const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
+  const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: "24h" });
   const refreshToken = jwt.sign(
     payload,
     process.env.JWT_REFRESH_SECRET || "refresh_secret",

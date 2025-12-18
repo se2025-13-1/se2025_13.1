@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useCallback, useEffect} from 'react';
 import {
   View,
   Text,
@@ -6,8 +6,13 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  Alert,
 } from 'react-native';
-import {useNavigation, useRoute} from '@react-navigation/native';
+import {
+  useNavigation,
+  useRoute,
+  useFocusEffect,
+} from '@react-navigation/native';
 import AddressSection from '../components/AddressSection';
 import SelectAddress, {Address} from '../components/SelectAddress';
 import ProductItem from '../components/ProductItem';
@@ -15,26 +20,91 @@ import VoucherSection from '../components/VoucherSection';
 import PaymentMethodSelector from '../components/PaymentMethodSelector';
 import OrderSummary from '../components/OrderSummary';
 import BottomCheckoutBar from '../components/BottomCheckoutBar';
+import {OrderApi} from '../../order/services/orderApi';
+import {AddressApi} from '../../address/services/addressApi';
+
+interface CartItemPayment {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  image?: string;
+  variant_id?: string;
+  color?: string;
+  size?: string;
+}
 
 const PaymentScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute();
   const params = route.params as any;
 
-  // Get product and variant data from navigation params
+  // Support both single product (buy_now) and cartItems (from cart)
   const product = params?.product || null;
   const variant = params?.variant || null;
   const quantity = params?.quantity || 1;
+
+  // Cart items from CartScreen
+  const cartItems = params?.cartItems || null;
+  const totalPrice = params?.totalPrice || 0;
+  const totalQuantity = params?.totalQuantity || 0;
 
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [showVoucherModal, setShowVoucherModal] = useState(false);
   const [selectedVoucher, setSelectedVoucher] = useState<any>(null);
   const [orderNote, setOrderNote] = useState<string>('');
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] =
+    useState<string>('1');
+
+  // Debug selectedAddress changes
+  useEffect(() => {
+    console.log(
+      'PaymentScreen - selectedAddress changed:',
+      selectedAddress
+        ? {
+            id: selectedAddress.id,
+            name: selectedAddress.recipient_name,
+            phone: selectedAddress.recipient_phone,
+          }
+        : null,
+    );
+  }, [selectedAddress]);
+
+  // Fetch default address on mount if not already set
+  useEffect(() => {
+    console.log(
+      'PaymentScreen - Mount, letting AddressSection handle address fetching',
+    );
+    // AddressSection will handle fetching and setting address via callback
+  }, []);
+
+  const handleAddressSelected = (address: Address) => {
+    console.log('PaymentScreen - Address selected via callback:', address);
+    setSelectedAddress(address);
+  };
+
+  // Refresh SelectAddress when screen is focused (after returning from AddAddress)
+  useFocusEffect(
+    useCallback(() => {
+      setRefreshKey(prev => prev + 1);
+    }, []),
+  );
+
+  // Determine if this is cart checkout or buy_now
+  const isCartCheckout = !!cartItems && cartItems.length > 0;
 
   // Calculate totals
-  const itemPrice = variant?.price || product?.base_price || 0;
-  const subtotal = itemPrice * quantity;
+  let subtotal: number;
+  if (isCartCheckout) {
+    // For cart checkout, use the totalPrice passed from CartScreen
+    subtotal = totalPrice;
+  } else {
+    // For single product buy_now, calculate from product/variant
+    const itemPrice = variant?.price || product?.base_price || 0;
+    subtotal = itemPrice * quantity;
+  }
 
   // Calculate voucher discount
   let voucherDiscount = 0;
@@ -70,11 +140,8 @@ const PaymentScreen: React.FC = () => {
     setShowAddressModal(true);
   };
 
-  const handleAddressSelected = (address: Address) => {
-    setSelectedAddress(address);
-  };
-
   const handleNavigateToAddAddress = () => {
+    setShowAddressModal(false);
     navigation.navigate('AddAddress');
   };
 
@@ -86,6 +153,115 @@ const PaymentScreen: React.FC = () => {
   const handleNoteChange = (note: string) => {
     setOrderNote(note);
     console.log('Order note changed:', note);
+  };
+
+  const handlePaymentMethodSelect = (methodId: string) => {
+    setSelectedPaymentMethod(methodId);
+  };
+
+  const handleCheckout = async () => {
+    console.log('=== CHECKOUT DEBUG START ===');
+    console.log('isCartCheckout:', isCartCheckout);
+    console.log('selectedAddress:', selectedAddress);
+
+    if (isCartCheckout) {
+      console.log('📦 Cart checkout - cartItems:', cartItems);
+    } else {
+      console.log('🛍️ Buy now - product:', product);
+      console.log('variant:', variant);
+      console.log('quantity:', quantity);
+    }
+
+    // Validate inputs
+    if (!selectedAddress) {
+      console.log('❌ selectedAddress is null - showing alert');
+      Alert.alert('Thông báo', 'Vui lòng chọn địa chỉ giao hàng');
+      return;
+    } else {
+      console.log('✅ selectedAddress is valid:', {
+        id: selectedAddress.id,
+        name: selectedAddress.recipient_name,
+        phone: selectedAddress.recipient_phone,
+      });
+    }
+
+    // Validate product data
+    if (!isCartCheckout && (!product || !variant)) {
+      console.log('❌ product or variant is null');
+      Alert.alert('Lỗi', 'Không có thông tin sản phẩm');
+      return;
+    }
+
+    if (isCartCheckout && (!cartItems || cartItems.length === 0)) {
+      console.log('❌ cartItems is empty');
+      Alert.alert('Lỗi', 'Giỏ hàng trống');
+      return;
+    }
+
+    try {
+      // Map payment method ID to method name
+      const paymentMethodMap: {[key: string]: string} = {
+        '1': 'cod',
+        '2': 'momo',
+        '3': 'zalopay',
+      };
+
+      const paymentMethod = paymentMethodMap[selectedPaymentMethod] || 'cod';
+      console.log('✅ paymentMethod:', paymentMethod);
+
+      // Build items array based on checkout type
+      const items: any[] = [];
+
+      if (isCartCheckout) {
+        // For cart checkout, map cartItems to items
+        items.push(
+          ...cartItems.map((item: CartItemPayment) => ({
+            variant_id: item.variant_id || item.id,
+            quantity: item.quantity,
+          })),
+        );
+        console.log('📦 Cart items mapped:', items);
+      } else {
+        // For buy_now, use single product variant
+        items.push({
+          variant_id: variant.id,
+          quantity: quantity,
+        });
+        console.log('🛍️ Buy now item:', items);
+      }
+
+      const orderPayload = {
+        address_id: selectedAddress.id,
+        type: isCartCheckout ? ('cart' as const) : ('buy_now' as const),
+        items: items,
+        payment_method: paymentMethod,
+        ...(selectedVoucher && {voucher_code: selectedVoucher.code}),
+        ...(orderNote && {note: orderNote}),
+      };
+
+      console.log(
+        '✅ Final order payload:',
+        JSON.stringify(orderPayload, null, 2),
+      );
+
+      console.log('📤 Calling OrderApi.createOrder...');
+      const order = await OrderApi.createOrder(orderPayload);
+      console.log('✅ Order created successfully:', order);
+
+      console.log('=== CHECKOUT DEBUG END ===');
+
+      // Navigate to order result screen
+      navigation.navigate('OrderResult', {
+        orderId: order.id,
+        items: orderPayload.items,
+      });
+    } catch (error: any) {
+      console.error('Error creating order:', error);
+      Alert.alert(
+        'Lỗi',
+        error.message || 'Không thể tạo đơn hàng. Vui lòng thử lại.',
+      );
+    }
   };
 
   return (
@@ -107,6 +283,8 @@ const PaymentScreen: React.FC = () => {
         <AddressSection
           onPress={handleAddressPress}
           onSelectAddress={handleAddressSelected}
+          selectedAddress={selectedAddress}
+          refreshKey={refreshKey}
         />
 
         {/* Select Address Modal */}
@@ -116,20 +294,40 @@ const PaymentScreen: React.FC = () => {
           onClose={() => setShowAddressModal(false)}
           onSelectAddress={handleAddressSelected}
           onNavigateToAddAddress={handleNavigateToAddAddress}
+          refreshKey={refreshKey}
         />
 
         {/* Products Section */}
-        {product && variant && (
-          <ProductItem
-            productName={product.name}
-            color={variant.color}
-            size={variant.size}
-            price={variant.price}
-            quantity={quantity}
-            image={variant.thumbnail || product.thumbnail}
-            note={orderNote}
-            onNoteChange={handleNoteChange}
-          />
+        {isCartCheckout ? (
+          // Show multiple items from cart
+          <View>
+            {cartItems?.map((item: CartItemPayment, index: number) => (
+              <ProductItem
+                key={item.id || index}
+                productName={item.name}
+                color={item.color}
+                size={item.size}
+                price={item.price}
+                quantity={item.quantity}
+                image={item.image}
+              />
+            ))}
+          </View>
+        ) : (
+          // Show single product for buy_now
+          product &&
+          variant && (
+            <ProductItem
+              productName={product.name}
+              color={variant.color}
+              size={variant.size}
+              price={variant.price}
+              quantity={quantity}
+              image={variant.thumbnail || product.thumbnail}
+              note={orderNote}
+              onNoteChange={handleNoteChange}
+            />
+          )
         )}
 
         {/* Voucher Section */}
@@ -163,7 +361,7 @@ const PaymentScreen: React.FC = () => {
           selectedVoucher={selectedVoucher}
         />
 
-        <PaymentMethodSelector />
+        <PaymentMethodSelector onSelect={handlePaymentMethodSelect} />
 
         <OrderSummary
           subtotal={subtotal}
@@ -183,18 +381,7 @@ const PaymentScreen: React.FC = () => {
         </View>
       </ScrollView>
 
-      <BottomCheckoutBar
-        total={total}
-        saved={0}
-        onCheckout={() => {
-          console.log('Checkout pressed:', {
-            product,
-            variant,
-            quantity,
-            total,
-          });
-        }}
-      />
+      <BottomCheckoutBar total={total} saved={0} onCheckout={handleCheckout} />
     </View>
   );
 };
