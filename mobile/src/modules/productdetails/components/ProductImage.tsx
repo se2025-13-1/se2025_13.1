@@ -11,17 +11,20 @@ import {
 const {width} = Dimensions.get('window');
 
 interface ProductImageProps {
-  images?: string[];
+  images?: Array<{url: string; color: string | null}>;
 }
 
-const ProductImage: React.FC<ProductImageProps> = ({
-  images = [
-    'https://via.placeholder.com/300x300/f0f0f0/666666?text=Product+1',
-    'https://via.placeholder.com/300x300/f0f0f0/666666?text=Product+2',
-    'https://via.placeholder.com/300x300/f0f0f0/666666?text=Product+3',
-    'https://via.placeholder.com/300x300/f0f0f0/666666?text=Product+4',
-  ],
-}) => {
+const ProductImage: React.FC<ProductImageProps> = ({images}) => {
+  // Lấy ảnh chung (color = null)
+  const generalImages = (images || [])
+    .filter(img => !img.color)
+    .map(img => img.url);
+
+  // Nếu không có ảnh chung, hiển thị placeholder
+  const displayImages =
+    generalImages.length > 0
+      ? generalImages
+      : ['https://via.placeholder.com/300x300/f0f0f0/666666?text=Product+1'];
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
@@ -42,7 +45,7 @@ const ProductImage: React.FC<ProductImageProps> = ({
       {/* Image Carousel */}
       <FlatList
         ref={flatListRef}
-        data={images}
+        data={displayImages}
         renderItem={renderImage}
         keyExtractor={(_, index) => index.toString()}
         horizontal
@@ -55,7 +58,7 @@ const ProductImage: React.FC<ProductImageProps> = ({
       {/* Image Counter */}
       <View style={styles.counterContainer}>
         <Text style={styles.counterText}>
-          {currentIndex + 1}/{images.length}
+          {currentIndex + 1}/{displayImages.length}
         </Text>
       </View>
     </View>

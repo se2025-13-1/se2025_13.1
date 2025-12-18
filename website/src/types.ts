@@ -58,19 +58,21 @@ export interface ProductImage {
 
 export interface Product {
   id: string;
-  category_id: string;
+  category_id?: string;
+  category_name?: string;
   name: string;
   slug: string;
-  description: string;
+  description?: string;
   base_price: number;
   is_active: boolean;
   rating_average?: number;
   review_count?: number;
   sold_count?: number;
+  thumbnail?: string;
   created_at?: string;
   updated_at?: string;
-  variants: ProductVariant[];
-  images: ProductImage[];
+  variants?: ProductVariant[];
+  images?: ProductImage[];
   order_items?: OrderItem[];
 }
 

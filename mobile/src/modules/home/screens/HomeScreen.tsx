@@ -99,17 +99,19 @@ const HomeScreen: React.FC = () => {
             {/* Categories Component */}
             <Categories />
 
-            {/* ProductList Component - Bán chạy */}
-            <ProductList
-              categoryTitle="Bán chạy"
-              onSeeMorePress={() => console.log('Navigate to best sellers')}
-              navigation={navigation}
-            />
-
             {/* ProductList Component - Sản phẩm mới */}
             <ProductList
               categoryTitle="Sản phẩm mới"
+              productType="new"
               onSeeMorePress={() => console.log('Navigate to new products')}
+              navigation={navigation}
+            />
+
+            {/* ProductList Component - Bán chạy */}
+            <ProductList
+              categoryTitle="Bán chạy"
+              productType="bestseller"
+              onSeeMorePress={() => console.log('Navigate to best sellers')}
               navigation={navigation}
             />
           </ScrollView>

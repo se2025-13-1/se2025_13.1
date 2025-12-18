@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronRight,
   AlertCircle,
+  Upload,
 } from "./Icons";
 import { Category } from "../types";
 import { apiClient } from "../services/apiClient";
@@ -28,9 +29,26 @@ const CategoryList: React.FC = () => {
   });
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Expanded state cho hierarchical view
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  // Handle image upload
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    setIsUploading(true);
+    try {
+      const url = await apiClient.uploadImage(e.target.files[0]);
+      if (url) {
+        setFormData({ ...formData, image_url: url });
+      }
+    } catch (error) {
+      setFormError("Failed to upload image");
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   // Fetch categories
   const fetchCategories = async () => {
@@ -164,9 +182,29 @@ const CategoryList: React.FC = () => {
     return cats.flatMap((cat) => [cat, ...getFlattened(cat.children)]);
   };
 
+  // Get parent category name by searching in flat list
+  const getParentNameById = (parentId: string): string | null => {
+    const flatList = getFlattened(categories as any[]);
+    const parent = flatList.find((cat: any) => cat.id === parentId);
+    return parent ? parent.name : null;
+  };
+
+  // Format category display name with parent in parentheses
+  const formatCategoryDisplay = (category: any): string => {
+    console.log("Category:", category.name, "parent_id:", category.parent_id);
+    // Check if this category has a parent_id
+    if (category.parent_id) {
+      const parentName = getParentNameById(category.parent_id);
+      console.log("Found parent:", parentName);
+      return parentName ? `${category.name} (${parentName})` : category.name;
+    }
+    return category.name;
+  };
+
   // Render category item recursively - uses children from backend tree
   const renderCategoryItem = (category: any, level: number = 0) => {
     const hasChildren = category.children && category.children.length > 0;
+    const isSubcategory = level > 0;
 
     return (
       <div
@@ -174,14 +212,14 @@ const CategoryList: React.FC = () => {
         className="border-b border-slate-100 last:border-b-0"
       >
         <div
-          className="flex items-center space-x-3 px-6 py-4 hover:bg-slate-50 transition-colors"
+          className="flex items-center space-x-4 px-6 py-3 hover:bg-slate-50 transition-colors group"
           style={{ paddingLeft: `${24 + level * 32}px` }}
         >
           {/* Expand button */}
           {hasChildren ? (
             <button
               onClick={() => toggleExpand(category.id)}
-              className="p-1 hover:bg-slate-200 rounded"
+              className="p-1 hover:bg-slate-200 rounded flex-shrink-0"
             >
               {expandedIds.has(category.id) ? (
                 <ChevronDown size={18} className="text-slate-400" />
@@ -190,23 +228,45 @@ const CategoryList: React.FC = () => {
               )}
             </button>
           ) : (
-            <div className="w-6" />
+            <div className="w-6 flex-shrink-0" />
           )}
+
+          {/* Image Thumbnail */}
+          <div className="flex-shrink-0">
+            {category.image_url ? (
+              <img
+                src={category.image_url}
+                alt={category.name}
+                className="w-12 h-12 rounded-lg object-cover border border-slate-200"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-lg bg-slate-200 flex items-center justify-center text-slate-400">
+                🏷️
+              </div>
+            )}
+          </div>
 
           {/* Category info */}
           <div className="flex-1 min-w-0">
-            <h3 className="font-medium text-slate-800 truncate">
-              {category.name}
-            </h3>
+            <div className="flex items-center space-x-2">
+              <h3 className="font-medium text-slate-800 truncate">
+                {category.name}
+              </h3>
+              {isSubcategory && (
+                <span className="inline-block px-2 py-0.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-full">
+                  Subcategory
+                </span>
+              )}
+            </div>
             {category.image_url && (
-              <p className="text-xs text-slate-400 truncate">
-                {category.image_url}
+              <p className="text-xs text-slate-400 truncate mt-1">
+                ✓ Image uploaded
               </p>
             )}
           </div>
 
           {/* Actions */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={() => handleOpenForm(category)}
               className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -355,41 +415,66 @@ const CategoryList: React.FC = () => {
                     .filter((c: any) => c.id !== editingCategory?.id)
                     .map((cat: any) => (
                       <option key={cat.id} value={cat.id}>
-                        {cat.name}
+                        {formatCategoryDisplay(cat)}
                       </option>
                     ))}
                 </select>
               </div>
 
-              {/* Image URL */}
+              {/* Image URL - Upload Section */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Image URL
+                  Image
                 </label>
-                <input
-                  type="url"
-                  value={formData.image_url}
-                  onChange={(e) =>
-                    setFormData({ ...formData, image_url: e.target.value })
-                  }
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="https://..."
-                />
-              </div>
+                <div className="space-y-3">
+                  {/* Upload Button */}
+                  <label className="border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center h-32 cursor-pointer hover:bg-slate-50 transition-colors">
+                    {isUploading ? (
+                      <span className="text-sm text-slate-500">
+                        Uploading...
+                      </span>
+                    ) : (
+                      <>
+                        <Upload size={20} className="text-slate-400 mb-1" />
+                        <span className="text-sm text-slate-500">
+                          {formData.image_url ? "Change Image" : "Upload Image"}
+                        </span>
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={isUploading}
+                    />
+                  </label>
 
-              {/* Preview */}
-              {formData.image_url && (
-                <div className="p-3 bg-slate-50 rounded-lg">
-                  <img
-                    src={formData.image_url}
-                    alt="Preview"
-                    className="w-full h-32 object-cover rounded"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                    }}
-                  />
+                  {/* Preview */}
+                  {formData.image_url && (
+                    <div className="p-3 bg-slate-50 rounded-lg relative">
+                      <img
+                        src={formData.image_url}
+                        alt="Preview"
+                        className="w-full h-32 object-cover rounded"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                      {/* Remove Button */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData({ ...formData, image_url: "" })
+                        }
+                        className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded hover:bg-red-700"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
 
               {/* Actions */}
               <div className="flex space-x-3 pt-4">

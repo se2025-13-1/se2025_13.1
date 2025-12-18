@@ -30,6 +30,7 @@ const buildCategoryTree = (categories, parentId = null) => {
       name: cat.name,
       slug: cat.slug,
       image_url: cat.image_url,
+      parent_id: cat.parent_id,
       children: buildCategoryTree(categories, cat.id), // Đệ quy tìm con
     });
   }

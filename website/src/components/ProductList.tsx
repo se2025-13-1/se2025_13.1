@@ -97,7 +97,7 @@ const ProductList: React.FC = () => {
 
   // Helper để tính tổng kho hàng
   const getTotalStock = (product: Product) => {
-    if (!product.variants) return 0;
+    if (!product.variants || product.variants.length === 0) return 0;
     return product.variants.reduce(
       (sum, v) => sum + (v.stock_quantity || 0),
       0
@@ -222,8 +222,7 @@ const ProductList: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                        {/* Tạm thời hiển thị ID, sau này có thể map sang tên Category */}
-                        {product.category_id}
+                        {product.category_name || "N/A"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
                         ${Number(product.base_price).toLocaleString()}

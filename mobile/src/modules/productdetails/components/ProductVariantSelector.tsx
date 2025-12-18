@@ -9,84 +9,119 @@ import {
   Alert,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
-import PaymentScreen from '../../payment/screens/PaymentScreen';
 
-interface Variant {
+interface ProductVariant {
   id: string;
-  name: string;
-  image?: string;
+  color: string;
+  size: string;
+  price: number;
+  stock?: number;
+  stock_quantity?: number;
+  thumbnail?: string;
+  images?: string[];
 }
 
-interface Size {
-  id: string;
-  label: string;
-  weight: string;
+interface ProductImage {
+  url: string;
+  color: string | null;
 }
 
 interface ProductVariantSelectorProps {
   onClose?: () => void;
-  onBuy: (color: string, size: string, quantity: number) => void;
-  colors?: Variant[];
-  sizes?: Size[];
-  price?: number;
-  originalPrice?: number;
-  stock?: number;
+  onBuy: (variant: ProductVariant, quantity: number) => void;
+  variants: ProductVariant[];
+  images: ProductImage[];
+  productName: string;
+  basePrice: number;
 }
 
 const ProductVariantSelector: React.FC<ProductVariantSelectorProps> = ({
   onClose,
   onBuy,
-  colors = [
-    {
-      id: '1',
-      name: 'MAU DEN',
-      image: 'https://via.placeholder.com/50x50/000000/000000?text=1',
-    },
-    {
-      id: '2',
-      name: 'MAU XAM',
-      image: 'https://via.placeholder.com/50x50/808080/808080?text=2',
-    },
-    {
-      id: '3',
-      name: 'MAU TRANG',
-      image: 'https://via.placeholder.com/50x50/CCCCCC/CCCCCC?text=3',
-    },
-  ],
-  sizes = [
-    {id: '1', label: 'Size S', weight: '(Dưới 52kg)'},
-    {id: '2', label: 'Size M', weight: '(53-60kg)'},
-    {id: '3', label: 'Size L', weight: '(60-68kg)'},
-    {id: '4', label: 'Size XL', weight: ''},
-  ],
-  price = 139920,
-  originalPrice = 250000,
-  stock = 966,
+  variants = [],
+  images = [],
+  productName = '',
+  basePrice = 0,
 }) => {
   const navigation = useNavigation<any>();
-  const [selectedColor, setSelectedColor] = useState<string | null>(null);
-  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
+    variants.length > 0 ? variants[0] : null,
+  );
   const [quantity, setQuantity] = useState(1);
 
-  const selectedColorObj = colors.find(c => c.id === selectedColor);
+  // Lấy danh sách màu duy nhất
+  const colors = Array.from(new Set(variants.map(v => v.color)));
+
+  // Lấy danh sách size duy nhất
+  const sizes = Array.from(new Set(variants.map(v => v.size)));
+
+  // Helper: Lấy ảnh theo màu
+  const getImagesByColor = (color: string): string[] => {
+    const result = images
+      .filter(img => img.color === color)
+      .map(img => img.url);
+    console.log(
+      'getImagesByColor:',
+      color,
+      'images:',
+      images,
+      'result:',
+      result,
+    );
+    return result;
+  };
+
+  const handleColorPress = (color: string) => {
+    const variant = variants.find(v => v.color === color);
+    if (variant) {
+      setSelectedVariant(variant);
+    }
+  };
+
+  const handleSizePress = (size: string) => {
+    if (!selectedVariant) return;
+    const color = selectedVariant.color;
+    const variant = variants.find(v => v.color === color && v.size === size);
+    if (variant) {
+      setSelectedVariant(variant);
+    }
+  };
 
   const handleBuyPress = () => {
-    if (!selectedColor || !selectedSize) {
-      Alert.alert('Thông báo', 'Vui lòng chọn màu sắc và size');
+    if (!selectedVariant) {
+      Alert.alert('Thông báo', 'Vui lòng chọn biến thể sản phẩm');
       return;
     }
-    onBuy(selectedColor, selectedSize, quantity);
-    // Navigate to PaymentScreen
-    navigation.navigate('Payment', {
-      color: selectedColor,
-      size: selectedSize,
-      quantity: quantity,
-      price: price,
-    });
+    const stockQty =
+      selectedVariant.stock ?? selectedVariant.stock_quantity ?? 0;
+    if (stockQty <= 0) {
+      Alert.alert('Thông báo', 'Sản phẩm này đã hết hàng');
+      return;
+    }
+
+    // Add images of selected color to variant
+    const colorImages = getImagesByColor(selectedVariant.color);
+    console.log('handleBuyPress - selectedVariant:', selectedVariant);
+    console.log('handleBuyPress - colorImages:', colorImages);
+
+    const variantWithImages = {
+      ...selectedVariant,
+      thumbnail:
+        colorImages.length > 0 ? colorImages[0] : selectedVariant.thumbnail,
+    };
+
+    console.log('variantWithImages:', variantWithImages);
+    onBuy(variantWithImages, quantity);
   };
 
   const handleIncreaseQuantity = () => {
-    setQuantity(prev => prev + 1);
+    if (selectedVariant) {
+      const stockQty =
+        selectedVariant.stock ?? selectedVariant.stock_quantity ?? 0;
+      if (quantity < stockQty) {
+        setQuantity(prev => prev + 1);
+      }
+    }
   };
 
   const handleDecreaseQuantity = () => {
@@ -107,19 +142,31 @@ const ProductVariantSelector: React.FC<ProductVariantSelectorProps> = ({
       {/* Bottom Sheet */}
       <View style={styles.container}>
         <View style={styles.content}>
-          {/* Selected Color Info */}
+          {/* Selected Variant Info */}
           <View style={styles.selectedColorSection}>
-            <Image
-              source={{uri: selectedColorObj?.image}}
-              style={styles.selectedColorImage}
-            />
+            {selectedVariant &&
+              getImagesByColor(selectedVariant.color).length > 0 && (
+                <Image
+                  source={{uri: getImagesByColor(selectedVariant.color)[0]}}
+                  style={styles.selectedColorImage}
+                />
+              )}
             <View style={styles.priceInfo}>
+              <Text style={styles.productTitle}>{productName}</Text>
               <View style={styles.priceRow}>
                 <Text style={styles.currentPrice}>
-                  {price.toLocaleString()}đ
+                  {selectedVariant
+                    ? selectedVariant.price.toLocaleString()
+                    : basePrice.toLocaleString()}
+                  ₫
                 </Text>
               </View>
-              <Text style={styles.stock}>Kho: {stock}</Text>
+              <Text style={styles.stock}>
+                Kho:{' '}
+                {selectedVariant
+                  ? selectedVariant.stock ?? selectedVariant.stock_quantity ?? 0
+                  : 0}
+              </Text>
             </View>
             {onClose && (
               <TouchableOpacity style={styles.closeButton} onPress={onClose}>
@@ -132,9 +179,9 @@ const ProductVariantSelector: React.FC<ProductVariantSelectorProps> = ({
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Màu sắc:</Text>
-              {colors.find(c => c.id === selectedColor) && (
+              {selectedVariant && (
                 <Text style={styles.selectedLabel}>
-                  {colors.find(c => c.id === selectedColor)?.name}
+                  {selectedVariant.color}
                 </Text>
               )}
             </View>
@@ -144,22 +191,25 @@ const ProductVariantSelector: React.FC<ProductVariantSelectorProps> = ({
               showsHorizontalScrollIndicator={false}
               style={styles.variantsContainer}
               contentContainerStyle={styles.variantsContentContainer}>
-              {colors.map(color => (
+              {colors.map((color, index) => (
                 <TouchableOpacity
-                  key={color.id}
+                  key={`color-${index}`}
                   style={[
                     styles.colorOption,
-                    selectedColor === color.id && styles.colorOptionActive,
+                    selectedVariant?.color === color &&
+                      styles.colorOptionActive,
                   ]}
-                  onPress={() => setSelectedColor(color.id)}>
-                  <Image
-                    source={{uri: color.image}}
-                    style={styles.colorImage}
-                  />
-                  {selectedColor === color.id && (
-                    <View style={styles.badge}>
-                      <Text style={styles.badgeText}>✓</Text>
-                    </View>
+                  onPress={() => handleColorPress(color)}>
+                  {getImagesByColor(color).length > 0 ? (
+                    <Image
+                      source={{uri: getImagesByColor(color)[0]}}
+                      style={styles.colorImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View
+                      style={[styles.colorImage, {backgroundColor: color}]}
+                    />
                   )}
                 </TouchableOpacity>
               ))}
@@ -171,11 +221,7 @@ const ProductVariantSelector: React.FC<ProductVariantSelectorProps> = ({
             <View style={styles.sizeHeader}>
               <Text style={styles.sectionTitle}>Size:</Text>
               <Text style={styles.sizeInfo}>
-                {selectedSize
-                  ? `${sizes.find(s => s.id === selectedSize)?.label} ${
-                      sizes.find(s => s.id === selectedSize)?.weight
-                    }`
-                  : 'Chọn size'}
+                {selectedVariant ? selectedVariant.size : 'Chọn size'}
               </Text>
             </View>
 
@@ -186,19 +232,19 @@ const ProductVariantSelector: React.FC<ProductVariantSelectorProps> = ({
               scrollEnabled={true}>
               {sizes.map((size, index) => (
                 <TouchableOpacity
-                  key={size.id}
+                  key={`size-${index}`}
                   style={[
                     styles.sizeOption,
-                    selectedSize === size.id && styles.sizeOptionActive,
+                    selectedVariant?.size === size && styles.sizeOptionActive,
                     index !== sizes.length - 1 && styles.sizeOptionMargin,
                   ]}
-                  onPress={() => setSelectedSize(size.id)}>
+                  onPress={() => handleSizePress(size)}>
                   <Text
                     style={[
                       styles.sizeLabel,
-                      selectedSize === size.id && styles.sizeLabelActive,
+                      selectedVariant?.size === size && styles.sizeLabelActive,
                     ]}>
-                    {size.label} {size.weight && `${size.weight}`}
+                    {size}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -233,10 +279,10 @@ const ProductVariantSelector: React.FC<ProductVariantSelectorProps> = ({
           <TouchableOpacity
             style={[
               styles.buyButton,
-              (!selectedColor || !selectedSize) && styles.buyButtonDisabled,
+              !selectedVariant && styles.buyButtonDisabled,
             ]}
             onPress={handleBuyPress}
-            disabled={!selectedColor || !selectedSize}>
+            disabled={!selectedVariant}>
             <Text style={styles.buyButtonText}>Mua ngay</Text>
           </TouchableOpacity>
         </View>
@@ -292,6 +338,12 @@ const styles = StyleSheet.create({
   priceInfo: {
     flex: 1,
     justifyContent: 'flex-end',
+  },
+  productTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 8,
   },
   closeButton: {
     width: 32,
@@ -375,7 +427,7 @@ const styles = StyleSheet.create({
   colorImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
+    flex: 1,
   },
   badge: {
     position: 'absolute',

@@ -4,20 +4,24 @@ import {View, Text, StyleSheet, Image} from 'react-native';
 interface ProductInfoProps {
   price?: number;
   productName?: string;
-  rating?: number;
-  reviewCount?: number;
+  rating_average?: number;
+  review_count?: number;
   soldCount?: number;
+  description?: string;
 }
 
 const ProductInfo: React.FC<ProductInfoProps> = ({
-  price = 299000,
-  productName = 'Túi đựng đồ da nữ thời trang cao cấp bền bỉ',
-  rating = 4.5,
-  reviewCount = 9500,
-  soldCount = 1250,
+  price,
+  productName,
+  rating_average,
+  review_count,
+  soldCount,
+  description,
 }) => {
-  const formatPrice = (price: number) => {
-    return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const formatPrice = (p: number) => {
+    return Math.floor(p)
+      .toString()
+      .replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   };
 
   const formatReviewCount = (count: number) => {
@@ -29,37 +33,43 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Price */}
-      <View style={styles.priceContainer}>
-        <Text style={styles.price}>{formatPrice(price)}₫</Text>
+      {/* Price and Sold Count */}
+      <View style={styles.priceHeaderContainer}>
+        {price && <Text style={styles.price}>{formatPrice(price)}₫</Text>}
+        {soldCount !== undefined && (
+          <Text style={styles.soldText}>Đã bán: {soldCount}</Text>
+        )}
       </View>
 
       {/* Product Name */}
-      <Text style={styles.productName} numberOfLines={2}>
-        {productName}
-      </Text>
+      {productName && (
+        <Text style={styles.productName} numberOfLines={2}>
+          {productName}
+        </Text>
+      )}
 
-      {/* Rating and Sold Info */}
+      {/* Rating Info */}
       <View style={styles.infoContainer}>
         <View style={styles.ratingContainer}>
           {/* Star Icon */}
-          <Image
-            source={require('../../../assets/icons/Star.png')}
-            style={styles.starIcon}
-          />
-          {/* Rating */}
-          <Text style={styles.ratingText}>{rating}</Text>
+          {typeof rating_average === 'number' && (
+            <>
+              <Image
+                source={require('../../../assets/icons/Star.png')}
+                style={styles.starIcon}
+              />
+              {/* Rating */}
+              <Text style={styles.ratingText}>{rating_average.toFixed(1)}</Text>
 
-          {/* Review Count */}
-          <Text style={styles.reviewCountText}>
-            ({formatReviewCount(reviewCount)})
-          </Text>
+              {/* Review Count */}
+              <Text style={styles.reviewCountText}>
+                ({formatReviewCount(review_count || 0)})
+              </Text>
 
-          {/* Divider */}
-          <View style={styles.divider} />
-
-          {/* Sold Count */}
-          <Text style={styles.soldText}>Đã bán: {soldCount}</Text>
+              {/* Divider */}
+              <View style={styles.divider} />
+            </>
+          )}
         </View>
       </View>
     </View>
@@ -77,6 +87,12 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     color: '#FF4444',
+  },
+  priceHeaderContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   priceContainer: {
     flexDirection: 'row',
@@ -128,6 +144,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '400',
     color: '#666666',
+  },
+  descriptionContainer: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5EA',
+  },
+  descriptionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 8,
+  },
+  descriptionText: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: '#666666',
+    lineHeight: 20,
   },
 });
 
