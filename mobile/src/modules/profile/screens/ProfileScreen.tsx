@@ -27,16 +27,16 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
   useEffect(() => {
     if (isAuthenticated && user) {
       console.log('User data:', user); // Debug log
-      // Backend returns full_name, also check fullName for fallback
-      let displayName = user.fullName || user.full_name || user.name;
+      // Use fullName from AuthUser interface
+      let displayName = user.fullName;
       if (!displayName && user.email) {
         displayName = user.email.split('@')[0];
       }
 
       setUserProfile({
         userName: displayName || 'Người dùng',
-        phoneNumber: user.phone || user.phoneNumber || '',
-        avatarUrl: user.avatarUrl || user.avatar_url || '',
+        phoneNumber: '',
+        avatarUrl: user.avatarUrl || '',
       });
     } else {
       setUserProfile({
@@ -80,7 +80,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
 
   const handleViewHistoryPress = () => {
     console.log('View order history pressed');
-    // TODO: Navigate to order history screen
+    navigation?.navigate('MyOrder');
   };
 
   const handleOrderStatusPress = (statusId: string) => {

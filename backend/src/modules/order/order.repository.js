@@ -103,15 +103,16 @@ export const OrderRepository = {
   },
 
   // 2. Lấy danh sách đơn hàng của User
-  async findByUserId(userId, { limit = 10, offset = 0 }) {
+  async findByUserId(userId, { limit = 1000, offset = 0 }) {
     const query = `
-      SELECT id, total_amount, status, created_at, shipping_info->>'recipient_name' as recipient_name
+      SELECT id, total_amount, status, payment_status, created_at, shipping_info->>'recipient_name' as recipient_name
       FROM orders 
       WHERE user_id = $1 
       ORDER BY created_at DESC 
       LIMIT $2 OFFSET $3
     `;
     const res = await pgPool.query(query, [userId, limit, offset]);
+    console.log("findByUserId query result:", res.rows); // Debug log
     return res.rows;
   },
 
@@ -259,6 +260,8 @@ export const OrderRepository = {
           [item.quantity, item.product_id]
         );
       }
+
+      await client.query("COMMIT");
       return { message: "Đã hủy đơn hàng thành công" };
     } catch (err) {
       await client.query("ROLLBACK");
@@ -286,5 +289,29 @@ export const OrderRepository = {
     `;
     const res = await pgPool.query(query, [limit, offset]);
     return res.rows;
+  },
+
+  // Update order status by admin
+  async updateStatus(orderId, status) {
+    try {
+      const query = `
+        UPDATE orders 
+        SET status = $1, updated_at = NOW() 
+        WHERE id = $2 
+        RETURNING *
+      `;
+      const res = await pgPool.query(query, [status, orderId]);
+
+      if (res.rows.length === 0) {
+        throw new Error("Đơn hàng không tồn tại");
+      }
+
+      return {
+        message: `Cập nhật trạng thái đơn hàng thành "${status}" thành công`,
+        order: res.rows[0],
+      };
+    } catch (err) {
+      throw err;
+    }
   },
 };

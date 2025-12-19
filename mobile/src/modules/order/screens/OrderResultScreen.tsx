@@ -15,9 +15,7 @@ import {
   useRoute,
   useFocusEffect,
 } from '@react-navigation/native';
-import OrderHeader from '../components/OrderHeader';
-import OrderItems from '../components/OrderItems';
-import OrderShipping from '../components/OrderShipping';
+import OrderResult from '../components/OrderResult';
 import {OrderApi, Order} from '../services/orderApi';
 
 const OrderResultScreen: React.FC = () => {
@@ -132,14 +130,8 @@ const OrderResultScreen: React.FC = () => {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Order Header - Success Message */}
-        <OrderHeader order={order} status={order.status} />
-
-        {/* Order Items */}
-        <OrderItems order={order} items={orderItems} />
-
-        {/* Order Shipping Info */}
-        <OrderShipping order={order} />
+        {/* Order Result - Success Message */}
+        <OrderResult order={order} status={order.status} />
       </ScrollView>
 
       {/* Footer Actions */}
@@ -147,13 +139,13 @@ const OrderResultScreen: React.FC = () => {
         <TouchableOpacity
           style={styles.viewOrdersButton}
           onPress={handleViewOrders}>
-          <Text style={styles.viewOrdersButtonText}>Xem đơn hàng</Text>
+          <Text style={styles.viewOrdersButtonText}>Đơn hàng</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.backHomeButton}
           onPress={handleBackHome}>
-          <Text style={styles.backHomeButtonText}>Về trang chủ</Text>
+          <Text style={styles.backHomeButtonText}>Trang chủ</Text>
         </TouchableOpacity>
       </View>
     </View>

@@ -15,6 +15,8 @@ router.use(requireAuth);
 router.get("/admin/all", requireAdmin, OrderController.listAll);
 // GET /api/orders/admin/:id -> Lấy chi tiết đơn (không cần check user_id)
 router.get("/admin/:id", requireAdmin, OrderController.detailAdmin);
+// PUT /api/orders/:id/status -> Admin cập nhật status đơn hàng
+router.put("/:id/status", requireAdmin, OrderController.updateStatus);
 
 // User Routes
 router.post("/", OrderController.create);

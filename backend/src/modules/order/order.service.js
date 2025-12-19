@@ -163,4 +163,22 @@ export const OrderService = {
 
     return await OrderRepository.findAll({ limit, offset });
   },
+
+  async updateOrderStatus(orderId, status) {
+    const validStatuses = [
+      "pending",
+      "confirmed",
+      "shipping",
+      "completed",
+      "cancelled",
+    ];
+
+    if (!validStatuses.includes(status)) {
+      throw new Error(
+        `Invalid status. Must be one of: ${validStatuses.join(", ")}`
+      );
+    }
+
+    return await OrderRepository.updateStatus(orderId, status);
+  },
 };
