@@ -156,6 +156,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
 
         {/* User Utility Component */}
         <UserUtility
+          navigation={navigation}
           onViewMorePress={handleViewMoreUtilitiesPress}
           onUtilityPress={handleUtilityPress}
           onLogin={handleLoginPress}

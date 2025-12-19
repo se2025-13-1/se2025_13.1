@@ -32,6 +32,7 @@ import PaymentMethodScreen from './src/modules/payment/screens/PaymentMethodScre
 import OrderResultScreen from './src/modules/order/screens/OrderResultScreen';
 import MyOrderScreen from './src/modules/order/screens/MyOrderScreen';
 import OrderDetailScreen from './src/modules/order/screens/OrderDetailScreen';
+import WishListScreen from './src/modules/wishlist/screens/WishListScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // 👇 1. IMPORT SERVICE THÔNG BÁO (THÊM MỚI)
@@ -81,6 +82,7 @@ export type RootStackParamList = {
   MyOrder: undefined;
   OrderDetail: {orderId: string};
   OrderResult: {orderId: string; items?: any[]};
+  WishList: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -194,6 +196,7 @@ const App = () => {
               <Stack.Screen name="OrderResult" component={OrderResultScreen} />
               <Stack.Screen name="MyOrder" component={MyOrderScreen} />
               <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
+              <Stack.Screen name="WishList" component={WishListScreen} />
               {/* Auth screens still available if user wants to login */}
               <Stack.Screen name="Login">
                 {props => (
