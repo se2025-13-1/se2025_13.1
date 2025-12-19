@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,10 @@ import {
 } from 'react-native';
 import {useAuth} from '../../../contexts/AuthContext';
 import RequireAuth from '../../auth/components/RequireAuth';
+import {wishlistApi} from '../../wishlist/services/wishlistApi';
 
 interface BottomActionBarProps {
+  productId?: string;
   onFavoritePress?: () => void;
   onChatPress?: () => void;
   onCartPress?: () => void;
@@ -24,6 +26,7 @@ interface BottomActionBarProps {
 }
 
 const BottomActionBar: React.FC<BottomActionBarProps> = ({
+  productId,
   onFavoritePress,
   onChatPress,
   onCartPress,
@@ -40,6 +43,8 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
   const [selectedFeature, setSelectedFeature] = useState<
     'cart' | 'chat' | 'notification'
   >('cart');
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [isLoadingFavorite, setIsLoadingFavorite] = useState(false);
 
   const handleAuthRequiredAction = (
     feature: 'cart' | 'chat' | 'notification',
@@ -51,6 +56,32 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
       return;
     }
     callback?.();
+  };
+
+  const handleFavoritePress = async () => {
+    if (!productId) {
+      console.warn('⚠️ productId is not provided');
+      return;
+    }
+    if (!isAuthenticated) {
+      console.warn('⚠️ User is not authenticated');
+      return;
+    }
+
+    setIsLoadingFavorite(true);
+    try {
+      const response = await wishlistApi.toggleWishlist(productId);
+      setIsFavorited(response.is_liked);
+      onFavoritePress?.();
+      console.log(
+        '✅ Wishlist toggled successfully, is_liked:',
+        response.is_liked,
+      );
+    } catch (error) {
+      console.error('❌ Error toggling wishlist:', error);
+    } finally {
+      setIsLoadingFavorite(false);
+    }
   };
 
   const handleCloseRequireAuth = () => {
@@ -87,12 +118,22 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
         {/* Favorite Button */}
         <TouchableOpacity
           style={[styles.actionButton, styles.smallButton]}
-          onPress={() =>
-            handleAuthRequiredAction('notification', onFavoritePress)
-          }
+          onPress={() => {
+            if (!isAuthenticated) {
+              setSelectedFeature('notification');
+              setShowRequireAuth(true);
+            } else {
+              handleFavoritePress();
+            }
+          }}
+          disabled={isLoadingFavorite}
           activeOpacity={0.7}>
           <Image
-            source={require('../../../assets/icons/Heart.png')}
+            source={
+              isFavorited
+                ? require('../../../assets/icons/HeartFilled.png')
+                : require('../../../assets/icons/Heart.png')
+            }
             style={styles.iconSmall}
           />
           <Text style={styles.actionLabel}>Yêu thích</Text>

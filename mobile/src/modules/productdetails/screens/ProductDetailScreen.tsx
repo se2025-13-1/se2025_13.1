@@ -270,6 +270,7 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
 
           {/* Bottom Action Bar */}
           <BottomActionBar
+            productId={productId}
             voucherPrice={0}
             onChatPress={() => console.log('Chat pressed')}
             onCartPress={handleAddToCart}

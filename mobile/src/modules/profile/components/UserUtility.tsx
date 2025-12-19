@@ -19,6 +19,7 @@ interface UserUtilityProps {
   onNavigateToCart?: () => void;
   onNavigateToChat?: () => void;
   onNavigateToNotifications?: () => void;
+  navigation?: any;
 }
 
 const UserUtility: React.FC<UserUtilityProps> = ({
@@ -31,6 +32,7 @@ const UserUtility: React.FC<UserUtilityProps> = ({
   onNavigateToCart,
   onNavigateToChat,
   onNavigateToNotifications,
+  navigation,
 }) => {
   const {isAuthenticated} = useAuth();
   const [showRequireAuth, setShowRequireAuth] = useState(false);
@@ -67,6 +69,17 @@ const UserUtility: React.FC<UserUtilityProps> = ({
   ];
 
   const handleUtilityPress = (utilityId: string) => {
+    // Xử lý nút favorites - điều hướng đến WishList Screen
+    if (utilityId === 'favorites') {
+      if (!isAuthenticated) {
+        setSelectedFeature('notification');
+        setShowRequireAuth(true);
+        return;
+      }
+      navigation?.navigate('WishList');
+      return;
+    }
+
     // Kiểm tra nếu là các chức năng yêu cầu đăng nhập
     if (['cart', 'chat', 'notifications'].includes(utilityId)) {
       if (!isAuthenticated) {
