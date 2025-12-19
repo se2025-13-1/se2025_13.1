@@ -55,6 +55,7 @@ export type RootStackParamList = {
   VerificationPassword: {email: string};
   Home: undefined;
   SearchEntry: undefined;
+  SearchResult: {keyword: string};
   Notification: undefined;
   NotificationDetail: {
     id: string;
@@ -67,7 +68,7 @@ export type RootStackParamList = {
   AddressList: undefined;
   AddAddress: undefined;
   EditAddress: {address: any};
-  ProductDetail: undefined;
+  ProductDetail: {productId: string};
   ReviewList: undefined;
   Cart: undefined;
   Payment: {
