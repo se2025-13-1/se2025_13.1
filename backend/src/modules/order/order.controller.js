@@ -96,4 +96,20 @@ export const OrderController = {
       return res.status(500).json({ error: err.message });
     }
   },
+
+  async updateStatus(req, res) {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      if (!status) {
+        return res.status(400).json({ error: "Status is required" });
+      }
+
+      const result = await OrderService.updateOrderStatus(id, status);
+      return res.json(result);
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  },
 };

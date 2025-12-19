@@ -2,12 +2,12 @@ import React from 'react';
 import {View, Text, StyleSheet} from 'react-native';
 import {Order} from '../services/orderApi';
 
-interface OrderHeaderProps {
+interface OrderResultProps {
   order: Order;
   status: string;
 }
 
-const OrderHeader: React.FC<OrderHeaderProps> = ({order, status}) => {
+const OrderResult: React.FC<OrderResultProps> = ({order, status}) => {
   const getStatusColor = () => {
     switch (status) {
       case 'pending':
@@ -128,4 +128,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default OrderHeader;
+export default OrderResult;

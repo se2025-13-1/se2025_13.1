@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {View, Text, TouchableOpacity, StyleSheet, Image} from 'react-native';
 
 interface OrderItem {
@@ -11,56 +11,25 @@ interface OrderItem {
   thumbnail: string;
 }
 
-interface OrderItemsProps {
-  orderId: string;
-  status: string;
+interface OrderProductProps {
   items: OrderItem[];
   totalAmount: number;
-  onViewDetails?: (orderId: string) => void;
 }
 
-const OrderItems: React.FC<OrderItemsProps> = ({
-  orderId,
-  status,
-  items,
-  totalAmount,
-  onViewDetails,
-}) => {
-  const getStatusDisplay = (status: string) => {
-    const statusMap: {[key: string]: string} = {
-      pending: 'Chờ xác nhận',
-      confirmed: 'Đã xác nhận',
-      shipping: 'Đang giao',
-      completed: 'Hoàn thành',
-      cancelled: 'Đã hủy',
-      returned: 'Đã trả hàng',
-    };
-    return statusMap[status] || status;
-  };
+const OrderProduct: React.FC<OrderProductProps> = ({items, totalAmount}) => {
+  const [expanded, setExpanded] = useState(false);
 
-  const getStatusColor = (status: string) => {
-    const colorMap: {[key: string]: string} = {
-      pending: '#FF9800',
-      confirmed: '#2196F3',
-      shipping: '#00BCD4',
-      completed: '#4CAF50',
-      cancelled: '#F44336',
-      returned: '#9C27B0',
-    };
-    return colorMap[status] || '#666';
-  };
-
+  const subtotal = items.reduce(
+    (sum, item) => sum + item.unit_price * item.quantity,
+    0,
+  );
+  const shipping = totalAmount - subtotal > 0 ? totalAmount - subtotal : 0;
+  const discount =
+    subtotal + shipping - totalAmount > 0
+      ? subtotal + shipping - totalAmount
+      : 0;
   return (
     <View style={styles.container}>
-      {/* Status Row - Top Right */}
-      <View style={styles.statusRow}>
-        <View style={styles.statusBadge}>
-          <Text style={[styles.statusText, {color: getStatusColor(status)}]}>
-            {getStatusDisplay(status)}
-          </Text>
-        </View>
-      </View>
-
       {/* Product Items */}
       <View style={styles.itemsContainer}>
         {items && items.length > 0 ? (
@@ -113,19 +82,60 @@ const OrderItems: React.FC<OrderItemsProps> = ({
       </View>
 
       {/* Total Amount */}
-      <View style={styles.totalRow}>
-        <Text style={styles.totalLabel}>Tổng tiền:</Text>
-        <Text style={styles.totalAmount}>
-          {totalAmount.toLocaleString('vi-VN')}₫
-        </Text>
-      </View>
-
-      {/* View Details Button */}
       <TouchableOpacity
-        style={styles.detailsButton}
-        onPress={() => onViewDetails?.(orderId)}>
-        <Text style={styles.detailsButtonText}>Xem chi tiết đơn hàng</Text>
+        style={styles.totalRow}
+        onPress={() => setExpanded(!expanded)}>
+        <View style={styles.totalLeftContent}>
+          <Text style={styles.totalLabel}>Tổng tiền:</Text>
+          <Text style={styles.totalAmount}>
+            {totalAmount.toLocaleString('vi-VN')}₫
+          </Text>
+        </View>
+        <Image
+          source={require('../../../assets/icons/Chevron.png')}
+          style={[
+            styles.chevronIcon,
+            {transform: [{rotate: expanded ? '90deg' : '0deg'}]},
+          ]}
+        />
       </TouchableOpacity>
+
+      {/* Expanded Payment Details */}
+      {expanded && (
+        <View style={styles.paymentDetailsContainer}>
+          <View style={styles.paymentRow}>
+            <Text style={styles.paymentLabel}>Tạm tính:</Text>
+            <Text style={styles.paymentValue}>
+              {subtotal.toLocaleString('vi-VN')}₫
+            </Text>
+          </View>
+          {shipping > 0 && (
+            <View style={styles.paymentRow}>
+              <Text style={styles.paymentLabel}>Phí vận chuyển:</Text>
+              <Text style={styles.paymentValue}>
+                {shipping.toLocaleString('vi-VN')}₫
+              </Text>
+            </View>
+          )}
+          {discount > 0 && (
+            <View style={styles.paymentRow}>
+              <Text style={[styles.paymentLabel, {color: '#E74C3C'}]}>
+                Giảm giá:
+              </Text>
+              <Text style={[styles.paymentValue, {color: '#E74C3C'}]}>
+                -{discount.toLocaleString('vi-VN')}₫
+              </Text>
+            </View>
+          )}
+          <View style={styles.paymentDivider} />
+          <View style={styles.paymentRow}>
+            <Text style={styles.paymentLabel}>Thành tiền:</Text>
+            <Text style={styles.paymentTotal}>
+              {totalAmount.toLocaleString('vi-VN')}₫
+            </Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 };
@@ -133,30 +143,15 @@ const OrderItems: React.FC<OrderItemsProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
-    borderRadius: 2,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#f0f0f0',
-    marginBottom: 6,
+    marginBottom: 12,
     padding: 12,
     overflow: 'hidden',
   },
-  statusRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginBottom: 1,
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 4,
-    backgroundColor: '#f5f5f5',
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
   itemsContainer: {
-    marginBottom: 1,
+    marginBottom: 12,
   },
   productRow: {
     flexDirection: 'row',
@@ -180,7 +175,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 2,
+    marginBottom: 6,
   },
   colorSizeQuantityRow: {
     flexDirection: 'row',
@@ -203,41 +198,6 @@ const styles = StyleSheet.create({
     color: '#000',
     textAlign: 'right',
   },
-  priceQuantityRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  quantityLabelText: {
-    fontSize: 12,
-    color: '#666',
-  },
-  variantRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  variantLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginRight: 8,
-  },
-  variantValue: {
-    fontSize: 12,
-    color: '#333',
-    fontWeight: '500',
-  },
-  quantityPriceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 1,
-  },
-  price: {
-    fontSize: 13,
-    fontWeight: 'bold',
-    color: '#FF6B6B',
-  },
   divider: {
     height: 1,
     backgroundColor: '#f0f0f0',
@@ -253,34 +213,67 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'center',
-    paddingTop: 9,
-    paddingBottom: 9,
+    paddingTop: 10,
+    paddingBottom: 0,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
-    marginBottom: 2,
     gap: 8,
+  },
+  totalLeftContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   totalLabel: {
     fontSize: 14,
     color: '#333',
-    fontWeight: '600',
+    fontWeight: '500',
   },
   totalAmount: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#000',
   },
-  detailsButton: {
-    backgroundColor: '#f5f5f5',
-    paddingVertical: 10,
-    borderRadius: 6,
-    alignItems: 'center',
+  chevronIcon: {
+    width: 20,
+    height: 20,
+    resizeMode: 'contain',
+    tintColor: '#666',
   },
-  detailsButtonText: {
+  paymentDetailsContainer: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    backgroundColor: '#fafafa',
+    borderRadius: 6,
+    padding: 10,
+  },
+  paymentRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  paymentLabel: {
+    fontSize: 13,
+    color: '#666',
+    fontWeight: '500',
+  },
+  paymentValue: {
+    fontSize: 13,
     color: '#333',
+    fontWeight: '500',
+  },
+  paymentDivider: {
+    height: 1,
+    backgroundColor: '#e0e0e0',
+    marginVertical: 8,
+  },
+  paymentTotal: {
     fontSize: 14,
-    fontWeight: '600',
+    color: '#000',
+    fontWeight: 'bold',
   },
 });
 
-export default OrderItems;
+export default OrderProduct;
