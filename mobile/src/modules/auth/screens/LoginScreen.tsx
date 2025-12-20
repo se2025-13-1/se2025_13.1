@@ -1,5 +1,5 @@
-import React, {useState} from 'react';
-import {useNavigation} from '@react-navigation/native';
+import React, {useState, useEffect} from 'react';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {AppConfig} from '../../../config/AppConfig';
 import {saveTokens, saveUser} from '../../../services/tokenService';
@@ -38,7 +38,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
   onLoginSuccess,
 }) => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
-  const {setUser, setIsAuthenticated} = useAuth();
+  const {
+    setUser,
+    setIsAuthenticated,
+    isAuthenticated,
+    isLoading: authLoading,
+  } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -46,6 +51,41 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
   const [isSuccess, setIsSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
+
+  // Auto-redirect if already authenticated
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      console.log('✨ User already authenticated, redirecting to Home...');
+
+      // Use setTimeout to avoid navigation during render
+      const redirectTimer = setTimeout(() => {
+        if (onLoginSuccess) {
+          onLoginSuccess();
+        } else {
+          navigation.reset({
+            index: 0,
+            routes: [{name: 'Home'}],
+          });
+        }
+      }, 100);
+
+      return () => clearTimeout(redirectTimer);
+    }
+  }, [isAuthenticated, authLoading, navigation, onLoginSuccess]);
+
+  // Re-check auth state when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      // Double-check auth state when screen is focused
+      if (!authLoading && isAuthenticated) {
+        console.log('🔄 Screen focused: User authenticated, redirecting...');
+        navigation.reset({
+          index: 0,
+          routes: [{name: 'Home'}],
+        });
+      }
+    }, [isAuthenticated, authLoading, navigation]),
+  );
 
   const validateEmail = (emailInput: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -150,12 +190,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
       // GOOGLE LOGIN FLOW
       if (provider === 'Google') {
         try {
-          const user = await FirebaseGoogleService.signIn();
-          if (user) {
-            // Success - Update global auth context
+          const user = await FirebaseGoogleService.signIn(user => {
+            // Success callback - Update global auth context
             setUser(user);
             setIsAuthenticated(true);
             setIsSuccess(true);
+
+            console.log('🎉 Google login success, redirecting...');
 
             if (onLoginSuccess) {
               onLoginSuccess();
@@ -166,7 +207,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                 routes: [{name: 'Home'}],
               });
             }
-          }
+          });
         } catch (error) {
           console.error('Google Sign-In error:', error);
           Alert.alert(

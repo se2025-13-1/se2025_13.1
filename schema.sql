@@ -96,7 +96,7 @@ CREATE TABLE products (
   name VARCHAR(255) NOT NULL,
   slug VARCHAR(300) UNIQUE,
   description TEXT,
-  base_price NUMERIC(15,2) NOT NULL,
+  base_price NUMERIC(15,0) NOT NULL,
   is_active BOOLEAN DEFAULT TRUE,
   
   -- Cache thống kê (Để hiển thị nhanh ngoài danh sách)
@@ -115,7 +115,7 @@ CREATE TABLE product_variants (
   sku VARCHAR(50) UNIQUE,
   color VARCHAR(50),      -- VD: Red, Blue
   size VARCHAR(20),       -- VD: S, M, L
-  price NUMERIC(15,2),    -- Giá riêng cho biến thể (nếu khác giá gốc)
+  price NUMERIC(15,0),    -- Giá riêng cho biến thể (nếu khác giá gốc)
   stock_quantity INT DEFAULT 0 CHECK (stock_quantity >= 0),
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
@@ -141,9 +141,9 @@ CREATE TABLE vouchers (
   code VARCHAR(50) UNIQUE NOT NULL,
   description TEXT,
   discount_type VARCHAR(20) CHECK (discount_type IN ('percent', 'fixed')),
-  discount_value NUMERIC(15,2) NOT NULL,
-  min_order_value NUMERIC(15,2) DEFAULT 0,
-  max_discount_amount NUMERIC(15,2),
+  discount_value NUMERIC(15,0) NOT NULL,
+  min_order_value NUMERIC(15,0) DEFAULT 0,
+  max_discount_amount NUMERIC(15,0),
   start_date TIMESTAMP,
   end_date TIMESTAMP,
   usage_limit INT,                        -- Tổng số lượng mã toàn hệ thống
@@ -209,10 +209,10 @@ CREATE TABLE orders (
   shipping_info JSONB NOT NULL, 
   
   -- Tài chính
-  subtotal_amount NUMERIC(15,2) NOT NULL,
-  shipping_fee NUMERIC(15,2) DEFAULT 0,
-  discount_amount NUMERIC(15,2) DEFAULT 0,
-  total_amount NUMERIC(15,2) NOT NULL,
+  subtotal_amount NUMERIC(15,0) NOT NULL,
+  shipping_fee NUMERIC(15,0) DEFAULT 0,
+  discount_amount NUMERIC(15,0 DEFAULT 0,
+  total_amount NUMERIC(15,0) NOT NULL,
   
   payment_method VARCHAR(50) DEFAULT 'cod',
   payment_status VARCHAR(50) DEFAULT 'unpaid',
@@ -235,8 +235,8 @@ CREATE TABLE order_items (
   variant_info JSONB, -- { color: "Red", size: "M" }
   
   quantity INT NOT NULL,
-  unit_price NUMERIC(15,2) NOT NULL,
-  total_price NUMERIC(15,2) NOT NULL
+  unit_price NUMERIC(15,0) NOT NULL,
+  total_price NUMERIC(15,0) NOT NULL
 );
 
 -- ======================================================================================

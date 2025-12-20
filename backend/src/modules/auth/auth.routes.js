@@ -14,6 +14,7 @@ router.post("/firebase", AuthController.firebaseGoogle);
 // Protected
 router.get("/me", requireAuth, AuthController.getMe);
 router.put("/profile", requireAuth, AuthController.updateProfile);
+router.post("/logout", requireAuth, AuthController.logout);
 
 // Auth Social (Removed - Use local email/password authentication)
 

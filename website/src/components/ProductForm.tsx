@@ -47,6 +47,16 @@ const ProductForm: React.FC<ProductFormProps> = ({
   const [vPrice, setVPrice] = useState("");
   const [vStock, setVStock] = useState("10");
 
+  // Variant Images - Lưu 1 ảnh cho mỗi variant
+  const [variantImages, setVariantImages] = useState<{
+    [key: string]: string; // variant id -> image url
+  }>({});
+
+  // State để track variant nào đang chờ paste
+  const [pasteTargetVariantId, setPasteTargetVariantId] = useState<
+    string | null
+  >(null);
+
   // --- HELPER: Get category display name with parent info ---
   const getCategoryDisplay = (cat: Category) => {
     if (!cat.parent_id) {
@@ -74,29 +84,102 @@ const ProductForm: React.FC<ProductFormProps> = ({
     fetchCats();
   }, []);
 
+  // Handle paste ảnh (Ctrl+V)
+  useEffect(() => {
+    const handlePaste = async (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        // Kiểm tra nếu là ảnh
+        if (item.type.indexOf("image") === 0) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file) {
+            // Paste vào variant được chọn hoặc general images
+            await uploadImageFile(file, pasteTargetVariantId);
+            // Reset target sau khi paste
+            if (pasteTargetVariantId) {
+              setPasteTargetVariantId(null);
+            }
+          }
+        }
+      }
+    };
+
+    window.addEventListener("paste", handlePaste);
+    return () => {
+      window.removeEventListener("paste", handlePaste);
+    };
+  }, [pasteTargetVariantId, images, variantImages]);
+
   // --- 3. HANDLERS ---
 
-  // Upload ảnh
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
+  // Upload ảnh helper function
+  const uploadImageFile = async (
+    file: File,
+    variantId: string | null = null
+  ) => {
     setIsUploading(true);
     try {
-      const url = await apiClient.uploadImage(e.target.files[0]);
+      const url = await apiClient.uploadImage(file);
       if (url) {
-        setImages([
-          ...images,
-          {
-            id: Date.now().toString(),
-            image_url: url,
-            color_ref: null, // Mặc định là ảnh chung
-            display_order: images.length,
-          },
-        ]);
+        const newImage: ProductImage = {
+          id: Date.now().toString(),
+          image_url: url,
+          color_ref: null,
+          display_order: 0,
+        };
+
+        if (variantId) {
+          // Set single image for variant
+          setVariantImages({
+            ...variantImages,
+            [variantId]: url,
+          });
+        } else {
+          // Add to general images
+          setImages([...images, newImage]);
+        }
       }
     } catch (error) {
       alert("Upload failed");
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  // Upload ảnh
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    await uploadImageFile(e.target.files[0], null);
+  };
+
+  // Tự động paste ảnh từ clipboard cho variant
+  const pasteImageFromClipboard = async (variantId: string) => {
+    try {
+      // Sử dụng Clipboard API để đọc ảnh
+      const clipboardItems = await navigator.clipboard.read();
+      for (const item of clipboardItems) {
+        // Tìm image type
+        const imageType = item.types.find((type) => type.startsWith("image/"));
+        if (imageType) {
+          const blob = await item.getType(imageType);
+          const file = new File([blob], `paste-${Date.now()}.png`, {
+            type: imageType,
+          });
+          await uploadImageFile(file, variantId);
+          return;
+        }
+      }
+      alert("Không tìm thấy ảnh trong clipboard!");
+    } catch (error) {
+      // Fallback: yêu cầu user cho quyền hoặc dùng Ctrl+V
+      setPasteTargetVariantId(variantId);
+      alert(
+        "Vui lòng bấm Ctrl+V để dán ảnh (hoặc cho phép truy cập clipboard)"
+      );
     }
   };
 
@@ -360,6 +443,9 @@ const ProductForm: React.FC<ProductFormProps> = ({
                     <th className="px-4 py-2 text-left text-xs font-medium text-slate-500">
                       Stock
                     </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-slate-500">
+                      Image
+                    </th>
                     <th className="px-4 py-2 text-right"></th>
                   </tr>
                 </thead>
@@ -377,6 +463,36 @@ const ProductForm: React.FC<ProductFormProps> = ({
                       </td>
                       <td className="px-4 py-2 text-sm">${v.price}</td>
                       <td className="px-4 py-2 text-sm">{v.stock_quantity}</td>
+                      <td className="px-4 py-2 text-sm">
+                        {variantImages[v.id!] ? (
+                          <div className="relative group w-12 h-12">
+                            <img
+                              src={variantImages[v.id!]}
+                              alt={`${v.color}-${v.size}`}
+                              className="w-12 h-12 object-cover rounded border border-slate-200"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newImages = { ...variantImages };
+                                delete newImages[v.id!];
+                                setVariantImages(newImages);
+                              }}
+                              className="absolute -top-1 -right-1 bg-rose-500 text-white p-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X size={10} />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => pasteImageFromClipboard(v.id!)}
+                            className="px-3 py-1.5 rounded text-xs font-medium transition-all bg-slate-100 text-slate-600 hover:bg-indigo-100 hover:text-indigo-600"
+                          >
+                            📋 Paste
+                          </button>
+                        )}
+                      </td>
                       <td className="px-4 py-2 text-right">
                         <button
                           onClick={() => removeVariant(v.id!)}
@@ -407,7 +523,14 @@ const ProductForm: React.FC<ProductFormProps> = ({
               ) : (
                 <>
                   <Upload size={24} className="text-slate-400 mb-2" />
-                  <span className="text-sm text-slate-500">Upload Image</span>
+                  <div className="text-center">
+                    <span className="text-sm text-slate-500 block">
+                      Upload Image
+                    </span>
+                    <span className="text-xs text-slate-400 mt-1">
+                      or Ctrl+V to paste
+                    </span>
+                  </div>
                 </>
               )}
               <input

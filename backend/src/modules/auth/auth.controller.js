@@ -112,4 +112,25 @@ export const AuthController = {
       });
     }
   },
+
+  // Logout - Invalidate session
+  async logout(req, res) {
+    try {
+      const userId = req.user?.id;
+
+      if (userId) {
+        // Optional: Add logic to invalidate refresh tokens in database
+        // await AuthService.invalidateUserTokens(userId);
+        console.log(`User ${userId} logged out successfully`);
+      }
+
+      return res.json({
+        message: "Logged out successfully",
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error("Logout error:", err);
+      return res.status(500).json({ error: "Logout failed" });
+    }
+  },
 };

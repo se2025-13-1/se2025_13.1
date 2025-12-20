@@ -252,10 +252,10 @@ export const ProductRepository = {
 
       // 2. Xây dựng điều kiện động (Dynamic Where)
 
-      // Tìm theo tên hoặc slug (Keyword) - sử dụng unaccent để tìm không dấu
+      // Tìm theo tên hoặc slug (Keyword) - ILIKE không dấu (case-insensitive)
       if (keyword) {
         conditions.push(
-          `(unaccent(p.name) ILIKE unaccent($${idx}) OR unaccent(p.slug) ILIKE unaccent($${idx}))`
+          `(LOWER(p.name) ILIKE LOWER($${idx}) OR LOWER(p.slug) ILIKE LOWER($${idx}))`
         );
         values.push(`%${keyword}%`);
         idx++;
@@ -354,7 +354,7 @@ export const ProductRepository = {
         const variantsRes = await client.query(
           `SELECT product_id, id, sku, color, size, price, stock_quantity 
            FROM product_variants 
-           WHERE product_id = ANY($1)
+           WHERE product_id = ANY($1::uuid[])
            ORDER BY product_id`,
           [productIds]
         );
@@ -363,7 +363,7 @@ export const ProductRepository = {
         const imagesRes = await client.query(
           `SELECT product_id, id, image_url, color_ref, display_order 
            FROM product_images 
-           WHERE product_id = ANY($1)
+           WHERE product_id = ANY($1::uuid[])
            ORDER BY product_id, 
             (CASE WHEN color_ref IS NULL THEN 0 ELSE 1 END) ASC,
             display_order ASC`,
@@ -410,6 +410,9 @@ export const ProductRepository = {
         products,
         total: parseInt(countRes.rows[0].total),
       };
+    } catch (err) {
+      console.error("[searchAndFilter] Error:", err);
+      throw err;
     } finally {
       client.release();
     }
