@@ -252,9 +252,11 @@ export const ProductRepository = {
 
       // 2. Xây dựng điều kiện động (Dynamic Where)
 
-      // Tìm theo tên hoặc slug (Keyword)
+      // Tìm theo tên hoặc slug (Keyword) - sử dụng unaccent để tìm không dấu
       if (keyword) {
-        conditions.push(`(p.name ILIKE $${idx} OR p.slug ILIKE $${idx})`);
+        conditions.push(
+          `(unaccent(p.name) ILIKE unaccent($${idx}) OR unaccent(p.slug) ILIKE unaccent($${idx}))`
+        );
         values.push(`%${keyword}%`);
         idx++;
       }

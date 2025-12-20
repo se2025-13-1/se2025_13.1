@@ -250,10 +250,12 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
 
             {/* Product Reviews */}
             <ProductReviewList
+              productId={productId}
               totalReviewCount={product.review_count || 0}
               averageRating={product.rating_average || 0}
-              reviews={[]}
-              onSeeAllPress={() => navigation?.navigate('ReviewList')}
+              onSeeAllPress={() =>
+                navigation?.navigate('ReviewList', {productId})
+              }
             />
 
             {/* Separator */}

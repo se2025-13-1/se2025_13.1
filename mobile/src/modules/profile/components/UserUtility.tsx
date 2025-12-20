@@ -36,9 +36,9 @@ const UserUtility: React.FC<UserUtilityProps> = ({
 }) => {
   const {isAuthenticated} = useAuth();
   const [showRequireAuth, setShowRequireAuth] = useState(false);
-  const [selectedFeature, setSelectedFeature] = useState<
-    'chat' | 'notification' | 'cart'
-  >('cart');
+  const [selectedFeature, setSelectedFeature] = useState<'cart' | 'chat'>(
+    'cart',
+  );
 
   const utilities: UtilityItem[] = [
     {
@@ -56,23 +56,13 @@ const UserUtility: React.FC<UserUtilityProps> = ({
       label: 'Giỏ hàng',
       icon: require('../../../assets/icons/AddToCart.png'),
     },
-    {
-      id: 'chat',
-      label: 'Tin nhắn',
-      icon: require('../../../assets/icons/Chat.png'),
-    },
-    {
-      id: 'notifications',
-      label: 'Thông báo',
-      icon: require('../../../assets/icons/Bell.png'),
-    },
   ];
 
   const handleUtilityPress = (utilityId: string) => {
     // Xử lý nút favorites - điều hướng đến WishList Screen
     if (utilityId === 'favorites') {
       if (!isAuthenticated) {
-        setSelectedFeature('notification');
+        setSelectedFeature('chat');
         setShowRequireAuth(true);
         return;
       }
@@ -80,29 +70,20 @@ const UserUtility: React.FC<UserUtilityProps> = ({
       return;
     }
 
-    // Kiểm tra nếu là các chức năng yêu cầu đăng nhập
-    if (['cart', 'chat', 'notifications'].includes(utilityId)) {
+    // Xử lý vouchers - không cần đăng nhập
+    if (utilityId === 'vouchers') {
+      onUtilityPress?.(utilityId);
+      return;
+    }
+
+    // Xử lý giỏ hàng - yêu cầu đăng nhập
+    if (utilityId === 'cart') {
       if (!isAuthenticated) {
-        setSelectedFeature(utilityId as 'cart' | 'chat' | 'notification');
+        setSelectedFeature('cart');
         setShowRequireAuth(true);
         return;
       }
-
-      // Nếu đã đăng nhập, thực hiện điều hướng
-      switch (utilityId) {
-        case 'cart':
-          onNavigateToCart?.();
-          break;
-        case 'chat':
-          onNavigateToChat?.();
-          break;
-        case 'notifications':
-          onNavigateToNotifications?.();
-          break;
-      }
-    } else {
-      // Xử lý các utility khác theo cách cũ
-      onUtilityPress?.(utilityId);
+      onNavigateToCart?.();
     }
   };
 

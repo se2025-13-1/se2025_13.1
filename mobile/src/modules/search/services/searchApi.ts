@@ -50,9 +50,13 @@ class SearchApi {
       const data = await response.json();
       console.log('✅ Search results:', data);
 
+      // API trả về { data, pagination }
+      const products = data.data || data.products || [];
+      const total = data.pagination?.total_items || data.total || 0;
+
       return {
-        products: data.products || [],
-        total: data.total || 0,
+        products,
+        total,
       };
     } catch (error) {
       console.error('❌ Search error:', error);
@@ -108,9 +112,15 @@ class SearchApi {
       }
 
       const data = await response.json();
+      console.log('✅ Advanced search results:', data);
+
+      // API trả về { data, pagination } từ service
+      const products = data.data || data.products || [];
+      const total = data.pagination?.total_items || data.total || 0;
+
       return {
-        products: data.products || [],
-        total: data.total || 0,
+        products,
+        total,
       };
     } catch (error) {
       console.error('❌ Advanced search error:', error);
