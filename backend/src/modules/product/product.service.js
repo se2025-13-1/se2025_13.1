@@ -2,154 +2,12 @@ import { ProductRepository } from "./product.repository.js";
 import { redisClient } from "../../config/redis.js";
 
 const generateSlug = (name) => {
-  // Bảng ánh xạ ký tự tiếng Việt sang không dấu
-  const vietnameseMap = {
-    á: "a",
-    à: "a",
-    ả: "a",
-    ã: "a",
-    ạ: "a",
-    ă: "a",
-    ắ: "a",
-    ằ: "a",
-    ẳ: "a",
-    ẵ: "a",
-    ặ: "a",
-    â: "a",
-    ấ: "a",
-    ầ: "a",
-    ẩ: "a",
-    ẫ: "a",
-    ậ: "a",
-    é: "e",
-    è: "e",
-    ẻ: "e",
-    ẽ: "e",
-    ẹ: "e",
-    ê: "e",
-    ế: "e",
-    ề: "e",
-    ễ: "e",
-    ệ: "e",
-    í: "i",
-    ì: "i",
-    ỉ: "i",
-    ĩ: "i",
-    ị: "i",
-    ó: "o",
-    ò: "o",
-    ỏ: "o",
-    õ: "o",
-    ọ: "o",
-    ô: "o",
-    ố: "o",
-    ồ: "o",
-    ổ: "o",
-    ỗ: "o",
-    ộ: "o",
-    ơ: "o",
-    ớ: "o",
-    ờ: "o",
-    ởa: "o",
-    ỡ: "o",
-    ợ: "o",
-    ú: "u",
-    ù: "u",
-    ủ: "u",
-    ũ: "u",
-    ụ: "u",
-    ư: "u",
-    ứ: "u",
-    ừ: "u",
-    ử: "u",
-    ữ: "u",
-    ự: "u",
-    ý: "y",
-    ỳ: "y",
-    ỷ: "y",
-    ỹ: "y",
-    ỵ: "y",
-    đ: "d",
-    Á: "a",
-    À: "a",
-    Ả: "a",
-    Ã: "a",
-    Ạ: "a",
-    Ă: "a",
-    Ắ: "a",
-    Ằ: "a",
-    Ẳ: "a",
-    Ẵ: "a",
-    Ặ: "a",
-    Â: "a",
-    Ấ: "a",
-    Ầ: "a",
-    Ẩ: "a",
-    Ẫ: "a",
-    Ậ: "a",
-    É: "e",
-    È: "e",
-    Ẻ: "e",
-    Ẽ: "e",
-    Ẹ: "e",
-    Ê: "e",
-    Ế: "e",
-    Ề: "e",
-    Ễ: "e",
-    Ệ: "e",
-    Í: "i",
-    Ì: "i",
-    Ỉ: "i",
-    Ĩ: "i",
-    Ị: "i",
-    Ó: "o",
-    Ò: "o",
-    Ỏ: "o",
-    Õ: "o",
-    Ọ: "o",
-    Ô: "o",
-    Ố: "o",
-    Ồ: "o",
-    Ổ: "o",
-    Ỗ: "o",
-    Ộ: "o",
-    Ơ: "o",
-    Ớ: "o",
-    Ờ: "o",
-    Ở: "o",
-    Ỡ: "o",
-    Ợ: "o",
-    Ú: "u",
-    Ù: "u",
-    Ủ: "u",
-    Ũ: "u",
-    Ụ: "u",
-    Ư: "u",
-    Ứ: "u",
-    Ừ: "u",
-    Ử: "u",
-    Ữ: "u",
-    Ự: "u",
-    Ý: "y",
-    Ỳ: "y",
-    Ỷ: "y",
-    Ỹ: "y",
-    Ỵ: "y",
-    Đ: "d",
-  };
-
-  // Chuyển từng ký tự theo bảng ánh xạ
-  let slug = name
-    .split("")
-    .map((char) => vietnameseMap[char] || char)
-    .join("")
+  return name
     .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-
-  return slug;
+    .replace(/\s+/g, "-");
 };
 
 export const ProductService = {
@@ -175,7 +33,7 @@ export const ProductService = {
 
     // 3. Tạo Slug
     if (!payload.slug && payload.name) {
-      payload.slug = generateSlug(payload.name) + "-" + Date.now();
+      payload.slug = generateSlug(payload.name);
     }
 
     // 4. Gọi Repo
@@ -207,6 +65,11 @@ export const ProductService = {
   },
 
   async updateProduct(productId, payload) {
+    // Nếu cập nhật tên mà không có slug, tự động tạo slug từ tên mới
+    if (payload.name && !payload.slug) {
+      payload.slug = generateSlug(payload.name);
+    }
+
     const updated = await ProductRepository.update(productId, payload);
 
     if (redisClient) {

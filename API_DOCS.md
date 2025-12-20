@@ -93,9 +93,10 @@ API này dùng cho cả Trang chủ, Tìm kiếm, Lọc, Admin List.
 
         min_rating: Số sao tối thiểu (VD: 4).
 
-        sort_by: price, rating, sold, created_at (Mặc định).
+        sort_by: price, rating, sold, name (Không bắt buộc).
+            - Nếu không truyền → Mặc định sắp xếp theo created_at DESC (Mới nhất).
 
-        sort_order: asc (Tăng dần), desc (Giảm dần).
+        sort_order: asc (Tăng dần), desc (Giảm dần, Mặc định).
 
     Ví dụ: /products?q=áo&min_price=100000&sort_by=price&sort_order=asc
 

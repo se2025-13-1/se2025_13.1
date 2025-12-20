@@ -1,10 +1,21 @@
-import React, {useState} from 'react';
-import {View, StyleSheet, FlatList, ActivityIndicator} from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import React, {useState, useEffect} from 'react';
+import {
+  View,
+  StyleSheet,
+  FlatList,
+  ActivityIndicator,
+  Alert,
+  Text,
+  TouchableOpacity,
+} from 'react-native';
+import {useNavigation, useRoute, RouteProp} from '@react-navigation/native';
 import ReviewHeader from '../components/ReviewHeader';
 import RatingSummary from '../components/RatingSummary';
 import ReviewItem from '../components/ReviewItem';
 import BottomActionBar from '../../productdetails/components/BottomActionBar';
+import {ReviewApi, ProductReview} from '../services/review.api';
+
+type ReviewListRouteProps = RouteProp<{params: {productId: string}}, 'params'>;
 
 interface Review {
   id: string;
@@ -19,54 +30,109 @@ interface Review {
 
 const ReviewListScreen: React.FC = () => {
   const navigation = useNavigation();
-  const [loading, setLoading] = useState(false);
-  const [reviews, setReviews] = useState<Review[]>([
-    {
-      id: '1',
-      userName: 'Nguyễn Văn A',
-      rating: 5,
-      reviewText: 'Sản phẩm rất tốt, chất lượng cao, giao hàng nhanh',
-      timestamp: new Date('2025-11-05'),
-      verified: true,
-      likeCount: 9,
-    },
-    {
-      id: '2',
-      userName: 'Trần Thị B',
-      rating: 4,
-      reviewText: 'Túi đẹp, đúng như ảnh, rất hài lòng',
-      timestamp: new Date('2025-11-02'),
-      verified: true,
-      likeCount: 5,
-    },
-    {
-      id: '3',
-      userName: 'Lê Văn C',
-      rating: 5,
-      reviewText: 'Chất liệu tốt, bền, đáng tiền',
-      timestamp: new Date('2025-10-29'),
-      verified: false,
-      likeCount: 12,
-    },
-    {
-      id: '4',
-      userName: 'Phạm Minh D',
-      rating: 4,
-      reviewText: 'Tốt nhưng giao hàng hơi lâu một chút',
-      timestamp: new Date('2025-10-25'),
-      verified: true,
-      likeCount: 3,
-    },
-    {
-      id: '5',
-      userName: 'Hoàng Anh E',
-      rating: 5,
-      reviewText: 'Rất hài lòng với sản phẩm này, sẽ mua lại',
-      timestamp: new Date('2025-10-20'),
-      verified: true,
-      likeCount: 15,
-    },
-  ]);
+  const route = useRoute<ReviewListRouteProps>();
+  const {productId} = route.params;
+
+  const [loading, setLoading] = useState(true);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  // Rating summary data calculated from reviews
+  const [ratingSummary, setRatingSummary] = useState({
+    averageRating: 0,
+    totalReviews: 0,
+    fiveStarCount: 0,
+    fourStarCount: 0,
+    threeStarCount: 0,
+    twoStarCount: 0,
+    oneStarCount: 0,
+  });
+
+  useEffect(() => {
+    fetchProductReviews();
+  }, [productId]);
+
+  const fetchProductReviews = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await ReviewApi.getProductReviews(productId, {
+        page: 1,
+        limit: 50, // Load more reviews for better overview
+      });
+
+      // Map backend ProductReview to frontend Review interface
+      const mappedReviews: Review[] = response.reviews.map(
+        (review: ProductReview) => ({
+          id: review.id,
+          userName: review.user_name || 'Người dùng',
+          userAvatar: review.user_avatar,
+          rating: review.rating,
+          reviewText: review.comment || '',
+          timestamp: new Date(review.created_at),
+          verified: review.is_approved, // Verified purchase = approved review
+          likeCount: 0, // Backend doesn't support likes yet
+        }),
+      );
+
+      setReviews(mappedReviews);
+      calculateRatingSummary(mappedReviews);
+    } catch (err: any) {
+      console.error('Error fetching reviews:', err);
+      setError(err.message || 'Không thể tải đánh giá');
+      Alert.alert('Lỗi', err.message || 'Không thể tải đánh giá sản phẩm');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateRatingSummary = (reviewsList: Review[]) => {
+    const totalReviews = reviewsList.length;
+
+    if (totalReviews === 0) {
+      setRatingSummary({
+        averageRating: 0,
+        totalReviews: 0,
+        fiveStarCount: 0,
+        fourStarCount: 0,
+        threeStarCount: 0,
+        twoStarCount: 0,
+        oneStarCount: 0,
+      });
+      return;
+    }
+
+    // Count ratings using a type-safe approach
+    const ratingCounts = {
+      '5Star': 0,
+      '4Star': 0,
+      '3Star': 0,
+      '2Star': 0,
+      '1Star': 0,
+      total: 0,
+    };
+
+    reviewsList.forEach(review => {
+      const ratingKey = `${review.rating}Star` as keyof typeof ratingCounts;
+      if (ratingKey in ratingCounts && ratingKey !== 'total') {
+        ratingCounts[ratingKey] = ratingCounts[ratingKey] + 1;
+      }
+      ratingCounts.total += review.rating;
+    });
+
+    const averageRating = ratingCounts.total / totalReviews;
+
+    setRatingSummary({
+      averageRating: Math.round(averageRating * 10) / 10, // Round to 1 decimal
+      totalReviews,
+      fiveStarCount: ratingCounts['5Star'],
+      fourStarCount: ratingCounts['4Star'],
+      threeStarCount: ratingCounts['3Star'],
+      twoStarCount: ratingCounts['2Star'],
+      oneStarCount: ratingCounts['1Star'],
+    });
+  };
 
   const handleBackPress = () => {
     navigation.goBack();
@@ -115,18 +181,34 @@ const ReviewListScreen: React.FC = () => {
       />
 
       <RatingSummary
-        averageRating={4.8}
-        totalReviews={245}
-        fiveStarCount={180}
-        fourStarCount={45}
-        threeStarCount={15}
-        twoStarCount={3}
-        oneStarCount={2}
+        averageRating={ratingSummary.averageRating}
+        totalReviews={ratingSummary.totalReviews}
+        fiveStarCount={ratingSummary.fiveStarCount}
+        fourStarCount={ratingSummary.fourStarCount}
+        threeStarCount={ratingSummary.threeStarCount}
+        twoStarCount={ratingSummary.twoStarCount}
+        oneStarCount={ratingSummary.oneStarCount}
       />
 
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#E53935" />
+        </View>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>❌ {error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={fetchProductReviews}>
+            <Text style={styles.retryButtonText}>Thử lại</Text>
+          </TouchableOpacity>
+        </View>
+      ) : reviews.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>📝 Chưa có đánh giá nào</Text>
+          <Text style={styles.emptySubText}>
+            Hãy là người đầu tiên đánh giá sản phẩm này!
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -135,6 +217,7 @@ const ReviewListScreen: React.FC = () => {
           keyExtractor={item => item.id}
           scrollEnabled={true}
           nestedScrollEnabled={true}
+          showsVerticalScrollIndicator={false}
         />
       )}
 
@@ -162,6 +245,46 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 30,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#E53935',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#E53935',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 6,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 30,
+  },
+  emptyText: {
+    fontSize: 18,
+    color: '#666666',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  emptySubText: {
+    fontSize: 14,
+    color: '#999999',
+    textAlign: 'center',
   },
 });
 

@@ -13,8 +13,8 @@ import {useFocusEffect} from '@react-navigation/native';
 import {OrderApi, Order} from '../services/orderApi';
 import OrderItems from '../components/OrderItems';
 
-const MyOrderScreen = ({navigation}: any) => {
-  const [activeTab, setActiveTab] = useState(0);
+const MyOrderScreen = ({navigation, route}: any) => {
+  const [activeTab, setActiveTab] = useState(route?.params?.initialTab ?? 0);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
 

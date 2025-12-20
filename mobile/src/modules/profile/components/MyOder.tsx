@@ -1,52 +1,88 @@
 import React from 'react';
-import {View, Text, TouchableOpacity, StyleSheet, Image} from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  ScrollView,
+} from 'react-native';
 
 interface OrderStatus {
   id: string;
   label: string;
   count: number;
   icon: any;
+  tabIndex: number;
 }
 
 interface MyOderProps {
   onViewHistoryPress?: () => void;
   onStatusPress?: (statusId: string) => void;
+  navigation?: any;
 }
 
-const MyOder: React.FC<MyOderProps> = ({onViewHistoryPress, onStatusPress}) => {
+const MyOder: React.FC<MyOderProps> = ({
+  onViewHistoryPress,
+  onStatusPress,
+  navigation,
+}) => {
   const orderStatuses: OrderStatus[] = [
     {
       id: 'pending-confirmation',
       label: 'Chờ xác nhận',
       count: 2,
       icon: require('../../../assets/icons/Clock.png'),
+      tabIndex: 0,
+    },
+    {
+      id: 'pending-pickup',
+      label: 'Chờ lấy hàng',
+      count: 0,
+      icon: require('../../../assets/icons/Truck.png'),
+      tabIndex: 1,
     },
     {
       id: 'pending-delivery',
       label: 'Đang giao hàng',
       count: 1,
       icon: require('../../../assets/icons/Truck.png'),
+      tabIndex: 2,
     },
     {
       id: 'delivered',
       label: 'Đã giao',
       count: 5,
       icon: require('../../../assets/icons/Check.png'),
+      tabIndex: 3,
     },
     {
       id: 'cancelled',
       label: 'Đã hủy',
       count: 0,
       icon: require('../../../assets/icons/Close.png'),
+      tabIndex: 4,
     },
   ];
+
+  const handleStatusPress = (status: OrderStatus) => {
+    // Call the onStatusPress callback if provided
+    onStatusPress?.(status.id);
+
+    // Navigate to MyOrderScreen with the selected tab index
+    if (navigation) {
+      navigation.navigate('MyOrder', {
+        initialTab: status.tabIndex,
+      });
+    }
+  };
 
   const renderStatusButton = (status: OrderStatus) => {
     return (
       <TouchableOpacity
         key={status.id}
         style={styles.statusButton}
-        onPress={() => onStatusPress?.(status.id)}
+        onPress={() => handleStatusPress(status)}
         activeOpacity={0.7}>
         <View style={styles.statusIconContainer}>
           <Image source={status.icon} style={styles.statusIcon} />
@@ -74,9 +110,14 @@ const MyOder: React.FC<MyOderProps> = ({onViewHistoryPress, onStatusPress}) => {
       </View>
 
       {/* Status Buttons Section */}
-      <View style={styles.statusesContainer}>
-        {orderStatuses.map(renderStatusButton)}
-      </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.scrollContainer}>
+        <View style={styles.statusesContainer}>
+          {orderStatuses.map(renderStatusButton)}
+        </View>
+      </ScrollView>
     </View>
   );
 };
@@ -114,13 +155,17 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
     tintColor: '#333',
   },
+  scrollContainer: {
+    marginHorizontal: -16,
+    paddingHorizontal: 16,
+  },
   statusesContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: 16,
   },
   statusButton: {
     alignItems: 'center',
-    flex: 1,
+    minWidth: 70,
     paddingHorizontal: 8,
   },
   statusIconContainer: {

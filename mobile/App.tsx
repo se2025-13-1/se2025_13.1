@@ -17,6 +17,7 @@ import ResetPasswordScreen from './src/modules/auth/screens/ResetPasswordScreen'
 import VerificationPasswordScreen from './src/modules/auth/screens/VerificationPassword';
 import HomeScreen from './src/modules/home/screens/HomeScreen';
 import SearchEntry from './src/modules/search/screens/SearchEntry';
+import SearchResult from './src/modules/search/screens/SearchResult';
 import NotificationScreen from './src/modules/notifications/screens/NotificationScreen';
 import NotificationDetailScreen from './src/modules/notifications/screens/NotificationDetailScreen';
 import EditProfileScreen from './src/modules/profile/screens/EditProfileScreen';
@@ -32,6 +33,7 @@ import PaymentMethodScreen from './src/modules/payment/screens/PaymentMethodScre
 import OrderResultScreen from './src/modules/order/screens/OrderResultScreen';
 import MyOrderScreen from './src/modules/order/screens/MyOrderScreen';
 import OrderDetailScreen from './src/modules/order/screens/OrderDetailScreen';
+import ReviewSubmitScreen from './src/modules/reviews/screens/ReviewSubmitScreen';
 import WishListScreen from './src/modules/wishlist/screens/WishListScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -69,7 +71,7 @@ export type RootStackParamList = {
   AddAddress: undefined;
   EditAddress: {address: any};
   ProductDetail: {productId: string};
-  ReviewList: undefined;
+  ReviewList: {productId: string};
   Cart: undefined;
   Payment: {
     product?: any;
@@ -82,6 +84,7 @@ export type RootStackParamList = {
   PaymentMethod: {selectedMethod: string};
   MyOrder: undefined;
   OrderDetail: {orderId: string};
+  ReviewSubmit: {orderId: string};
   OrderResult: {orderId: string; items?: any[]};
   WishList: undefined;
 };
@@ -170,6 +173,7 @@ const App = () => {
             <>
               <Stack.Screen name="Home" component={HomeScreen} />
               <Stack.Screen name="SearchEntry" component={SearchEntry} />
+              <Stack.Screen name="SearchResult" component={SearchResult} />
               <Stack.Screen
                 name="Notification"
                 component={NotificationScreen}
@@ -197,6 +201,10 @@ const App = () => {
               <Stack.Screen name="OrderResult" component={OrderResultScreen} />
               <Stack.Screen name="MyOrder" component={MyOrderScreen} />
               <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
+              <Stack.Screen
+                name="ReviewSubmit"
+                component={ReviewSubmitScreen}
+              />
               <Stack.Screen name="WishList" component={WishListScreen} />
               {/* Auth screens still available if user wants to login */}
               <Stack.Screen name="Login">

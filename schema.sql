@@ -9,6 +9,7 @@
 -- Kích hoạt extension để tạo UUID và hỗ trợ tìm kiếm Full-text
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm"; -- Hỗ trợ tìm kiếm like %name% nhanh hơn
+CREATE EXTENSION IF NOT EXISTS "unaccent"; -- Hỗ trợ tìm kiếm tiếng Việt không dấu
 
 -- Hàm tự động cập nhật thời gian 'updated_at'
 CREATE OR REPLACE FUNCTION update_updated_at_column()

@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   Text,
@@ -7,30 +7,107 @@ import {
   Image,
   FlatList,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface HistorySearchProps {
   onHistoryItemPress: (item: string) => void;
 }
 
+const SEARCH_HISTORY_KEY = 'search_history';
+const MAX_HISTORY_ITEMS = 10;
+
 const HistorySearch: React.FC<HistorySearchProps> = ({onHistoryItemPress}) => {
-  const [searchHistory, setSearchHistory] = useState<string[]>([
-    'Áo thun nam',
-    'Quần jeans nữ',
-    'Váy đầm',
-    'Giày thể thao',
-  ]);
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load history từ AsyncStorage khi component mount
+  useEffect(() => {
+    loadSearchHistory();
+  }, []);
+
+  const loadSearchHistory = useCallback(async () => {
+    try {
+      setLoading(true);
+      const stored = await AsyncStorage.getItem(SEARCH_HISTORY_KEY);
+      if (stored) {
+        const history = JSON.parse(stored);
+        setSearchHistory(Array.isArray(history) ? history : []);
+      }
+      console.log('✅ Loaded search history:', stored);
+    } catch (error) {
+      console.error('❌ Error loading search history:', error);
+      setSearchHistory([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const handleHistoryItemPress = (item: string) => {
     onHistoryItemPress(item);
+    // Thêm vào history mới khi user click (move to top)
+    addToSearchHistory(item);
   };
 
-  const handleDeleteHistoryItem = (item: string) => {
-    setSearchHistory(searchHistory.filter(h => h !== item));
-  };
+  const addToSearchHistory = useCallback(
+    async (item: string) => {
+      try {
+        const trimmed = item.trim();
+        if (!trimmed) return;
 
-  const handleClearHistory = () => {
-    setSearchHistory([]);
-  };
+        // Xóa item nếu đã tồn tại (để move to top)
+        let updatedHistory = searchHistory.filter(
+          h => h.toLowerCase() !== trimmed.toLowerCase(),
+        );
+
+        // Thêm item vào đầu list
+        updatedHistory = [trimmed, ...updatedHistory];
+
+        // Giữ lại max 10 items
+        if (updatedHistory.length > MAX_HISTORY_ITEMS) {
+          updatedHistory = updatedHistory.slice(0, MAX_HISTORY_ITEMS);
+        }
+
+        // Lưu vào AsyncStorage
+        await AsyncStorage.setItem(
+          SEARCH_HISTORY_KEY,
+          JSON.stringify(updatedHistory),
+        );
+
+        setSearchHistory(updatedHistory);
+        console.log('✅ Added to search history:', trimmed);
+      } catch (error) {
+        console.error('❌ Error adding to search history:', error);
+      }
+    },
+    [searchHistory],
+  );
+
+  const handleDeleteHistoryItem = useCallback(
+    async (item: string) => {
+      try {
+        const updatedHistory = searchHistory.filter(h => h !== item);
+        await AsyncStorage.setItem(
+          SEARCH_HISTORY_KEY,
+          JSON.stringify(updatedHistory),
+        );
+        setSearchHistory(updatedHistory);
+        console.log('✅ Deleted from search history:', item);
+      } catch (error) {
+        console.error('❌ Error deleting search history item:', error);
+      }
+    },
+    [searchHistory],
+  );
+
+  const handleClearHistory = useCallback(async () => {
+    try {
+      await AsyncStorage.removeItem(SEARCH_HISTORY_KEY);
+      setSearchHistory([]);
+      console.log('✅ Cleared search history');
+    } catch (error) {
+      console.error('❌ Error clearing search history:', error);
+    }
+  }, []);
 
   const renderHistoryItem = ({item}: {item: string}) => (
     <TouchableOpacity

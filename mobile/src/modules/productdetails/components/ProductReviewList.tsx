@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -6,10 +6,13 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import ProductReviewItem from './ProductReviewItem';
+import {ReviewApi, ProductReview} from '../../reviews/services/review.api';
 
 interface ProductReviewListProps {
+  productId: string; // Required to fetch reviews
   reviews?: Array<{
     id: string;
     userName: string;
@@ -26,39 +29,70 @@ interface ProductReviewListProps {
 }
 
 const ProductReviewList: React.FC<ProductReviewListProps> = ({
-  reviews = [
-    {
-      id: '1',
-      userName: 'Nguyễn Văn A',
-      rating: 5,
-      reviewText: 'Sản phẩm rất tốt, chất lượng cao, giao hàng nhanh',
-      timestamp: '2 ngày trước',
-      verified: true,
-      likeCount: 9,
-    },
-    {
-      id: '2',
-      userName: 'Trần Thị B',
-      rating: 4,
-      reviewText: 'Túi đẹp, đúng như ảnh, rất hài lòng',
-      timestamp: '5 ngày trước',
-      verified: true,
-      likeCount: 5,
-    },
-    {
-      id: '3',
-      userName: 'Lê Văn C',
-      rating: 5,
-      reviewText: 'Chất liệu tốt, bền, đáng tiền',
-      timestamp: '1 tuần trước',
-      verified: false,
-      likeCount: 12,
-    },
-  ],
-  totalReviewCount = 25,
-  averageRating = 4.8,
+  productId,
+  reviews: propReviews,
+  totalReviewCount = 0,
+  averageRating = 0,
   onSeeAllPress,
 }) => {
+  const [reviews, setReviews] = useState<any[]>(propReviews || []);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (productId) {
+      fetchPreviewReviews();
+    }
+  }, [productId]);
+
+  const fetchPreviewReviews = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await ReviewApi.getProductReviews(productId, {
+        page: 1,
+        limit: 3, // Only get first 3 reviews for preview
+      });
+
+      // Map backend ProductReview to component format
+      const mappedReviews = response.reviews.map((review: ProductReview) => ({
+        id: review.id,
+        userName: review.user_name || 'Người dùng',
+        userAvatar: review.user_avatar,
+        rating: review.rating,
+        reviewText: review.comment || '',
+        timestamp: formatTimestamp(review.created_at),
+        verified: review.is_approved,
+        likeCount: 0, // Backend doesn't support likes yet
+      }));
+
+      setReviews(mappedReviews);
+    } catch (err: any) {
+      console.error('Error fetching preview reviews:', err);
+      setError(err.message || 'Không thể tải đánh giá');
+      // Don't show alert for preview - just log error
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatTimestamp = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 0) return 'Hôm nay';
+      if (diffDays === 1) return 'Hôm qua';
+      if (diffDays < 7) return `${diffDays} ngày trước`;
+      if (diffDays < 30) return `${Math.floor(diffDays / 7)} tuần trước`;
+      return `${Math.floor(diffDays / 30)} tháng trước`;
+    } catch {
+      return dateString;
+    }
+  };
   const renderStars = (rating: number) => {
     const stars = [];
     for (let i = 1; i <= 5; i++) {
@@ -128,7 +162,16 @@ const ProductReviewList: React.FC<ProductReviewListProps> = ({
 
       {/* Reviews List */}
       <View style={styles.reviewsListContainer}>
-        {reviews.length > 0 ? (
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color="#E53935" />
+            <Text style={styles.loadingText}>Đang tải đánh giá...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>Không thể tải đánh giá</Text>
+          </View>
+        ) : reviews.length > 0 ? (
           <>
             {reviews.slice(0, 3).map(review => (
               <ProductReviewItem
@@ -145,16 +188,18 @@ const ProductReviewList: React.FC<ProductReviewListProps> = ({
             ))}
 
             {/* View All Button */}
-            <TouchableOpacity
-              style={styles.viewAllButton}
-              onPress={onSeeAllPress}
-              activeOpacity={0.7}>
-              <Text style={styles.viewAllText}>Xem tất cả</Text>
-              <Image
-                source={require('../../../assets/icons/ArrowForward.png')}
-                style={styles.viewAllIcon}
-              />
-            </TouchableOpacity>
+            {totalReviewCount > 3 && (
+              <TouchableOpacity
+                style={styles.viewAllButton}
+                onPress={onSeeAllPress}
+                activeOpacity={0.7}>
+                <Text style={styles.viewAllText}>Xem tất cả</Text>
+                <Image
+                  source={require('../../../assets/icons/ArrowForward.png')}
+                  style={styles.viewAllIcon}
+                />
+              </TouchableOpacity>
+            )}
           </>
         ) : (
           <View style={styles.emptyState}>

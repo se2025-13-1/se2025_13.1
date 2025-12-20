@@ -110,6 +110,15 @@ const OrderDetailScreen: React.FC<OrderDetailScreenProps> = ({
   const canCancelOrder =
     order && (order.status === 'pending' || order.status === 'confirmed');
 
+  // Check if order can be reviewed (completed status)
+  const canReviewOrder = order && order.status === 'completed';
+
+  const handleReviewOrder = () => {
+    if (order) {
+      navigation.navigate('ReviewSubmit', {orderId: order.id});
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.container}>
@@ -179,6 +188,15 @@ const OrderDetailScreen: React.FC<OrderDetailScreenProps> = ({
 
         {/* Order Shipping */}
         <OrderShipping order={order} />
+
+        {/* Review Order Button - when completed */}
+        {canReviewOrder && (
+          <TouchableOpacity
+            style={styles.reviewButton}
+            onPress={handleReviewOrder}>
+            <Text style={styles.reviewButtonText}>Đánh giá sản phẩm</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Cancel Order Button */}
         {canCancelOrder && (
@@ -255,6 +273,19 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   cancelButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  reviewButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  reviewButtonText: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',

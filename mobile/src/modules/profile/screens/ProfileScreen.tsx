@@ -9,6 +9,7 @@ import {
 import ProfileHeader from '../components/ProfileHeader';
 import MyOder from '../components/MyOder';
 import UserUtility from '../components/UserUtility';
+import ProductRecommended from '../../productdetails/components/ProductRecommended';
 import {useAuth} from '../../../contexts/AuthContext';
 
 interface ProfileScreenProps {
@@ -149,6 +150,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
         <MyOder
           onViewHistoryPress={handleViewHistoryPress}
           onStatusPress={handleOrderStatusPress}
+          navigation={navigation}
         />
 
         {/* Divider */}
@@ -167,6 +169,12 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
           onNavigateToChat={handleNavigateToChat}
           onNavigateToNotifications={handleNavigateToNotifications}
         />
+
+        {/* Divider */}
+        <View style={styles.separator} />
+
+        {/* Product Recommended Component */}
+        <ProductRecommended navigation={navigation} />
       </ScrollView>
     </View>
   );
