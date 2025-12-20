@@ -97,9 +97,23 @@ const SettingScreen: React.FC<SettingScreenProps> = ({navigation}) => {
         text: 'Logout',
         onPress: async () => {
           try {
-            // Logout using context
-            await logout();
-            console.log('✅ Logged out successfully');
+            console.log('🚪 Starting logout process...');
+
+            // Logout using context (includes complete logout from all services)
+            const logoutResult = await logout();
+
+            if (logoutResult?.errors && logoutResult.errors.length > 0) {
+              // Show warning but continue
+              Alert.alert(
+                'Logout Warning',
+                `Logged out successfully, but some services may still be connected: ${logoutResult.errors.join(
+                  ', ',
+                )}`,
+                [{text: 'OK'}],
+              );
+            }
+
+            console.log('✅ Logout completed successfully');
 
             // Navigate back to Home screen
             navigation?.reset({
@@ -108,7 +122,24 @@ const SettingScreen: React.FC<SettingScreenProps> = ({navigation}) => {
             });
           } catch (error) {
             console.error('❌ Logout error:', error);
-            Alert.alert('Error', 'Failed to logout. Please try again.');
+
+            Alert.alert(
+              'Logout Error',
+              'Some logout operations failed, but you have been signed out of the app. You may need to sign out manually from your Google account.',
+              [
+                {text: 'OK'},
+                {
+                  text: 'Try Again',
+                  onPress: () => handleLogout(),
+                },
+              ],
+            );
+
+            // Force navigate even if logout failed partially
+            navigation?.reset({
+              index: 0,
+              routes: [{name: 'Home'}],
+            });
           }
         },
         style: 'destructive',

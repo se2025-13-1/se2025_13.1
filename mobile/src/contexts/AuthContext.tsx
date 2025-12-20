@@ -12,6 +12,7 @@ import {
   isAuthenticated as checkIsAuthenticated,
 } from '../services/tokenService';
 import {AuthApi} from '../modules/auth/services/authApi';
+import {LogoutService} from '../services/logoutService';
 
 export interface AuthUser {
   id: string;
@@ -118,15 +119,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
       setError(null);
       setIsLoading(true);
 
-      // Clear tokens and user data
-      await clearTokens();
+      console.log('🚪 Starting complete logout...');
 
+      // Use comprehensive logout service
+      const logoutResult = await LogoutService.performCompleteLogout();
+
+      // Reset auth state regardless of logout result
       setIsAuthenticated(false);
       setUser(null);
       setError(null);
 
-      console.log('✅ Logged out successfully');
+      if (logoutResult.success) {
+        console.log('✅ Complete logout successful');
+
+        if (logoutResult.errors.length > 0) {
+          console.warn('⚠️ Some services logout failed:', logoutResult.errors);
+        }
+      } else {
+        console.error('❌ Logout failed but auth state cleared');
+      }
+
+      return logoutResult;
     } catch (err: any) {
+      console.error('❌ Critical logout error:', err);
+
+      // Emergency fallback - try to clear local data at minimum
+      try {
+        const quickLogout = await LogoutService.performQuickLogout();
+        setIsAuthenticated(false);
+        setUser(null);
+
+        console.log('✅ Emergency logout completed');
+        return quickLogout;
+      } catch (emergencyError) {
+        console.error('❌ Emergency logout also failed:', emergencyError);
+      }
+
       const errorMessage = err.message || 'Logout failed';
       setError(errorMessage);
       throw err;

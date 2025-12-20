@@ -22,6 +22,9 @@ const ProductList: React.FC = () => {
     undefined
   );
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(
+    new Set()
+  );
 
   // Hàm fetch dữ liệu
   const fetchProducts = async () => {
@@ -57,6 +60,53 @@ const ProductList: React.FC = () => {
     }
   };
 
+  // Xóa hàng loạt
+  const handleBatchDelete = async () => {
+    if (selectedProducts.size === 0) return;
+    const count = selectedProducts.size;
+    if (
+      window.confirm(
+        `Are you sure you want to delete ${count} product(s)? This cannot be undone!`
+      )
+    ) {
+      try {
+        // Xóa từng sản phẩm
+        for (const id of selectedProducts) {
+          try {
+            await apiClient.deleteProduct(id);
+          } catch (err) {
+            console.error(`Failed to delete product ${id}`);
+          }
+        }
+        // Cập nhật danh sách
+        setProducts(products.filter((p) => !selectedProducts.has(p.id)));
+        setSelectedProducts(new Set());
+      } catch (err) {
+        alert("Failed to delete products");
+      }
+    }
+  };
+
+  // Chọn/bỏ chọn 1 sản phẩm
+  const toggleSelectProduct = (productId: string) => {
+    const newSelected = new Set(selectedProducts);
+    if (newSelected.has(productId)) {
+      newSelected.delete(productId);
+    } else {
+      newSelected.add(productId);
+    }
+    setSelectedProducts(newSelected);
+  };
+
+  // Chọn tất cả sản phẩm
+  const toggleSelectAll = () => {
+    if (selectedProducts.size === filteredProducts.length) {
+      setSelectedProducts(new Set());
+    } else {
+      setSelectedProducts(new Set(filteredProducts.map((p) => p.id)));
+    }
+  };
+
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
     setIsFormOpen(true);
@@ -86,6 +136,11 @@ const ProductList: React.FC = () => {
   const filteredProducts = products.filter((product) =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Check if all filtered products are selected
+  const isAllSelected =
+    filteredProducts.length > 0 &&
+    filteredProducts.every((p) => selectedProducts.has(p.id));
 
   // Helper để lấy ảnh đại diện (Thumbnail)
   const getThumbnail = (product: Product) => {
@@ -144,6 +199,22 @@ const ProductList: React.FC = () => {
         </div>
       </div>
 
+      {/* Batch Action Toolbar */}
+      {selectedProducts.size > 0 && (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex items-center justify-between">
+          <span className="text-sm font-medium text-indigo-900">
+            {selectedProducts.size} product(s) selected
+          </span>
+          <button
+            onClick={handleBatchDelete}
+            className="flex items-center space-x-2 bg-rose-600 text-white px-4 py-2 rounded-lg hover:bg-rose-700 transition-colors"
+          >
+            <Trash2 size={18} />
+            <span>Delete Selected</span>
+          </button>
+        </div>
+      )}
+
       {/* Product Table */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
         {isLoading ? (
@@ -165,6 +236,14 @@ const ProductList: React.FC = () => {
             <table className="min-w-full divide-y divide-slate-200">
               <thead className="bg-slate-50">
                 <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    <input
+                      type="checkbox"
+                      checked={isAllSelected}
+                      onChange={toggleSelectAll}
+                      className="rounded border-slate-300 cursor-pointer"
+                    />
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                     Product
                   </th>
@@ -191,11 +270,24 @@ const ProductList: React.FC = () => {
               <tbody className="bg-white divide-y divide-slate-200">
                 {filteredProducts.map((product) => {
                   const thumbnail = getThumbnail(product);
+                  const isSelected = selectedProducts.has(product.id);
                   return (
                     <tr
                       key={product.id}
-                      className="hover:bg-slate-50 transition-colors"
+                      className={`transition-colors ${
+                        isSelected
+                          ? "bg-indigo-50 border-l-4 border-indigo-600"
+                          : "hover:bg-slate-50"
+                      }`}
                     >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelectProduct(product.id)}
+                          className="rounded border-slate-300 cursor-pointer"
+                        />
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="h-10 w-10 flex-shrink-0 rounded-lg bg-slate-100 overflow-hidden border border-slate-200">
