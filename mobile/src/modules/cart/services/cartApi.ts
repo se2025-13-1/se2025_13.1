@@ -1,5 +1,6 @@
 import {AppConfig} from '../../../config/AppConfig';
 import {getAccessToken} from '../../../services/tokenService';
+import {cacheService} from '../../../services/cacheService';
 
 const BASE_URL = AppConfig.BASE_URL;
 
@@ -26,44 +27,48 @@ export const CartApi = {
   /**
    * Lấy giỏ hàng hiện tại
    */
-  getCart: async (): Promise<CartResponse> => {
-    try {
-      const token = await getAccessToken();
-      console.log(
-        'GetCart - Token:',
-        token ? 'Found (' + token.substring(0, 20) + '...)' : 'Not found',
-      );
+  getCart: async (forceRefresh: boolean = false): Promise<CartResponse> => {
+    const token = await getAccessToken();
+    console.log(
+      'GetCart - Token:',
+      token ? 'Found (' + token.substring(0, 20) + '...)' : 'Not found',
+    );
 
-      if (!token) {
-        throw new Error('Bạn cần đăng nhập lại');
-      }
-
-      console.log('GetCart - Calling API:', `${BASE_URL}/api/cart`);
-      const res = await fetch(`${BASE_URL}/api/cart`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const json = await res.json();
-      console.log('GetCart - Response status:', res.status);
-      console.log('GetCart - Response:', json);
-
-      if (!res.ok) {
-        if (res.status === 401) {
-          console.error('GetCart - 401 Unauthorized:', json);
-          throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại');
-        }
-        throw new Error(json.error || json.message || 'Lỗi khi lấy giỏ hàng');
-      }
-
-      return json;
-    } catch (error: any) {
-      console.error('GetCart - Error:', error);
-      throw new Error(error.message || 'Lỗi kết nối');
+    if (!token) {
+      throw new Error('Bạn cần đăng nhập lại');
     }
+
+    return await cacheService.executeWithCache(
+      'user_cart',
+      async () => {
+        console.log('GetCart - Calling API:', `${BASE_URL}/api/cart`);
+        const res = await fetch(`${BASE_URL}/api/cart`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const json = await res.json();
+        console.log('GetCart - Response status:', res.status);
+        console.log('GetCart - Response:', json);
+
+        if (!res.ok) {
+          if (res.status === 401) {
+            console.error('GetCart - 401 Unauthorized:', json);
+            throw new Error(
+              'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại',
+            );
+          }
+          throw new Error(json.error || json.message || 'Lỗi khi lấy giỏ hàng');
+        }
+
+        return json;
+      },
+      {userId: token.substring(0, 20)},
+      {ttl: 2 * 60 * 1000, forceRefresh}, // 2 minutes cache for cart
+    );
   },
 
   /**
@@ -104,6 +109,9 @@ export const CartApi = {
         }
         throw new Error(json.error || json.message || 'Lỗi khi thêm vào giỏ');
       }
+
+      // Clear cart cache after successful addition
+      await cacheService.clearByPrefix('user_cart');
 
       return json;
     } catch (error: any) {
@@ -151,6 +159,9 @@ export const CartApi = {
         );
       }
 
+      // Clear cart cache after successful update
+      await cacheService.clearByPrefix('user_cart');
+
       return json;
     } catch (error: any) {
       console.error('UpdateItem - Error:', error);
@@ -189,10 +200,18 @@ export const CartApi = {
         throw new Error(json.error || json.message || 'Lỗi khi xóa sản phẩm');
       }
 
+      // Clear cart cache after successful removal
+      await cacheService.clearByPrefix('user_cart');
+
       return json;
     } catch (error: any) {
       console.error('RemoveItem - Error:', error);
       throw new Error(error.message || 'Lỗi kết nối');
     }
+  },
+
+  // Cache management methods
+  clearCartCache: async (): Promise<void> => {
+    await cacheService.clearByPrefix('user_cart');
   },
 };

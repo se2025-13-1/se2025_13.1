@@ -10,21 +10,33 @@ import {
 
 const {width} = Dimensions.get('window');
 
+interface ProductImage {
+  url?: string;
+  image_url?: string;
+  color: string | null;
+  color_ref?: string | null;
+}
+
 interface ProductImageProps {
-  images?: Array<{url: string; color: string | null}>;
+  images?: ProductImage[];
 }
 
 const ProductImage: React.FC<ProductImageProps> = ({images}) => {
-  // Lấy ảnh chung (color = null)
-  const generalImages = (images || [])
-    .filter(img => !img.color)
-    .map(img => img.url);
+  // Normalize images - hỗ trợ cả url/image_url và color/color_ref
+  const normalizedImages = (images || []).map(img => ({
+    url: img.url || img.image_url || '',
+    color: img.color || img.color_ref || null,
+  }));
 
-  // Nếu không có ảnh chung, hiển thị placeholder
-  const displayImages =
-    generalImages.length > 0
-      ? generalImages
-      : ['https://via.placeholder.com/300x300/f0f0f0/666666?text=Product+1'];
+  // Lấy tất cả ảnh (chung + theo màu)
+  const displayImages = normalizedImages.map(img => img.url).filter(url => url);
+
+  // Nếu không có ảnh, hiển thị placeholder
+  const finalImages =
+    displayImages.length > 0
+      ? displayImages
+      : ['https://via.placeholder.com/300x300/f0f0f0/666666?text=Product'];
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
@@ -45,7 +57,7 @@ const ProductImage: React.FC<ProductImageProps> = ({images}) => {
       {/* Image Carousel */}
       <FlatList
         ref={flatListRef}
-        data={displayImages}
+        data={finalImages}
         renderItem={renderImage}
         keyExtractor={(_, index) => index.toString()}
         horizontal
@@ -58,7 +70,7 @@ const ProductImage: React.FC<ProductImageProps> = ({images}) => {
       {/* Image Counter */}
       <View style={styles.counterContainer}>
         <Text style={styles.counterText}>
-          {currentIndex + 1}/{displayImages.length}
+          {currentIndex + 1}/{finalImages.length}
         </Text>
       </View>
     </View>
@@ -97,5 +109,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 });
+
+export default ProductImage;
 
 export default ProductImage;

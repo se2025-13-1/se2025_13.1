@@ -610,7 +610,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
             type="submit"
             className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-md"
           >
-            Save Product
+            {initialProduct ? "Update Product" : "Save Product"}
           </button>
         </div>
       </form>

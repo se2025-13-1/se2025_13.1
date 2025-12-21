@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   FlatList,
   Dimensions,
   ActivityIndicator,
@@ -15,37 +14,25 @@ const {width} = Dimensions.get('window');
 const CARD_WIDTH = (width - 45) / 2; // Chiều rộng card với margin
 
 interface ProductListProps {
-  categoryTitle?: string;
-  productType?: 'new' | 'bestseller'; // 'new' = sản phẩm mới, 'bestseller' = bán chạy
-  onSeeMorePress?: () => void;
   navigation?: any;
 }
 
-const ProductList: React.FC<ProductListProps> = ({
-  categoryTitle = 'Bán chạy',
-  productType = 'bestseller',
-  onSeeMorePress,
-  navigation,
-}) => {
+const ProductList: React.FC<ProductListProps> = ({navigation}) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProducts();
-  }, [productType]);
+  }, []);
 
   const fetchProducts = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      let response;
-      if (productType === 'new') {
-        response = await homeService.getNewProducts(10);
-      } else {
-        response = await homeService.getBestSellers(10);
-      }
+      // Lấy tất cả sản phẩm mới (sắp xếp theo mới nhất: created_at DESC)
+      const response = await homeService.getNewProducts(100);
 
       setProducts(response.data || []);
     } catch (err) {
@@ -59,16 +46,9 @@ const ProductList: React.FC<ProductListProps> = ({
 
   const handleProductPress = (productId: string) => {
     console.log('Product pressed:', productId);
-    // TODO: Navigate to product detail screen
-    // navigation.navigate('ProductDetail', { productId });
-  };
-
-  const handleSeeMorePress = () => {
-    console.log('See more pressed for:', categoryTitle);
-    if (onSeeMorePress) {
-      onSeeMorePress();
+    if (navigation) {
+      navigation.navigate('ProductDetail', {productId});
     }
-    // TODO: Navigate to category products screen
   };
 
   const renderProduct = ({item}: {item: Product}) => (
@@ -81,8 +61,6 @@ const ProductList: React.FC<ProductListProps> = ({
     </View>
   );
 
-  const renderSeparator = () => <View style={styles.separator} />;
-
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyText}>{error || 'Không có sản phẩm'}</Text>
@@ -91,13 +69,8 @@ const ProductList: React.FC<ProductListProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Header với tên danh mục và nút xem thêm */}
-      <View style={styles.header}>
-        <Text style={styles.categoryTitle}>{categoryTitle}</Text>
-        <TouchableOpacity onPress={handleSeeMorePress}>
-          <Text style={styles.seeMoreText}>Xem thêm</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Header - Danh mục Sản phẩm mới */}
+      <Text style={styles.categoryTitle}>Sản phẩm mới</Text>
 
       {/* Loading State */}
       {loading && (
@@ -106,20 +79,18 @@ const ProductList: React.FC<ProductListProps> = ({
         </View>
       )}
 
-      {/* Danh sách sản phẩm theo chiều ngang */}
+      {/* Danh sách sản phẩm theo grid dọc (2 cột) */}
       {!loading && (
         <FlatList
           data={products}
           renderItem={renderProduct}
           keyExtractor={item => item.id}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          snapToInterval={CARD_WIDTH + 5}
-          snapToAlignment="start"
-          decelerationRate="fast"
-          contentContainerStyle={styles.productList}
-          ItemSeparatorComponent={renderSeparator}
+          numColumns={2}
+          columnWrapperStyle={styles.columnWrapper}
+          scrollEnabled={true}
+          showsVerticalScrollIndicator={true}
           ListEmptyComponent={renderEmpty}
+          contentContainerStyle={styles.listContent}
         />
       )}
     </View>
@@ -128,45 +99,36 @@ const ProductList: React.FC<ProductListProps> = ({
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     paddingHorizontal: 15,
-    marginBottom: 20,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
   },
   categoryTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333333',
+    marginBottom: 15,
+    marginTop: 10,
   },
-  seeMoreText: {
-    fontSize: 14,
-    color: '#ee4d2d',
-    fontWeight: '500',
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  productList: {
-    paddingLeft: 5,
-    paddingRight: 10,
+  listContent: {
+    paddingVertical: 10,
+  },
+  columnWrapper: {
+    justifyContent: 'space-between',
+    marginBottom: 10,
   },
   productItem: {
     width: CARD_WIDTH,
   },
-  separator: {
-    width: 5,
-  },
-  loadingContainer: {
-    height: 200,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   emptyContainer: {
-    height: 150,
+    flex: 1,
+    height: 300,
     justifyContent: 'center',
     alignItems: 'center',
-    width: width - 30,
   },
   emptyText: {
     fontSize: 14,

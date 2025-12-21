@@ -97,6 +97,12 @@ const OrderResultScreen: React.FC = () => {
     navigation.navigate('Orders');
   };
 
+  const handleViewOrderDetail = () => {
+    if (order?.id) {
+      navigation.navigate('OrderDetail', {orderId: order.id});
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.centerContainer}>
@@ -131,7 +137,9 @@ const OrderResultScreen: React.FC = () => {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Order Result - Success Message */}
-        <OrderResult order={order} status={order.status} />
+        <TouchableOpacity onPress={handleViewOrderDetail} activeOpacity={0.7}>
+          <OrderResult order={order} status={order.status} />
+        </TouchableOpacity>
       </ScrollView>
 
       {/* Footer Actions */}

@@ -1,5 +1,6 @@
 import {AppConfig} from '../../../config/AppConfig';
 import {getAccessToken} from '../../../services/tokenService';
+import {cacheService} from '../../../services/cacheService';
 
 const BASE_URL = AppConfig.BASE_URL;
 
@@ -102,31 +103,44 @@ export const AuthApi = {
         throw new Error('No access token found');
       }
 
-      console.log(
-        'Fetching profile with token:',
-        token.substring(0, 20) + '...',
-      );
+      // Use cache for profile data (5 minutes TTL)
+      return await cacheService.executeWithCache(
+        'profile',
+        async () => {
+          console.log(
+            'Fetching profile with token:',
+            token.substring(0, 20) + '...',
+          );
 
-      const res = await fetch(`${BASE_URL}/api/auth/me`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          const res = await fetch(`${BASE_URL}/api/auth/me`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          console.log('Profile response status:', res.status);
+          const json = await res.json();
+
+          if (!res.ok) {
+            console.error('Profile fetch error:', res.status, json);
+            throw new Error(json.error || 'Lỗi lấy thông tin cá nhân');
+          }
+
+          return json;
         },
-      });
-
-      console.log('Profile response status:', res.status);
-      const json = await res.json();
-
-      if (!res.ok) {
-        console.error('Profile fetch error:', res.status, json);
-        throw new Error(json.error || 'Lỗi lấy thông tin cá nhân');
-      }
-
-      return json;
+        {token: token.substring(0, 20)}, // Use partial token as cache key
+        {ttl: 5 * 60 * 1000}, // 5 minutes cache
+      );
     } catch (error) {
       console.error('Failed to fetch profile:', error);
       throw error;
     }
+  },
+
+  // Clear profile cache when needed
+  clearProfileCache: async () => {
+    await cacheService.clearByPrefix('profile');
   },
 };
