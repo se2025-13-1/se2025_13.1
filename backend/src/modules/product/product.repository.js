@@ -158,45 +158,134 @@ export const ProductRepository = {
   },
 
   async update(id, payload) {
-    const { name, description, base_price, is_active, category_id } = payload;
+    const {
+      name,
+      slug,
+      description,
+      base_price,
+      is_active,
+      category_id,
+      variants = [],
+      images = [],
+    } = payload;
 
-    const fields = [];
-    const values = [];
-    let idx = 1;
+    const client = await pgPool.connect();
+    try {
+      await client.query("BEGIN");
 
-    if (name) {
-      fields.push(`name = $${idx++}`);
-      values.push(name);
-    }
-    if (description) {
-      fields.push(`description = $${idx++}`);
-      values.push(description);
-    }
-    if (base_price) {
-      fields.push(`base_price = $${idx++}`);
-      values.push(base_price);
-    }
-    if (is_active !== undefined) {
-      fields.push(`is_active = $${idx++}`);
-      values.push(is_active);
-    }
-    if (category_id) {
-      fields.push(`category_id = $${idx++}`);
-      values.push(category_id);
-    }
+      // 1. Update basic product info
+      const fields = [];
+      const values = [];
+      let idx = 1;
 
-    if (fields.length === 0) return this.findById(id);
+      if (name) {
+        fields.push(`name = $${idx++}`);
+        values.push(name);
+      }
+      if (slug) {
+        fields.push(`slug = $${idx++}`);
+        values.push(slug);
+      }
+      if (description) {
+        fields.push(`description = $${idx++}`);
+        values.push(description);
+      }
+      if (base_price !== undefined) {
+        fields.push(`base_price = $${idx++}`);
+        values.push(base_price);
+      }
+      if (is_active !== undefined) {
+        fields.push(`is_active = $${idx++}`);
+        values.push(is_active);
+      }
+      if (category_id) {
+        fields.push(`category_id = $${idx++}`);
+        values.push(category_id);
+      }
 
-    values.push(id);
-    const query = `
-      UPDATE products 
-      SET ${fields.join(", ")}, updated_at = NOW() 
-      WHERE id = $${idx} 
-      RETURNING *
-    `;
+      // Always update updated_at
+      fields.push(`updated_at = NOW()`);
 
-    const res = await pgPool.query(query, values);
-    return res.rows[0];
+      values.push(id);
+
+      const updateQuery = `
+        UPDATE products 
+        SET ${fields.join(", ")} 
+        WHERE id = $${idx} 
+        RETURNING *
+      `;
+
+      const productRes = await client.query(updateQuery, values);
+      if (productRes.rows.length === 0) {
+        await client.query("ROLLBACK");
+        return null;
+      }
+
+      const productId = productRes.rows[0].id;
+
+      // 2. Handle Variants (Delete old, insert new)
+      if (variants.length > 0) {
+        // Delete old variants
+        await client.query(
+          `DELETE FROM product_variants WHERE product_id = $1`,
+          [productId]
+        );
+
+        // Insert new variants
+        for (const variant of variants) {
+          const variantQuery = `
+            INSERT INTO product_variants (product_id, sku, color, size, price, stock_quantity)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (sku) DO UPDATE SET 
+              color = EXCLUDED.color,
+              size = EXCLUDED.size,
+              price = EXCLUDED.price,
+              stock_quantity = EXCLUDED.stock_quantity,
+              updated_at = NOW()
+            RETURNING id;
+          `;
+          await client.query(variantQuery, [
+            productId,
+            variant.sku,
+            variant.color,
+            variant.size,
+            variant.price || base_price,
+            variant.stock_quantity || 0,
+          ]);
+        }
+      }
+
+      // 3. Handle Images (Delete old, insert new)
+      if (images.length > 0) {
+        // Delete old images
+        await client.query(`DELETE FROM product_images WHERE product_id = $1`, [
+          productId,
+        ]);
+
+        // Insert new images
+        for (let index = 0; index < images.length; index++) {
+          const img = images[index];
+          const imageQuery = `
+            INSERT INTO product_images (product_id, image_url, color_ref, display_order)
+            VALUES ($1, $2, $3, $4)
+          `;
+          await client.query(imageQuery, [
+            productId,
+            img.image_url,
+            img.color_ref || null,
+            img.display_order || index,
+          ]);
+        }
+      }
+
+      await client.query("COMMIT");
+      return productRes.rows[0];
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
   },
 
   async delete(id) {
