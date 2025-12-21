@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import ProductCard from '../../../shared/Components/ProductCard';
 import homeService, {Product} from '../services/homeService';
+import ProductListSkeleton from '../../../shared/skeleton/ProductListSkeleton';
 
 const {width} = Dimensions.get('window');
 const CARD_WIDTH = (width - 45) / 2; // Chiều rộng card với margin
@@ -69,29 +70,27 @@ const ProductList: React.FC<ProductListProps> = ({navigation}) => {
 
   return (
     <View style={styles.container}>
-      {/* Header - Danh mục Sản phẩm mới */}
-      <Text style={styles.categoryTitle}>Sản phẩm mới</Text>
+      {/* Loading State với skeleton */}
+      {loading ? (
+        <ProductListSkeleton itemCount={6} />
+      ) : (
+        <>
+          {/* Header - Danh mục Sản phẩm mới */}
+          <Text style={styles.categoryTitle}>Sản phẩm mới</Text>
 
-      {/* Loading State */}
-      {loading && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ee4d2d" />
-        </View>
-      )}
-
-      {/* Danh sách sản phẩm theo grid dọc (2 cột) */}
-      {!loading && (
-        <FlatList
-          data={products}
-          renderItem={renderProduct}
-          keyExtractor={item => item.id}
-          numColumns={2}
-          columnWrapperStyle={styles.columnWrapper}
-          scrollEnabled={true}
-          showsVerticalScrollIndicator={true}
-          ListEmptyComponent={renderEmpty}
-          contentContainerStyle={styles.listContent}
-        />
+          {/* Danh sách sản phẩm theo grid dọc (2 cột) */}
+          <FlatList
+            data={products}
+            renderItem={renderProduct}
+            keyExtractor={item => item.id}
+            numColumns={2}
+            columnWrapperStyle={styles.columnWrapper}
+            scrollEnabled={false}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={renderEmpty}
+            contentContainerStyle={styles.listContent}
+          />
+        </>
       )}
     </View>
   );
@@ -120,6 +119,7 @@ const styles = StyleSheet.create({
   columnWrapper: {
     justifyContent: 'space-between',
     marginBottom: 10,
+    gap: 9,
   },
   productItem: {
     width: CARD_WIDTH,

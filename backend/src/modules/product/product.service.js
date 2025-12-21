@@ -39,8 +39,23 @@ export const ProductService = {
     // 4. Gọi Repo
     const createdBasic = await ProductRepository.create(payload);
 
-    // 5. Xóa Cache
-    if (redisClient) await redisClient.del("products:all");
+    // 5. Xóa Cache - Xóa tất cả cache liên quan đến products
+    if (redisClient) {
+      // Xóa cache list cơ bản
+      await redisClient.del("products:all");
+
+      // Xóa tất cả cache search patterns
+      const searchKeys = await redisClient.keys("products:search:*");
+      if (searchKeys.length > 0) {
+        await redisClient.del(searchKeys);
+      }
+
+      // Xóa cache list patterns
+      const listKeys = await redisClient.keys("products:list:*");
+      if (listKeys.length > 0) {
+        await redisClient.del(listKeys);
+      }
+    }
 
     return await ProductRepository.findById(createdBasic.id);
   },
@@ -73,10 +88,23 @@ export const ProductService = {
     const updated = await ProductRepository.update(productId, payload);
 
     if (redisClient) {
-      await Promise.all([
-        redisClient.del("products:all"),
-        redisClient.del(`product:${productId}:detail`),
-      ]);
+      // Xóa cache chi tiết sản phẩm
+      await redisClient.del(`product:${productId}:detail`);
+
+      // Xóa cache list cơ bản
+      await redisClient.del("products:all");
+
+      // Xóa tất cả cache search patterns
+      const searchKeys = await redisClient.keys("products:search:*");
+      if (searchKeys.length > 0) {
+        await redisClient.del(searchKeys);
+      }
+
+      // Xóa cache list patterns
+      const listKeys = await redisClient.keys("products:list:*");
+      if (listKeys.length > 0) {
+        await redisClient.del(listKeys);
+      }
     }
 
     return await ProductRepository.findById(productId);
@@ -86,10 +114,23 @@ export const ProductService = {
     const deleted = await ProductRepository.delete(productId);
 
     if (deleted && redisClient) {
-      await Promise.all([
-        redisClient.del("products:all"),
-        redisClient.del(`product:${productId}:detail`),
-      ]);
+      // Xóa cache chi tiết sản phẩm
+      await redisClient.del(`product:${productId}:detail`);
+
+      // Xóa cache list cơ bản
+      await redisClient.del("products:all");
+
+      // Xóa tất cả cache search patterns
+      const searchKeys = await redisClient.keys("products:search:*");
+      if (searchKeys.length > 0) {
+        await redisClient.del(searchKeys);
+      }
+
+      // Xóa cache list patterns
+      const listKeys = await redisClient.keys("products:list:*");
+      if (listKeys.length > 0) {
+        await redisClient.del(listKeys);
+      }
     }
 
     return deleted;
@@ -192,8 +233,23 @@ export const ProductService = {
       }
     }
 
-    // Xóa cache
-    if (redisClient) await redisClient.del("products:all");
+    // Xóa cache - Xóa tất cả cache liên quan đến products
+    if (redisClient) {
+      // Xóa cache list cơ bản
+      await redisClient.del("products:all");
+
+      // Xóa tất cả cache search patterns
+      const searchKeys = await redisClient.keys("products:search:*");
+      if (searchKeys.length > 0) {
+        await redisClient.del(searchKeys);
+      }
+
+      // Xóa cache list patterns
+      const listKeys = await redisClient.keys("products:list:*");
+      if (listKeys.length > 0) {
+        await redisClient.del(listKeys);
+      }
+    }
 
     return { message: `Fixed ${fixedCount} slugs` };
   },

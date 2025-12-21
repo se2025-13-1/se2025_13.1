@@ -9,7 +9,9 @@ import {
   ActivityIndicator,
   Image,
 } from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 import {AppConfig} from '../../../config/AppConfig';
+import CategoriesSkeleton from '../../../shared/skeleton/CategoriesSkeleton';
 
 // Calculate item width to show max 5 categories per screen
 const screenWidth = Dimensions.get('window').width;
@@ -61,6 +63,7 @@ const CATEGORY_COLORS = [
 ];
 
 const Categories: React.FC = () => {
+  const navigation = useNavigation();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -120,14 +123,22 @@ const Categories: React.FC = () => {
     }
   };
 
-  const handleCategoryPress = (categoryName: string) => {
+  const handleCategoryPress = (categoryName: string, categoryId?: string) => {
     console.log('Category pressed:', categoryName);
-    // TODO: Navigate to category products page
+    // Tìm category tương ứng
+    const category = categories.find(cat => cat.name === categoryName);
+    const id = categoryId || category?.id;
+
+    if (id) {
+      // @ts-ignore
+      navigation.navigate('Categories', {categoryId: id});
+    }
   };
 
   const handleSeeMore = () => {
     console.log('See more categories');
-    // TODO: Navigate to all categories page
+    // @ts-ignore
+    navigation.navigate('Categories');
   };
 
   if (error) {
@@ -148,62 +159,76 @@ const Categories: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header: Danh mục + Xem thêm */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Danh mục</Text>
-        <TouchableOpacity onPress={handleSeeMore}>
-          <Text style={styles.seeMore}>Xem thêm</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Loading state */}
+      {/* Loading state với skeleton */}
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+        <CategoriesSkeleton />
+      ) : error ? (
+        <View>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Danh mục</Text>
+            <TouchableOpacity onPress={() => fetchCategories()}>
+              <Text style={styles.seeMore}>Thử lại</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
         </View>
       ) : (
-        // Horizontal ScrollView for Categories
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          scrollEventThrottle={16}
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}>
-          {categories.length > 0 ? (
-            categories.map(category => (
-              <TouchableOpacity
-                key={category.id}
-                style={styles.categoryItem}
-                onPress={() => handleCategoryPress(category.name)}
-                activeOpacity={0.7}>
-                {/* Category Icon/Image */}
-                <View
-                  style={[
-                    styles.iconContainer,
-                    {backgroundColor: category.color || '#FF6B6B'},
-                  ]}>
-                  {category.image_url ? (
-                    <Image
-                      source={{uri: category.image_url}}
-                      style={styles.categoryImage}
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <Text style={styles.categoryImageText}>
-                      {category.name.charAt(0).toUpperCase()}
-                    </Text>
-                  )}
-                </View>
-                {/* Category Name */}
-                <Text style={styles.categoryName}>{category.name}</Text>
-              </TouchableOpacity>
-            ))
-          ) : (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>Không có danh mục</Text>
-            </View>
-          )}
-        </ScrollView>
+        <View>
+          {/* Header: Danh mục + Xem thêm */}
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Danh mục</Text>
+            <TouchableOpacity onPress={handleSeeMore}>
+              <Text style={styles.seeMore}>Xem thêm</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Horizontal ScrollView for Categories */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            scrollEventThrottle={16}
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}>
+            {categories.length > 0 ? (
+              categories.map(category => (
+                <TouchableOpacity
+                  key={category.id}
+                  style={styles.categoryItem}
+                  onPress={() =>
+                    handleCategoryPress(category.name, category.id)
+                  }
+                  activeOpacity={0.7}>
+                  {/* Category Icon/Image */}
+                  <View
+                    style={[
+                      styles.iconContainer,
+                      {backgroundColor: category.color || '#FF6B6B'},
+                    ]}>
+                    {category.image_url ? (
+                      <Image
+                        source={{uri: category.image_url}}
+                        style={styles.categoryImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <Text style={styles.categoryImageText}>
+                        {category.name.charAt(0).toUpperCase()}
+                      </Text>
+                    )}
+                  </View>
+                  {/* Category Name */}
+                  <Text style={styles.categoryName}>{category.name}</Text>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>Không có danh mục</Text>
+              </View>
+            )}
+          </ScrollView>
+        </View>
       )}
     </View>
   );

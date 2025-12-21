@@ -34,13 +34,50 @@ export const ProductRepository = {
       ]);
       const productId = productRes.rows[0].id;
 
-      // Insert Variants
+      // Insert Variants - Xử lý duplicate SKU trước khi insert
       if (variants.length > 0) {
         const variantQuery = `
           INSERT INTO product_variants (product_id, sku, color, size, price, stock_quantity)
           VALUES ($1, $2, $3, $4, $5, $6)
         `;
+
+        // Kiểm tra và tạo unique SKU cho tất cả variants trước
+        const processedVariants = [];
         for (const v of variants) {
+          let finalSKU = v.sku;
+          let isUnique = false;
+          let retryCount = 0;
+          const maxRetries = 5;
+
+          while (!isUnique && retryCount < maxRetries) {
+            // Kiểm tra SKU đã tồn tại chưa
+            const checkQuery = `SELECT COUNT(*) FROM product_variants WHERE sku = $1`;
+            const checkResult = await client.query(checkQuery, [finalSKU]);
+            const count = parseInt(checkResult.rows[0].count);
+
+            if (count === 0) {
+              isUnique = true;
+            } else {
+              retryCount++;
+              finalSKU = `${v.sku}-${Date.now()}-${retryCount}`;
+              console.log(`SKU '${v.sku}' exists, trying: ${finalSKU}`);
+            }
+
+            if (retryCount >= maxRetries && !isUnique) {
+              throw new Error(
+                `Cannot create unique SKU after ${maxRetries} attempts for variant: ${v.sku}`
+              );
+            }
+          }
+
+          processedVariants.push({
+            ...v,
+            sku: finalSKU,
+          });
+        }
+
+        // Insert tất cả variants với SKU đã unique
+        for (const v of processedVariants) {
           await client.query(variantQuery, [
             productId,
             v.sku,

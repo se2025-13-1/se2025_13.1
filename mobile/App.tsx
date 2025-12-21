@@ -35,6 +35,7 @@ import MyOrderScreen from './src/modules/order/screens/MyOrderScreen';
 import OrderDetailScreen from './src/modules/order/screens/OrderDetailScreen';
 import ReviewSubmitScreen from './src/modules/reviews/screens/ReviewSubmitScreen';
 import WishListScreen from './src/modules/wishlist/screens/WishListScreen';
+import CategoriesScreen from './src/modules/home/screens/CategoriesScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // 👇 1. IMPORT SERVICE THÔNG BÁO (THÊM MỚI)
@@ -254,6 +255,7 @@ const App = () => {
                 component={ReviewSubmitScreen}
               />
               <Stack.Screen name="WishList" component={WishListScreen} />
+              <Stack.Screen name="Categories" component={CategoriesScreen} />
               {/* Auth screens still available if user wants to login */}
               <Stack.Screen name="Login">
                 {props => (

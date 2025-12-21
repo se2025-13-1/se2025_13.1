@@ -112,6 +112,36 @@ class HomeService {
     );
   }
 
+  /**
+   * Fetch sản phẩm theo danh mục
+   * @param categoryId ID của danh mục
+   * @param limit Số sản phẩm tối đa
+   * @param forceRefresh Có force refresh cache không
+   */
+  async getProductsByCategory(
+    categoryId: string,
+    limit: number = 50,
+    forceRefresh: boolean = false,
+  ): Promise<ProductsResponse> {
+    return await cacheService.executeWithCache(
+      'products_by_category',
+      async () => {
+        const response = await fetch(
+          `${this.apiUrl}/products?category_id=${categoryId}&limit=${limit}`,
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data: ProductsResponse = await response.json();
+        return data;
+      },
+      {categoryId, limit},
+      {ttl: 5 * 60 * 1000, forceRefresh}, // 5 minutes cache
+    );
+  }
+
   // Cache management methods
   async clearNewProductsCache(): Promise<void> {
     await cacheService.clearByPrefix('new_products');

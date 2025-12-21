@@ -187,11 +187,19 @@ const ProductForm: React.FC<ProductFormProps> = ({
   const addVariant = () => {
     if (!vColor || !vSize) return alert("Color and Size are required");
 
+    // Tạo SKU unique bằng cách thêm timestamp để tránh duplicate
+    const timestamp = Date.now();
+    const baseSKU = `${name.slice(0, 3).toUpperCase()}-${vColor
+      .slice(0, 1)
+      .toUpperCase()}-${vSize}`;
+
+    // Kiểm tra xem SKU đã tồn tại trong variants hiện tại chưa
+    const existingSKU = variants.find((v) => v.sku.startsWith(baseSKU));
+    const uniqueSKU = existingSKU ? `${baseSKU}-${timestamp}` : baseSKU;
+
     const newVariant: ProductVariant = {
       id: Date.now().toString(), // Temp ID
-      sku: `${name.slice(0, 3).toUpperCase()}-${vColor
-        .slice(0, 1)
-        .toUpperCase()}-${vSize}`,
+      sku: uniqueSKU,
       color: vColor,
       size: vSize,
       price: parseFloat(vPrice) || parseFloat(basePrice) || 0,
@@ -366,13 +374,23 @@ const ProductForm: React.FC<ProductFormProps> = ({
               <label className="block text-xs font-medium text-slate-500 mb-1">
                 Color
               </label>
-              <input
-                type="text"
+              <select
                 className="w-full px-3 py-2 border rounded-md text-sm"
-                placeholder="Red"
                 value={vColor}
                 onChange={(e) => setVColor(e.target.value)}
-              />
+              >
+                <option value="">Chọn màu</option>
+                <option value="xanh">Xanh</option>
+                <option value="rêu">Rêu</option>
+                <option value="than">Than</option>
+                <option value="đen">Đen</option>
+                <option value="hồng">Hồng</option>
+                <option value="trắng">Trắng</option>
+                <option value="vàng">Vàng</option>
+                <option value="đỏ">Đỏ</option>
+                <option value="ghi">Ghi</option>
+                <option value="xanh lá">Xanh lá</option>
+              </select>
             </div>
             <div className="w-24">
               <label className="block text-xs font-medium text-slate-500 mb-1">
