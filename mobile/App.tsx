@@ -42,6 +42,8 @@ import {
   requestUserPermission,
   getFCMToken,
   notificationListener,
+  setupBackgroundMessageHandler,
+  setupNotificationTapListener,
 } from './src/modules/notifications/service/notificationService';
 // Bạn có thể cần import AsyncStorage nếu bạn lưu token đăng nhập ở đó
 // import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -98,6 +100,9 @@ const App = () => {
 
   // 👇 EFFECT XỬ LÝ THÔNG BÁO (ĐÃ SỬA LOGIC LẤY TOKEN)
   useEffect(() => {
+    let unsubscribeNotification: (() => void) | null = null;
+    let unsubscribeNotificationTap: (() => void) | null = null;
+
     // Initialize Social SDKs and check auth status on app startup
     const initializeApp = async () => {
       try {
@@ -106,30 +111,73 @@ const App = () => {
         FirebaseGoogleService.configure();
         initializeFacebookSDK();
 
+        // 🔔 THIẾT LẬP BACKGROUND MESSAGE HANDLER (quan trọng: phải trước onMessage)
+        setupBackgroundMessageHandler();
+
+        // 🔔 THIẾT LẬP NOTIFICATION TAP LISTENER (khi user tap vào notification)
+        unsubscribeNotificationTap = setupNotificationTapListener(
+          (remoteMessage: any) => {
+            // Xử lý khi user tap vào notification
+            console.log('User tapped notification:', remoteMessage);
+            // Có thể navigate đến order detail nếu có order_id
+          },
+        );
+
         // First, show splash for 2 seconds for visual effect
         await new Promise(resolve => setTimeout(resolve, 2000));
 
         // Check if there's a stored token
         const authenticated = await checkIsAuthenticated();
+        console.log('🔐 checkIsAuthenticated result:', authenticated);
 
         if (authenticated) {
           // User has a valid token, skip to app
           setIsAuthenticated(true);
           setHasStarted(true);
+
+          // 🔔 XIN QUYỀN NOTIFICATION VÀ LẤY FCM TOKEN
+          console.log('🔔 Requesting notification permission...');
+          const hasPermission = await requestUserPermission();
+          console.log('🔔 Notification permission result:', hasPermission);
+
+          if (hasPermission) {
+            const userToken = await AsyncStorage.getItem('accessToken');
+            console.log(
+              '🔔 Got user token:',
+              userToken ? '✅ token exists' : '❌ no token',
+            );
+            if (userToken) {
+              console.log('🔔 Calling getFCMToken...');
+              await getFCMToken(userToken);
+            }
+          } else {
+            console.warn('⚠️ Notification permission denied');
+          }
+
+          // 🔔 LẮNG NGHE NOTIFICATION KHI APP ĐANG MỞ (Foreground)
+          unsubscribeNotification = notificationListener();
         } else {
           // User not authenticated, show welcome screen
           setHasStarted(false);
         }
-
-        setIsLoading(false);
       } catch (error) {
         console.error('App initialization failed:', error);
+      } finally {
         setIsLoading(false);
-        setHasStarted(false);
       }
     };
 
     initializeApp();
+
+    // Cleanup subscriptions when component unmounts
+    return () => {
+      if (unsubscribeNotification) {
+        unsubscribeNotification();
+      }
+      if (unsubscribeNotificationTap) {
+        unsubscribeNotificationTap();
+      }
+    };
   }, []);
 
   const handleSplashFinish = () => {

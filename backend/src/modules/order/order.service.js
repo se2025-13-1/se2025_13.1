@@ -1,4 +1,5 @@
 import { OrderRepository } from "./order.repository.js";
+import { NotificationService } from "../notification/notification.service.js";
 import { CartRepository } from "../cart/cart.repository.js";
 import { ProductRepository } from "../product/product.repository.js";
 import { AddressRepository } from "../address/address.repository.js";
@@ -165,6 +166,9 @@ export const OrderService = {
   },
 
   async updateOrderStatus(orderId, status) {
+    console.log(
+      `🔴 [ORDER SERVICE] updateOrderStatus called: orderId=${orderId}, status=${status}`
+    );
     const validStatuses = [
       "pending",
       "confirmed",
@@ -179,6 +183,65 @@ export const OrderService = {
       );
     }
 
-    return await OrderRepository.updateStatus(orderId, status);
+    const result = await OrderRepository.updateStatus(orderId, status);
+    console.log(`🔴 [ORDER SERVICE] updateOrderStatus result:`, result);
+
+    // 🔔 GỬI NOTIFICATION KHI ORDER STATUS THAY ĐỔI
+    if (result && result.order) {
+      const order = result.order;
+      const userId = order.user_id;
+      console.log(
+        `🔴 [ORDER SERVICE] Sending notification for order ${orderId} to user ${userId}, status=${status}`
+      );
+
+      // Gửi notification dựa trên status
+      if (status === "confirmed") {
+        // Đơn hàng được xác nhận
+        console.log(`🔴 [ORDER SERVICE] Sending CONFIRMED notification`);
+        await NotificationService.sendToUser(userId, {
+          title: "✅ Đơn hàng được xác nhận",
+          body: `Đơn hàng #${orderId.slice(0, 8)} của bạn đã được xác nhận!`,
+          type: "order_confirmed",
+          data: {
+            order_id: orderId,
+            status: "confirmed",
+            notification_type: "order_confirmed",
+          },
+        });
+      } else if (status === "completed") {
+        // Đơn hàng hoàn tất
+        console.log(`🔴 [ORDER SERVICE] Sending COMPLETED notification`);
+        await NotificationService.sendToUser(userId, {
+          title: "📦 Đơn hàng hoàn tất",
+          body: `Đơn hàng #${orderId.slice(0, 8)} của bạn đã hoàn tất!`,
+          type: "order_status_update",
+          data: {
+            order_id: orderId,
+            status: "completed",
+            notification_type: "order_status_update",
+          },
+        });
+      } else if (status === "shipping") {
+        // Đơn hàng đang vận chuyển
+        console.log(`🔴 [ORDER SERVICE] Sending SHIPPING notification`);
+        await NotificationService.sendToUser(userId, {
+          title: "🚚 Đơn hàng đang vận chuyển",
+          body: `Đơn hàng #${orderId.slice(
+            0,
+            8
+          )} của bạn đang trên đường đến bạn!`,
+          type: "order_shipped",
+          data: {
+            order_id: orderId,
+            status: "shipping",
+            notification_type: "order_shipped",
+          },
+        });
+      }
+    } else {
+      console.log(`🔴 [ORDER SERVICE] No result or order found`);
+    }
+
+    return result;
   },
 };

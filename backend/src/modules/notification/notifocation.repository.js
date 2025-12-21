@@ -18,7 +18,13 @@ export const NotificationRepository = {
       `SELECT fcm_token FROM user_devices WHERE user_id = $1`,
       [userId]
     );
-    return res.rows.map((r) => r.fcm_token);
+    const tokens = res.rows.map((r) => r.fcm_token);
+    console.log("📱 getUserTokens query result:", {
+      userId,
+      rowCount: res.rows.length,
+      tokens: tokens.map((t) => t.substring(0, 20) + "..."),
+    });
+    return tokens;
   },
 
   // 3. Xóa Token (khi logout hoặc token chết)
@@ -30,19 +36,37 @@ export const NotificationRepository = {
 
   // 4. Tạo thông báo mới vào DB
   async create({ userId, title, body, type, data }) {
-    const query = `
-      INSERT INTO notifications (user_id, title, body, type, data)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING *
-    `;
-    const res = await pgPool.query(query, [
-      userId,
-      title,
-      body,
-      type,
-      JSON.stringify(data),
-    ]);
-    return res.rows[0];
+    try {
+      // Thử insert với data column trước
+      const query = `
+        INSERT INTO notifications (user_id, title, body, type, data)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING *
+      `;
+      const res = await pgPool.query(query, [
+        userId,
+        title,
+        body,
+        type,
+        JSON.stringify(data),
+      ]);
+      return res.rows[0];
+    } catch (error) {
+      // Nếu column data không tồn tại, thử insert không có data
+      console.log("⚠️ data column not found, trying without data...");
+      try {
+        const query = `
+          INSERT INTO notifications (user_id, title, body, type)
+          VALUES ($1, $2, $3, $4)
+          RETURNING *
+        `;
+        const res = await pgPool.query(query, [userId, title, body, type]);
+        return res.rows[0];
+      } catch (innerError) {
+        console.error("❌ Notification create failed:", innerError);
+        throw innerError;
+      }
+    }
   },
 
   // 5. Lấy danh sách thông báo của User

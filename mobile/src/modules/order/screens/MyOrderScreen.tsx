@@ -8,15 +8,18 @@ import {
   ScrollView,
   FlatList,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import {OrderApi, Order} from '../services/orderApi';
+import {cacheService} from '../../../services/cacheService';
 import OrderItems from '../components/OrderItems';
 
 const MyOrderScreen = ({navigation, route}: any) => {
   const [activeTab, setActiveTab] = useState(route?.params?.initialTab ?? 0);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const tabs = [
     {id: 0, label: 'Chờ xác nhận', status: 'pending'},
@@ -30,17 +33,20 @@ const MyOrderScreen = ({navigation, route}: any) => {
     fetchOrders();
   }, [activeTab]);
 
-  // Refresh orders when screen is focused (e.g., after cancelling an order)
+  // 🔄 Refresh orders when screen is focused (from background/notification)
   useFocusEffect(
     React.useCallback(() => {
+      // Clear cache khi screen focus để force refresh
+      cacheService.clearByPrefix('user_orders');
       fetchOrders();
     }, [activeTab]),
   );
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (skipCache: boolean = false) => {
     try {
       setLoading(true);
-      const allOrders = await OrderApi.getOrders();
+      // Lấy orders với force refresh nếu skipCache = true
+      const allOrders = await OrderApi.getOrders(skipCache);
 
       console.log('=== DEBUG: All Orders Response ===');
       console.log('Total orders:', allOrders.length);
@@ -68,7 +74,7 @@ const MyOrderScreen = ({navigation, route}: any) => {
       const ordersWithItems = await Promise.all(
         filteredOrders.map(async order => {
           try {
-            const detailedOrder = await OrderApi.getOrder(order.id);
+            const detailedOrder = await OrderApi.getOrder(order.id, skipCache);
             return detailedOrder;
           } catch (error) {
             console.error(
@@ -86,7 +92,16 @@ const MyOrderScreen = ({navigation, route}: any) => {
       setOrders([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  // 🔄 Pull to refresh handler
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    // Clear cache và fetch dữ liệu mới
+    cacheService.clearByPrefix('user_orders');
+    await fetchOrders(true);
   };
 
   return (
@@ -179,6 +194,14 @@ const MyOrderScreen = ({navigation, route}: any) => {
             }}
             keyExtractor={item => item.id}
             contentContainerStyle={styles.listContainer}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                colors={['#E74C3C']}
+                progressBackgroundColor="#fff"
+              />
+            }
           />
         </View>
       )}

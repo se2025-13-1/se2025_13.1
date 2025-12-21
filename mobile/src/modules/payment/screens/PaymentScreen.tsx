@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   Image,
   Alert,
@@ -22,6 +22,7 @@ import OrderSummary from '../components/OrderSummary';
 import BottomCheckoutBar from '../components/BottomCheckoutBar';
 import {OrderApi} from '../../order/services/orderApi';
 import {AddressApi} from '../../address/services/addressApi';
+import {NotificationService} from '../../../services/notificationService';
 
 interface CartItemPayment {
   id: string;
@@ -250,6 +251,9 @@ const PaymentScreen: React.FC = () => {
 
       console.log('=== CHECKOUT DEBUG END ===');
 
+      // Hiển thị thông báo hệ thống khi đặt hàng thành công
+      await NotificationService.showOrderSuccessNotification(order.id);
+
       // Navigate to order result screen
       navigation.navigate('OrderResult', {
         orderId: order.id,
@@ -257,6 +261,8 @@ const PaymentScreen: React.FC = () => {
       });
     } catch (error: any) {
       console.error('Error creating order:', error);
+      // Hiển thị thông báo khi đặt hàng thất bại
+      await NotificationService.showOrderFailedNotification(error.message);
       Alert.alert(
         'Lỗi',
         error.message || 'Không thể tạo đơn hàng. Vui lòng thử lại.',
@@ -278,108 +284,115 @@ const PaymentScreen: React.FC = () => {
         <View style={{width: 24}} />
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Address Section */}
-        <AddressSection
-          onPress={handleAddressPress}
-          onSelectAddress={handleAddressSelected}
-          selectedAddress={selectedAddress}
-          refreshKey={refreshKey}
-        />
-
-        {/* Select Address Modal */}
-        <SelectAddress
-          visible={showAddressModal}
-          currentAddress={selectedAddress}
-          onClose={() => setShowAddressModal(false)}
-          onSelectAddress={handleAddressSelected}
-          onNavigateToAddAddress={handleNavigateToAddAddress}
-          refreshKey={refreshKey}
-        />
-
-        {/* Products Section */}
-        {isCartCheckout ? (
-          // Show multiple items from cart
+      <FlatList
+        data={[{id: 'payment-content'}]}
+        renderItem={() => (
           <View>
-            {cartItems?.map((item: CartItemPayment, index: number) => (
-              <ProductItem
-                key={item.id || index}
-                productName={item.name}
-                color={item.color}
-                size={item.size}
-                price={item.price}
-                quantity={item.quantity}
-                image={item.image}
-              />
-            ))}
-          </View>
-        ) : (
-          // Show single product for buy_now
-          product &&
-          variant && (
-            <ProductItem
-              productName={product.name}
-              color={variant.color}
-              size={variant.size}
-              price={variant.price}
-              quantity={quantity}
-              image={variant.thumbnail || product.thumbnail}
-              note={orderNote}
-              onNoteChange={handleNoteChange}
+            {/* Address Section */}
+            <AddressSection
+              onPress={handleAddressPress}
+              onSelectAddress={handleAddressSelected}
+              selectedAddress={selectedAddress}
+              refreshKey={refreshKey}
             />
-          )
+
+            {/* Select Address Modal */}
+            <SelectAddress
+              visible={showAddressModal}
+              currentAddress={selectedAddress}
+              onClose={() => setShowAddressModal(false)}
+              onSelectAddress={handleAddressSelected}
+              onNavigateToAddAddress={handleNavigateToAddAddress}
+              refreshKey={refreshKey}
+            />
+
+            {/* Products Section */}
+            {isCartCheckout ? (
+              // Show multiple items from cart
+              <View>
+                {cartItems?.map((item: CartItemPayment, index: number) => (
+                  <ProductItem
+                    key={item.id || index}
+                    productName={item.name}
+                    color={item.color}
+                    size={item.size}
+                    price={item.price}
+                    quantity={item.quantity}
+                    image={item.image}
+                  />
+                ))}
+              </View>
+            ) : (
+              // Show single product for buy_now
+              product &&
+              variant && (
+                <ProductItem
+                  productName={product.name}
+                  color={variant.color}
+                  size={variant.size}
+                  price={variant.price}
+                  quantity={quantity}
+                  image={variant.thumbnail || product.thumbnail}
+                  note={orderNote}
+                  onNoteChange={handleNoteChange}
+                />
+              )
+            )}
+
+            {/* Voucher Section */}
+            <TouchableOpacity
+              style={styles.voucherRow}
+              onPress={() => setShowVoucherModal(true)}>
+              <Text style={styles.voucherLabel}>Voucher đơn hàng</Text>
+              <View style={styles.voucherRightContent}>
+                <Text style={styles.voucherValue}>
+                  {selectedVoucher
+                    ? `${selectedVoucher.code} - ${
+                        selectedVoucher.discount_type === 'percent' ||
+                        selectedVoucher.discount_type === 'percentage'
+                          ? `${selectedVoucher.discount_value}%`
+                          : `${selectedVoucher.discount_value.toLocaleString()}đ`
+                      }`
+                    : 'Chọn voucher'}
+                </Text>
+                <Image
+                  source={require('../../../assets/icons/ArrowForward.png')}
+                  style={styles.arrowIcon}
+                />
+              </View>
+            </TouchableOpacity>
+
+            {/* Voucher Modal */}
+            <VoucherSection
+              visible={showVoucherModal}
+              onClose={() => setShowVoucherModal(false)}
+              onSelect={handleVoucherSelect}
+              selectedVoucher={selectedVoucher}
+            />
+
+            <PaymentMethodSelector onSelect={handlePaymentMethodSelect} />
+
+            <OrderSummary
+              subtotal={subtotal}
+              shippingFee={0}
+              shippingDiscount={0}
+              voucherDiscount={voucherDiscount}
+              total={total}
+            />
+
+            {/* Terms and Conditions Text */}
+            <View style={styles.termsContainer}>
+              <Text style={styles.termsText}>
+                Nhấn <Text style={{fontWeight: '600'}}>"Đặt hàng"</Text> đồng
+                nghĩa với việc bạn đồng ý tuân theo{' '}
+                <Text style={styles.termsLink}>Điều khoản DoubleD Shop</Text>
+              </Text>
+            </View>
+          </View>
         )}
-
-        {/* Voucher Section */}
-        <TouchableOpacity
-          style={styles.voucherRow}
-          onPress={() => setShowVoucherModal(true)}>
-          <Text style={styles.voucherLabel}>Voucher đơn hàng</Text>
-          <View style={styles.voucherRightContent}>
-            <Text style={styles.voucherValue}>
-              {selectedVoucher
-                ? `${selectedVoucher.code} - ${
-                    selectedVoucher.discount_type === 'percent' ||
-                    selectedVoucher.discount_type === 'percentage'
-                      ? `${selectedVoucher.discount_value}%`
-                      : `${selectedVoucher.discount_value.toLocaleString()}đ`
-                  }`
-                : 'Chọn voucher'}
-            </Text>
-            <Image
-              source={require('../../../assets/icons/ArrowForward.png')}
-              style={styles.arrowIcon}
-            />
-          </View>
-        </TouchableOpacity>
-
-        {/* Voucher Modal */}
-        <VoucherSection
-          visible={showVoucherModal}
-          onClose={() => setShowVoucherModal(false)}
-          onSelect={handleVoucherSelect}
-          selectedVoucher={selectedVoucher}
-        />
-
-        <PaymentMethodSelector onSelect={handlePaymentMethodSelect} />
-
-        <OrderSummary
-          subtotal={subtotal}
-          shippingFee={0}
-          shippingDiscount={0}
-          voucherDiscount={voucherDiscount}
-          total={total}
-        />
-
-        {/* Terms and Conditions Text */}
-        <View style={styles.termsContainer}>
-          <Text style={styles.termsText}>
-            Nhấn <Text style={{fontWeight: '600'}}>"Đặt hàng"</Text> đồng nghĩa
-            với việc bạn đồng ý tuân theo{' '}
-            <Text style={styles.termsLink}>Điều khoản DoubleD Shop</Text>
-          </Text>
-        </View>
-      </ScrollView>
+        keyExtractor={(item) => item.id}
+        scrollEnabled={true}
+      />
 
       <BottomCheckoutBar total={total} saved={0} onCheckout={handleCheckout} />
     </View>

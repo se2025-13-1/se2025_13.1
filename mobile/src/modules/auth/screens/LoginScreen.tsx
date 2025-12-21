@@ -2,10 +2,18 @@ import React, {useState, useEffect} from 'react';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {AppConfig} from '../../../config/AppConfig';
-import {saveTokens, saveUser} from '../../../services/tokenService';
+import {
+  saveTokens,
+  saveUser,
+  getAccessToken,
+} from '../../../services/tokenService';
 import {useAuth} from '../../../contexts/AuthContext';
 import {FirebaseGoogleService} from '../../../services/firebaseGoogleService';
 import {RootStackParamList} from '../../../../App';
+import {
+  getFCMToken,
+  requestUserPermission,
+} from '../../notifications/service/notificationService';
 import {
   View,
   Text,
@@ -111,6 +119,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     // If no errors, call API
     if (Object.keys(newErrors).length === 0) {
       setIsLoading(true);
+      console.log('📧 Email Login pressed:', {email});
 
       fetch(`${AppConfig.BASE_URL}/api/auth/login`, {
         method: 'POST',
@@ -121,13 +130,17 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         }),
       })
         .then(async res => {
+          console.log('📧 Login response status:', res.status);
           const data = await res.json();
+          console.log('📧 Login response data:', data);
+          
           if (!res.ok) {
             throw new Error(data.error || 'Login failed');
           }
           // Success - Save tokens and update context
           if (data.accessToken) {
             try {
+              console.log('📧 Saving tokens...');
               await saveTokens(
                 data.accessToken,
                 data.refreshToken,
@@ -154,9 +167,36 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                   fullName: userFullName,
                 });
                 setIsAuthenticated(true);
+                console.log('📧 Email login success');
+
+                // 🔔 REGISTER FCM TOKEN AFTER EMAIL LOGIN
+                (async () => {
+                  try {
+                    console.log('🔔 Requesting notification permission after email login...');
+                    const hasPermission = await requestUserPermission();
+                    console.log('🔔 Permission result:', hasPermission);
+                    
+                    if (hasPermission) {
+                      const userToken = await getAccessToken();
+                      console.log('🔔 AccessToken retrieved:', userToken ? '✅ exists' : '❌ null');
+                      
+                      if (userToken) {
+                        console.log('🔔 Calling getFCMToken after email login with token...');
+                        await getFCMToken(userToken);
+                        console.log('🔔 getFCMToken completed');
+                      } else {
+                        console.warn('❌ AccessToken is null');
+                      }
+                    } else {
+                      console.warn('❌ Permission denied');
+                    }
+                  } catch (error) {
+                    console.error('❌ FCM Token registration error:', error);
+                  }
+                })();
               }
             } catch (storageError) {
-              console.error('Failed to save tokens:', storageError);
+              console.error('❌ Failed to save tokens:', storageError);
             }
           }
 
@@ -169,7 +209,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
           });
         })
         .catch(err => {
-          console.error('Login error:', err);
+          console.error('❌ Email login error:', err);
           setIsLoading(false);
           // Phân biệt loại lỗi
           let errorMessage = 'Login failed. Please try again.';
@@ -197,6 +237,42 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
             setIsSuccess(true);
 
             console.log('🎉 Google login success, redirecting...');
+
+            // 🔔 REGISTER FCM TOKEN AFTER LOGIN
+            (async () => {
+              try {
+                console.log(
+                  '🔔 Requesting notification permission after login...',
+                );
+                const hasPermission = await requestUserPermission();
+                console.log('🔔 Permission result:', hasPermission);
+
+                if (hasPermission) {
+                  console.log(
+                    '🔔 Getting accessToken using getAccessToken()...',
+                  );
+                  const userToken = await getAccessToken();
+                  console.log(
+                    '🔔 AccessToken retrieved:',
+                    userToken ? '✅ exists' : '❌ null',
+                  );
+
+                  if (userToken) {
+                    console.log(
+                      '🔔 Calling getFCMToken after login with token...',
+                    );
+                    await getFCMToken(userToken);
+                    console.log('🔔 getFCMToken completed');
+                  } else {
+                    console.warn('❌ AccessToken is null');
+                  }
+                } else {
+                  console.warn('❌ Permission denied');
+                }
+              } catch (error) {
+                console.error('❌ FCM Token registration error:', error);
+              }
+            })();
 
             if (onLoginSuccess) {
               onLoginSuccess();

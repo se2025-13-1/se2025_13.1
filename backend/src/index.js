@@ -21,6 +21,7 @@ import voucherRoutes from "./modules/voucher/voucher.routes.js";
 import reviewRoutes from "./modules/review/review.routes.js";
 import statisticsRoutes from "./modules/statistics/statistics.routes.js";
 import wishlistRoutes from "./modules/wishlist/wishlist.routes.js";
+import notificationRoutes from "./modules/notification/notification.routes.js";
 
 dotenv.config();
 
@@ -60,6 +61,7 @@ app.use("/api/vouchers", voucherRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/statistics", statisticsRoutes);
 app.use("/api/wishlist", wishlistRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // =========================
 // ❗ GLOBAL ERROR HANDLER
