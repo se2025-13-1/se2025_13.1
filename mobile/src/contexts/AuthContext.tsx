@@ -13,6 +13,7 @@ import {
 } from '../services/tokenService';
 import {AuthApi} from '../modules/auth/services/authApi';
 import {LogoutService} from '../services/logoutService';
+import {globalCacheManager} from '../services/globalCacheManager';
 
 export interface AuthUser {
   id: string;
@@ -88,6 +89,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
       // This is a placeholder - actual login is handled in LoginScreen
       // The screen will call setUser and setIsAuthenticated after token save
       console.log('Login initiated for:', email);
+
+      // Pre-warm cache after successful login
+      setTimeout(async () => {
+        try {
+          await globalCacheManager.handleUserAction('login');
+        } catch (cacheError) {
+          console.warn('Cache pre-warming failed:', cacheError);
+        }
+      }, 100);
     } catch (err: any) {
       const errorMessage = err.message || 'Login failed';
       setError(errorMessage);
@@ -121,6 +131,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 
       console.log('🚪 Starting complete logout...');
 
+      // Clear all user-specific cache first
+      try {
+        await globalCacheManager.handleUserAction('logout');
+        console.log('✅ User cache cleared successfully');
+      } catch (cacheError) {
+        console.warn('⚠️ Cache clearing failed during logout:', cacheError);
+      }
+
       // Use comprehensive logout service
       const logoutResult = await LogoutService.performCompleteLogout();
 
@@ -145,6 +163,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 
       // Emergency fallback - try to clear local data at minimum
       try {
+        // Emergency cache clear
+        await globalCacheManager.clearUserData();
+
         const quickLogout = await LogoutService.performQuickLogout();
         setIsAuthenticated(false);
         setUser(null);
@@ -169,7 +190,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 
   const refreshUser = async () => {
     try {
-      // Try to fetch fresh profile from backend
+      // Try to fetch fresh profile from backend with cache
       const response = await AuthApi.getProfile();
 
       if (response && response.user) {

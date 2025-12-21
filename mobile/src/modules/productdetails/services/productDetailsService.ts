@@ -1,4 +1,5 @@
 import {AppConfig} from '../../../config/AppConfig';
+import {cacheService} from '../../../services/cacheService';
 
 export interface ProductVariant {
   id: string;
@@ -47,33 +48,35 @@ class ProductDetailsService {
   /**
    * Fetch chi tiết sản phẩm bao gồm variants, images
    */
-  async getProductDetails(productId: string): Promise<ProductDetailsResponse> {
-    try {
-      console.log(`[ProductDetails] Fetching product: ${productId}`);
+  async getProductDetails(
+    productId: string,
+    forceRefresh: boolean = false,
+  ): Promise<ProductDetailsResponse> {
+    console.log(`[ProductDetails] Fetching product: ${productId}`);
 
-      const response = await fetch(`${this.apiUrl}/products/${productId}`);
+    return await cacheService.executeWithCache(
+      'product_details',
+      async () => {
+        const response = await fetch(`${this.apiUrl}/products/${productId}`);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-      const data: ProductDetailsResponse = await response.json();
+        const data: ProductDetailsResponse = await response.json();
 
-      console.log(`[ProductDetails] Fetched product:`, {
-        id: data.product.id,
-        name: data.product.name,
-        variants: data.product.variants?.length,
-        images: data.product.images?.length,
-      });
+        console.log(`[ProductDetails] Fetched product:`, {
+          id: data.product.id,
+          name: data.product.name,
+          variants: data.product.variants?.length,
+          images: data.product.images?.length,
+        });
 
-      return data;
-    } catch (error) {
-      console.error(
-        '[ProductDetailsService] Error fetching product details:',
-        error,
-      );
-      throw error;
-    }
+        return data;
+      },
+      {productId},
+      {ttl: 15 * 60 * 1000, forceRefresh}, // 15 minutes cache for product details
+    );
   }
 
   /**
@@ -121,6 +124,15 @@ class ProductDetailsService {
   getTotalStock(variants?: ProductVariant[]): number {
     if (!variants) return 0;
     return variants.reduce((sum, v) => sum + (v.stock_quantity || 0), 0);
+  }
+
+  // Cache management methods
+  async clearProductDetailsCache(productId?: string): Promise<void> {
+    if (productId) {
+      await cacheService.clear('product_details', {productId});
+    } else {
+      await cacheService.clearByPrefix('product_details');
+    }
   }
 }
 

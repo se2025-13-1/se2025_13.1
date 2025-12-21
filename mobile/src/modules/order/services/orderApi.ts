@@ -1,5 +1,6 @@
 import {AppConfig} from '../../../config/AppConfig';
 import {getAccessToken} from '../../../services/tokenService';
+import {cacheService} from '../../../services/cacheService';
 
 const BASE_URL = AppConfig.BASE_URL;
 
@@ -95,7 +96,15 @@ export const OrderApi = {
         throw new Error(json.error || json.message || 'Lỗi khi tạo đơn hàng');
       }
 
-      return json.order || json.data || json;
+      const order = json.order || json.data || json;
+
+      // Clear relevant caches after creating order
+      await Promise.all([
+        cacheService.clearByPrefix('user_orders'),
+        cacheService.clearByPrefix('user_cart'), // Cart may be cleared after order
+      ]);
+
+      return order;
     } catch (error: any) {
       console.error('CreateOrder error:', error);
       throw new Error(error.message || 'Lỗi kết nối');
@@ -103,76 +112,87 @@ export const OrderApi = {
   },
 
   // Lấy chi tiết đơn hàng
-  getOrder: async (orderId: string): Promise<Order> => {
-    try {
-      console.log('GetOrder - Fetching order:', orderId);
-      const token = await getAccessToken();
+  getOrder: async (
+    orderId: string,
+    forceRefresh: boolean = false,
+  ): Promise<Order> => {
+    console.log('GetOrder - Fetching order:', orderId);
+    const token = await getAccessToken();
 
-      if (!token) {
-        throw new Error('Bạn cần đăng nhập lại');
-      }
-
-      const res = await fetch(`${BASE_URL}/api/orders/${orderId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const json = await res.json();
-      console.log('GetOrder - Response status:', res.status);
-      console.log('GetOrder - Response:', json);
-
-      if (!res.ok) {
-        if (res.status === 401) {
-          throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại');
-        }
-        throw new Error(
-          json.error || json.message || 'Lỗi khi lấy thông tin đơn hàng',
-        );
-      }
-
-      return json.order || json.data || json;
-    } catch (error: any) {
-      console.error('GetOrder error:', error);
-      throw new Error(error.message || 'Lỗi kết nối');
+    if (!token) {
+      throw new Error('Bạn cần đăng nhập lại');
     }
+
+    return await cacheService.executeWithCache(
+      'user_order',
+      async () => {
+        const res = await fetch(`${BASE_URL}/api/orders/${orderId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const json = await res.json();
+        console.log('GetOrder - Response status:', res.status);
+        console.log('GetOrder - Response:', json);
+
+        if (!res.ok) {
+          if (res.status === 401) {
+            throw new Error(
+              'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại',
+            );
+          }
+          throw new Error(
+            json.error || json.message || 'Lỗi khi lấy thông tin đơn hàng',
+          );
+        }
+
+        return json.order || json.data || json;
+      },
+      {orderId, userId: token.substring(0, 20)},
+      {ttl: 5 * 60 * 1000, forceRefresh}, // 5 minutes cache
+    );
   },
 
   // Lấy danh sách đơn hàng
-  getOrders: async (): Promise<Order[]> => {
-    try {
-      const token = await getAccessToken();
+  getOrders: async (forceRefresh: boolean = false): Promise<Order[]> => {
+    const token = await getAccessToken();
 
-      if (!token) {
-        throw new Error('Bạn cần đăng nhập lại');
-      }
-
-      const res = await fetch(`${BASE_URL}/api/orders?limit=1000&page=1`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const json = await res.json();
-
-      if (!res.ok) {
-        if (res.status === 401) {
-          throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại');
-        }
-        throw new Error(
-          json.error || json.message || 'Lỗi khi lấy danh sách đơn hàng',
-        );
-      }
-
-      return json.orders || json.data || json;
-    } catch (error: any) {
-      console.error('GetOrders error:', error);
-      throw new Error(error.message || 'Lỗi kết nối');
+    if (!token) {
+      throw new Error('Bạn cần đăng nhập lại');
     }
+
+    return await cacheService.executeWithCache(
+      'user_orders',
+      async () => {
+        const res = await fetch(`${BASE_URL}/api/orders?limit=1000&page=1`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const json = await res.json();
+
+        if (!res.ok) {
+          if (res.status === 401) {
+            throw new Error(
+              'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại',
+            );
+          }
+          throw new Error(
+            json.error || json.message || 'Lỗi khi lấy danh sách đơn hàng',
+          );
+        }
+
+        return json.orders || json.data || json;
+      },
+      {userId: token.substring(0, 20)},
+      {ttl: 3 * 60 * 1000, forceRefresh}, // 3 minutes cache
+    );
   },
 
   cancelOrder: async (orderId: string) => {
@@ -213,10 +233,38 @@ export const OrderApi = {
         );
       }
 
+      // Clear relevant caches after cancelling order
+      await Promise.all([
+        cacheService.clearByPrefix('user_orders'),
+        cacheService.clear('user_order', {
+          orderId,
+          userId: token.substring(0, 20),
+        }),
+      ]);
+
       return json.order || json.data || json;
     } catch (error: any) {
       console.error('CancelOrder error:', error);
       throw new Error(error.message || 'Lỗi kết nối');
     }
+  },
+
+  // Cache management methods
+  clearOrderCache: async (orderId?: string): Promise<void> => {
+    if (orderId) {
+      const token = await getAccessToken();
+      if (token) {
+        await cacheService.clear('user_order', {
+          orderId,
+          userId: token.substring(0, 20),
+        });
+      }
+    } else {
+      await cacheService.clearByPrefix('user_order');
+    }
+  },
+
+  clearOrdersCache: async (): Promise<void> => {
+    await cacheService.clearByPrefix('user_orders');
   },
 };

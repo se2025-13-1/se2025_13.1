@@ -1,4 +1,5 @@
 import {AppConfig} from '../../../config/AppConfig';
+import {cacheService} from '../../../services/cacheService';
 
 export interface Product {
   id: string;
@@ -32,44 +33,54 @@ class HomeService {
    * Fetch sản phẩm mới (New Products)
    * Sort by created_at DESC (mới nhất)
    */
-  async getNewProducts(limit: number = 10): Promise<ProductsResponse> {
-    try {
-      const response = await fetch(
-        `${this.apiUrl}/products?limit=${limit}&sort_by=created_at&sort_order=desc`,
-      );
+  async getNewProducts(
+    limit: number = 10,
+    forceRefresh: boolean = false,
+  ): Promise<ProductsResponse> {
+    return await cacheService.executeWithCache(
+      'new_products',
+      async () => {
+        const response = await fetch(
+          `${this.apiUrl}/products?limit=${limit}&sort_by=created_at&sort_order=desc`,
+        );
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-      const data: ProductsResponse = await response.json();
-      return data;
-    } catch (error) {
-      console.error('[HomeService] Error fetching new products:', error);
-      throw error;
-    }
+        const data: ProductsResponse = await response.json();
+        return data;
+      },
+      {limit},
+      {ttl: 10 * 60 * 1000, forceRefresh}, // 10 minutes cache
+    );
   }
 
   /**
    * Fetch sản phẩm bán chạy (Best Sellers)
    * Sort by sold_count DESC (bán nhiều nhất)
    */
-  async getBestSellers(limit: number = 10): Promise<ProductsResponse> {
-    try {
-      const response = await fetch(
-        `${this.apiUrl}/products?limit=${limit}&sort_by=sold_count&sort_order=desc`,
-      );
+  async getBestSellers(
+    limit: number = 10,
+    forceRefresh: boolean = false,
+  ): Promise<ProductsResponse> {
+    return await cacheService.executeWithCache(
+      'best_sellers',
+      async () => {
+        const response = await fetch(
+          `${this.apiUrl}/products?limit=${limit}&sort_by=sold_count&sort_order=desc`,
+        );
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-      const data: ProductsResponse = await response.json();
-      return data;
-    } catch (error) {
-      console.error('[HomeService] Error fetching best sellers:', error);
-      throw error;
-    }
+        const data: ProductsResponse = await response.json();
+        return data;
+      },
+      {limit},
+      {ttl: 15 * 60 * 1000, forceRefresh}, // 15 minutes cache (longer for best sellers)
+    );
   }
 
   /**
@@ -78,24 +89,46 @@ class HomeService {
   async searchProducts(
     keyword: string,
     limit: number = 10,
+    forceRefresh: boolean = false,
   ): Promise<ProductsResponse> {
-    try {
-      const response = await fetch(
-        `${this.apiUrl}/products?q=${encodeURIComponent(
-          keyword,
-        )}&limit=${limit}`,
-      );
+    return await cacheService.executeWithCache(
+      'search_products',
+      async () => {
+        const response = await fetch(
+          `${this.apiUrl}/products?q=${encodeURIComponent(
+            keyword,
+          )}&limit=${limit}`,
+        );
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-      const data: ProductsResponse = await response.json();
-      return data;
-    } catch (error) {
-      console.error('[HomeService] Error searching products:', error);
-      throw error;
-    }
+        const data: ProductsResponse = await response.json();
+        return data;
+      },
+      {keyword, limit},
+      {ttl: 5 * 60 * 1000, forceRefresh}, // 5 minutes cache for search
+    );
+  }
+
+  // Cache management methods
+  async clearNewProductsCache(): Promise<void> {
+    await cacheService.clearByPrefix('new_products');
+  }
+
+  async clearBestSellersCache(): Promise<void> {
+    await cacheService.clearByPrefix('best_sellers');
+  }
+
+  async clearSearchCache(): Promise<void> {
+    await cacheService.clearByPrefix('search_products');
+  }
+
+  async clearAllCache(): Promise<void> {
+    await this.clearNewProductsCache();
+    await this.clearBestSellersCache();
+    await this.clearSearchCache();
   }
 }
 
