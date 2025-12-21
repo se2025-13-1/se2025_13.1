@@ -30,21 +30,10 @@ const SETTING_ITEMS: SettingItem[] = [
   {id: '3', title: 'Địa Chỉ', section: 'account'},
   {id: '4', title: 'Tài khoản / Thẻ Ngân hàng', section: 'account'},
 
-  // Cài đặt section
-  {id: '5', title: 'Cài đặt', section: 'settings'},
-  {id: '7', title: 'Cài đặt Thông báo', section: 'settings'},
-  {
-    id: '10',
-    title: 'Language / Ngôn ngữ',
-    subtitle: 'Tiếng Việt',
-    section: 'settings',
-  },
-
   // Hỗ trợ section
   {id: '11', title: 'Hỗ trợ', section: 'support'},
-  {id: '12', title: 'Trung tâm hỗ trợ', section: 'support'},
   {id: '13', title: 'Tiêu chuẩn cộng đồng', section: 'support'},
-  {id: '14', title: 'Điều Khoản Shopee', section: 'support'},
+  {id: '14', title: 'Điều Khoản', section: 'support'},
 ];
 
 const SettingScreen: React.FC<SettingScreenProps> = ({navigation}) => {

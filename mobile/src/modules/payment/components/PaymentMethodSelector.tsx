@@ -18,8 +18,6 @@ const POPULAR_METHODS: PaymentMethod[] = [
     name: 'Thanh toán khi nhận hàng',
     description: 'Thanh toán khi nhận hàng',
   },
-  {id: '2', name: 'Ví MoMo', description: 'Liên kết với MoMo'},
-  {id: '3', name: 'Ví Zalopay', description: 'Kết nối Ví Zalopay'},
 ];
 
 const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({

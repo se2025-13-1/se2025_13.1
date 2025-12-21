@@ -68,7 +68,7 @@ class HomeService {
       'best_sellers',
       async () => {
         const response = await fetch(
-          `${this.apiUrl}/products?limit=${limit}&sort_by=sold_count&sort_order=desc`,
+          `${this.apiUrl}/products?limit=${limit}&sort_by=sold&sort_order=desc`,
         );
 
         if (!response.ok) {
