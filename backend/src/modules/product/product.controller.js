@@ -66,18 +66,18 @@ export const ProductController = {
       const { id } = req.params;
       const body = req.body;
 
-      // Chỉ lấy các field cho phép update ở bảng products
-      const payload = {};
-      if (body.name) payload.name = body.name;
-      if (body.description || body.short_description)
-        payload.description = body.description || body.short_description;
-      if (body.base_price !== undefined) payload.base_price = body.base_price;
-      if (body.is_active !== undefined) payload.is_active = body.is_active;
-      if (body.category || body.category_id)
-        payload.category_id = body.category_id || body.category;
-
-      // Note: Hiện tại chưa hỗ trợ update Variants/Images qua API này
-      // vì logic diff variants khá phức tạp.
+      // Map data từ request
+      const payload = {
+        name: body.name,
+        slug: body.slug,
+        description: body.description || body.short_description,
+        base_price:
+          body.base_price !== undefined ? body.base_price : body.price,
+        category_id: body.category_id || body.category,
+        is_active: body.is_active !== undefined ? body.is_active : undefined,
+        variants: body.variants || [], // [{id?, color, size, sku, price, stock_quantity}]
+        images: body.images || [], // [{id?, image_url, color_ref, display_order}]
+      };
 
       const updated = await ProductService.updateProduct(id, payload);
 
@@ -88,7 +88,7 @@ export const ProductController = {
       }
 
       return res.json({
-        message: "Product updated",
+        message: "Product updated successfully",
         product: updated,
       });
     } catch (err) {
