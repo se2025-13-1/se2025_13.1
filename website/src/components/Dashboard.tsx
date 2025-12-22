@@ -21,6 +21,7 @@ interface DashboardData {
   low_stock_count: number;
   total_products: number;
   pending_orders: number;
+  completed_orders: number;
 }
 
 interface RevenueData {
@@ -45,29 +46,50 @@ const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardData | null>(null);
   const [revenueData, setRevenueData] = useState<RevenueData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      // Gọi song song 2 API để tiết kiệm thời gian
+      // Thêm timestamp để bypass cache
+      const timestamp = new Date().getTime();
+      const [statsRes, revenueRes] = await Promise.all([
+        apiClient.getDashboardStats(),
+        apiClient.getRevenueChart(7), // Lấy 7 ngày gần nhất
+      ]);
+
+      console.log("📊 Dashboard Stats Response:", statsRes);
+
+      if (statsRes.data) setStats(statsRes.data);
+      if (revenueRes.data) setRevenueData(revenueRes.data);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error("Failed to fetch dashboard data", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Gọi song song 2 API để tiết kiệm thời gian
-        const [statsRes, revenueRes] = await Promise.all([
-          apiClient.getDashboardStats(),
-          apiClient.getRevenueChart(7), // Lấy 7 ngày gần nhất
-        ]);
-
-        console.log("📊 Dashboard Stats Response:", statsRes);
-
-        if (statsRes.data) setStats(statsRes.data);
-        if (revenueRes.data) setRevenueData(revenueRes.data);
-      } catch (error) {
-        console.error("Failed to fetch dashboard data", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
+    // Fetch data ngay khi component mount
     fetchData();
-  }, []);
+
+    // Auto-refresh every 30 seconds
+    let intervalId: NodeJS.Timeout;
+    if (autoRefreshEnabled) {
+      intervalId = setInterval(() => {
+        console.log("🔄 Auto-refreshing dashboard...");
+        fetchData();
+      }, 30000); // 30 giây
+    }
+
+    // Cleanup interval khi component unmount hoặc autoRefreshEnabled change
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [autoRefreshEnabled]);
 
   if (loading) {
     return (
@@ -83,7 +105,32 @@ const Dashboard: React.FC = () => {
         <h1 className="text-2xl font-bold text-slate-800">
           Dashboard Overview
         </h1>
-        <span className="text-sm text-slate-500">Real-time data</span>
+        <div className="flex items-center gap-4 mt-4 sm:mt-0">
+          <div className="text-sm text-slate-500">
+            {lastUpdated && (
+              <>
+                Last updated: {lastUpdated.toLocaleTimeString()}
+                <br />
+                <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={autoRefreshEnabled}
+                    onChange={(e) => setAutoRefreshEnabled(e.target.checked)}
+                    className="rounded"
+                  />
+                  <span className="text-xs">Auto-refresh (30s)</span>
+                </label>
+              </>
+            )}
+          </div>
+          <button
+            onClick={fetchData}
+            disabled={loading}
+            className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+          >
+            {loading ? "Loading..." : "Refresh"}
+          </button>
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -129,6 +176,13 @@ const Dashboard: React.FC = () => {
           icon={AlertCircle}
           color="bg-orange-500"
           subtext="Awaiting confirmation"
+        />
+        <StatCard
+          title="Completed Orders"
+          value={stats?.completed_orders || 0}
+          icon={Package}
+          color="bg-green-500"
+          subtext="Successfully delivered"
         />
       </div>
 

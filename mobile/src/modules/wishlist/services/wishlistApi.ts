@@ -66,6 +66,49 @@ export const wishlistApi = {
     );
   },
 
+  async getWishlistStatus(productId: string) {
+    const tokenData = await getTokens();
+    const token = tokenData?.accessToken;
+
+    try {
+      // Get wishlist IDs and check if productId is in there
+      // Force refresh to get latest data
+      const idsResponse = await this.listWishlistIds(true);
+      console.log(
+        '[wishlistApi] getWishlistStatus - idsResponse:',
+        idsResponse,
+      );
+
+      // Backend returns { ids: [...] } or just the array directly
+      let wishlistIds = [];
+      if (idsResponse?.ids) {
+        wishlistIds = idsResponse.ids;
+      } else if (idsResponse?.data) {
+        wishlistIds = idsResponse.data;
+      } else if (idsResponse?.wishlist_ids) {
+        wishlistIds = idsResponse.wishlist_ids;
+      } else if (Array.isArray(idsResponse)) {
+        wishlistIds = idsResponse;
+      }
+
+      const isLiked = wishlistIds.includes(productId);
+      console.log(
+        '[wishlistApi] getWishlistStatus - productId:',
+        productId,
+        'isLiked:',
+        isLiked,
+        'wishlistIds:',
+        wishlistIds,
+      );
+      return {
+        is_liked: isLiked,
+      };
+    } catch (error) {
+      console.error('[wishlistApi] Error checking wishlist status:', error);
+      return {is_liked: false};
+    }
+  },
+
   // Cache management methods
   async clearWishlistCache(): Promise<void> {
     await Promise.all([

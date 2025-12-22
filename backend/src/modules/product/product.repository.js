@@ -543,4 +543,17 @@ export const ProductRepository = {
       client.release();
     }
   },
+
+  // Tăng sold_count của sản phẩm khi đơn hàng completed
+  async incrementSoldCount(productId, quantity) {
+    const query = `
+      UPDATE products
+      SET sold_count = COALESCE(sold_count, 0) + $1,
+          updated_at = NOW()
+      WHERE id = $2
+      RETURNING id, sold_count
+    `;
+    const res = await pgPool.query(query, [quantity, productId]);
+    return res.rows[0];
+  },
 };

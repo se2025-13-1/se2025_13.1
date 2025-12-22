@@ -11,7 +11,7 @@ import {
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import CartHeader from '../components/CartHeader';
 import CartList, {CartItemData} from '../components/CartList';
-import CartRecommend from '../components/CartRecommend';
+import ProductRecommended from '../../productdetails/components/ProductRecommended';
 import CartBottomBar from '../components/CartBottomBar';
 import EmptyCart from '../components/EmptyCart';
 import {CartApi, CartItem} from '../services/cartApi';
@@ -46,20 +46,31 @@ const CartScreen: React.FC<CartScreenProps> = ({onBackPress}) => {
 
       // Map API response to CartItemData format
       const formattedItems: CartItemData[] =
-        response.items?.map((item: CartItem) => ({
-          id: item.id,
-          image:
-            item.image_url ||
-            'https://via.placeholder.com/150x150/f0f0f0/666666?text=No+Image',
-          name: item.product_name,
-          size:
-            item.color && item.size
-              ? `${item.color}, Size ${item.size}`
-              : 'N/A',
-          price: item.price,
-          quantity: item.quantity,
-          variant_id: item.variant_id,
-        })) || [];
+        response.items?.map((item: CartItem) => {
+          console.log('[CartScreen] Item data:', {
+            item_id: (item as any).item_id,
+            id: item.id,
+            product_name: item.product_name,
+            thumbnail: (item as any).thumbnail,
+            image_url: item.image_url,
+            variant_id: item.variant_id,
+          });
+          return {
+            id: item.id || (item as any).item_id,
+            image:
+              (item as any).thumbnail ||
+              item.image_url ||
+              'https://via.placeholder.com/150x150/f0f0f0/666666?text=No+Image',
+            name: item.product_name,
+            size:
+              item.color && item.size
+                ? `${item.color}, Size ${item.size}`
+                : 'N/A',
+            price: item.price,
+            quantity: item.quantity,
+            variant_id: item.variant_id,
+          };
+        }) || [];
 
       console.log('[CartScreen] Formatted items:', formattedItems);
       setCartItems(formattedItems);
@@ -87,6 +98,7 @@ const CartScreen: React.FC<CartScreenProps> = ({onBackPress}) => {
 
   const handleItemRemove = async (id: string) => {
     try {
+      console.log('[CartScreen] handleItemRemove called with id:', id);
       setIsLoading(true);
       await CartApi.removeItem(id);
 
@@ -206,7 +218,9 @@ const CartScreen: React.FC<CartScreenProps> = ({onBackPress}) => {
               onSelectionChange={handleSelectionChange}
             />
 
-            {cartItems.length > 0 && <CartRecommend navigation={navigation} />}
+            {cartItems.length > 0 && (
+              <ProductRecommended navigation={navigation} />
+            )}
           </ScrollView>
 
           <CartBottomBar

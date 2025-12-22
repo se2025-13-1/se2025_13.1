@@ -390,11 +390,15 @@ const PaymentScreen: React.FC = () => {
             </View>
           </View>
         )}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
         scrollEnabled={true}
       />
 
-      <BottomCheckoutBar total={total} saved={0} onCheckout={handleCheckout} />
+      <BottomCheckoutBar
+        total={total}
+        saved={voucherDiscount}
+        onCheckout={handleCheckout}
+      />
     </View>
   );
 };

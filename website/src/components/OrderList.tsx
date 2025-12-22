@@ -43,6 +43,15 @@ const OrderList: React.FC = () => {
     }
   };
 
+  // Check if order status is final (cannot be changed)
+  const isFinalStatus = (status: OrderStatus): boolean => {
+    return (
+      status === OrderStatus.SHIPPING ||
+      status === OrderStatus.CANCELLED ||
+      status === OrderStatus.COMPLETED
+    );
+  };
+
   // Filter logic
   const filteredOrders = orders.filter(
     (order) =>
@@ -183,13 +192,23 @@ const OrderList: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <select
-                        className="text-xs border-slate-200 rounded-md p-1 outline-none focus:border-indigo-500"
+                        className={`text-xs border-slate-200 rounded-md p-1 outline-none focus:border-indigo-500 ${
+                          isFinalStatus(order.status)
+                            ? "bg-slate-100 text-slate-500 cursor-not-allowed opacity-60"
+                            : "bg-white text-slate-900 cursor-pointer"
+                        }`}
                         value={order.status}
                         onChange={(e) =>
                           handleUpdateStatus(
                             order.id,
                             e.target.value as OrderStatus
                           )
+                        }
+                        disabled={isFinalStatus(order.status)}
+                        title={
+                          isFinalStatus(order.status)
+                            ? "Cannot change status for completed, shipping, or cancelled orders"
+                            : "Change order status"
                         }
                       >
                         <option value={OrderStatus.PENDING}>Pending</option>

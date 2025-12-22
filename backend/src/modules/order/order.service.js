@@ -5,6 +5,7 @@ import { ProductRepository } from "../product/product.repository.js";
 import { AddressRepository } from "../address/address.repository.js";
 import { VoucherService } from "../voucher/voucher.service.js";
 import { VoucherRepository } from "../voucher/voucher.repository.js";
+import { StatisticsService } from "../statistics/statistics.service.js";
 
 export const OrderService = {
   async createOrder(userId, payload) {
@@ -185,6 +186,47 @@ export const OrderService = {
 
     const result = await OrderRepository.updateStatus(orderId, status);
     console.log(`🔴 [ORDER SERVICE] updateOrderStatus result:`, result);
+
+    // 🔔 CẬP NHẬT SOLD_COUNT KHI ĐƠN HÀNG COMPLETED
+    if (status === "completed" && result && result.order) {
+      console.log(
+        `🔴 [ORDER SERVICE] Updating sold_count for completed order ${orderId}`
+      );
+      try {
+        // Lấy chi tiết đơn hàng để biết tất cả sản phẩm đã bán
+        const orderDetails = await OrderRepository.findById(orderId);
+        if (orderDetails && orderDetails.items) {
+          // Cập nhật sold_count cho mỗi sản phẩm
+          for (const item of orderDetails.items) {
+            const productId = item.product_id;
+            const quantity = item.quantity;
+
+            if (productId && quantity > 0) {
+              await ProductRepository.incrementSoldCount(productId, quantity);
+              console.log(
+                `✅ [ORDER SERVICE] Updated sold_count for product ${productId} +${quantity}`
+              );
+            }
+          }
+        }
+      } catch (err) {
+        console.error(
+          `❌ [ORDER SERVICE] Error updating sold_count:`,
+          err.message
+        );
+        // Không throw error, chỉ log để không làm gián đoạn việc cập nhật status
+      }
+
+      // 🧹 CLEAR DASHBOARD CACHE khi status thay đổi
+      try {
+        await StatisticsService.clearDashboardCache();
+      } catch (err) {
+        console.error(
+          `❌ [ORDER SERVICE] Error clearing dashboard cache:`,
+          err.message
+        );
+      }
+    }
 
     // 🔔 GỬI NOTIFICATION KHI ORDER STATUS THAY ĐỔI
     if (result && result.order) {

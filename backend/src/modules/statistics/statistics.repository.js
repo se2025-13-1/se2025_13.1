@@ -26,7 +26,10 @@ export const StatisticsRepository = {
       // 6. Đếm Tổng Số Pending Orders (Chỉ đơn đang chờ xác nhận)
       const pendingOrdersQuery = `SELECT COUNT(*) as total FROM orders WHERE status = 'pending'`;
 
-      // Chạy song song 6 câu lệnh
+      // 7. Đếm Tổng Số Completed Orders (Chỉ đơn đã hoàn thành)
+      const completedOrdersQuery = `SELECT COUNT(*) as total FROM orders WHERE status = 'completed'`;
+
+      // Chạy song song 7 câu lệnh
       const [
         revenueRes,
         ordersRes,
@@ -34,6 +37,7 @@ export const StatisticsRepository = {
         lowStockRes,
         productsRes,
         pendingRes,
+        completedRes,
       ] = await Promise.all([
         client.query(revenueQuery),
         client.query(ordersQuery),
@@ -41,6 +45,7 @@ export const StatisticsRepository = {
         client.query(lowStockQuery),
         client.query(totalProductsQuery),
         client.query(pendingOrdersQuery),
+        client.query(completedOrdersQuery),
       ]);
 
       const result = {
@@ -50,7 +55,28 @@ export const StatisticsRepository = {
         low_stock_count: Number(lowStockRes.rows[0].total),
         total_products: Number(productsRes.rows[0].total),
         pending_orders: Number(pendingRes.rows[0].total),
+        completed_orders: Number(completedRes.rows[0].total),
       };
+
+      // 🔴 DEBUG: Log chi tiết nếu có revenue nhưng completed_orders = 0
+      if (result.total_revenue > 0 && result.completed_orders === 0) {
+        console.warn("⚠️  INCONSISTENCY DETECTED:");
+        console.warn(`   Total Revenue: ${result.total_revenue}`);
+        console.warn(`   Completed Orders: ${result.completed_orders}`);
+        console.warn(
+          "   Checking orders with revenue but non-completed status..."
+        );
+
+        const debugQuery = `
+          SELECT id, status, total_amount 
+          FROM orders 
+          WHERE total_amount > 0 
+          ORDER BY created_at DESC 
+          LIMIT 10
+        `;
+        const debugRes = await client.query(debugQuery);
+        console.warn("   Recent orders with revenue:", debugRes.rows);
+      }
 
       console.log("📊 Dashboard Stats:", result);
       return result;

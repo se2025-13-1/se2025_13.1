@@ -2,11 +2,11 @@ import { StatisticsRepository } from "./statistics.repository.js";
 import { redisClient } from "../../config/redis.js";
 
 export const StatisticsService = {
-  async getGeneralStats() {
+  async getGeneralStats(bypassCache = false) {
     const cacheKey = "stats:dashboard:general";
 
-    // 1. Kiểm tra Cache
-    if (redisClient) {
+    // 1. Kiểm tra Cache (trừ khi bypassCache = true)
+    if (!bypassCache && redisClient) {
       const cachedData = await redisClient.get(cacheKey);
       if (cachedData) {
         console.log("✅ Cache hit for dashboard stats");
@@ -14,18 +14,27 @@ export const StatisticsService = {
       }
     }
 
-    console.log("🔄 Cache miss, fetching from database...");
+    console.log("🔄 Cache miss or bypassed, fetching from database...");
 
     // 2. Nếu không có Cache, gọi DB
     const stats = await StatisticsRepository.getDashboardStats();
 
-    // 3. Lưu Cache (TTL: 300 giây = 5 phút)
+    // 3. Lưu Cache (TTL: 60 giây = 1 phút, để data fresher)
     if (redisClient) {
-      await redisClient.set(cacheKey, JSON.stringify(stats), { EX: 300 });
-      console.log("💾 Cached dashboard stats for 5 minutes");
+      await redisClient.set(cacheKey, JSON.stringify(stats), { EX: 60 });
+      console.log("💾 Cached dashboard stats for 1 minute");
     }
 
     return stats;
+  },
+
+  // Clear cache khi cần (gọi sau khi update order status)
+  async clearDashboardCache() {
+    const cacheKey = "stats:dashboard:general";
+    if (redisClient) {
+      await redisClient.del(cacheKey);
+      console.log("🧹 Cleared dashboard cache");
+    }
   },
 
   async getRevenueChart(range = 7) {

@@ -11,6 +11,17 @@ interface NotificationOptions {
 
 export const NotificationService = {
   /**
+   * Lấy dãy số đầu tiên từ order ID
+   * Ví dụ: "550e8400-e29b-41d4-a716-446655440000" -> "550e8400"
+   */
+  getOrderIdPrefix: (orderId: string): string => {
+    if (!orderId) return 'N/A';
+    // Lấy phần đầu tiên (trước dấu gạch ngang đầu tiên) hoặc 8 ký tự đầu
+    const prefix = orderId.split('-')[0] || orderId.substring(0, 8);
+    return prefix.toUpperCase();
+  },
+
+  /**
    * Hiển thị thông báo hệ thống cho Android (Heads-Up Notification)
    * Tương tự thông báo trên Facebook, Instagram, etc.
    *
@@ -62,27 +73,21 @@ export const NotificationService = {
    */
   showOrderSuccessNotification: async (orderId: string) => {
     try {
-      const {NotificationModule} = NativeModules;
+      const orderIdPrefix = NotificationService.getOrderIdPrefix(orderId);
 
-      if (
-        NotificationModule &&
-        NotificationModule.showOrderSuccessNotification
-      ) {
-        await NotificationModule.showOrderSuccessNotification(orderId);
-      } else {
-        // Fallback
-        await NotificationService.showSystemNotification({
-          title: '✅ Đặt hàng thành công',
-          message: `Đơn hàng #${orderId} của bạn đã được tạo thành công!`,
-          channelId: 'order_notifications',
-          color: '#4CAF50',
-        });
-      }
+      // Luôn dùng systemNotification để đảm bảo hiển thị prefix đúng
+      await NotificationService.showSystemNotification({
+        title: '✅ Đặt hàng thành công',
+        message: `Đơn hàng #${orderIdPrefix} của bạn đã được tạo thành công!`,
+        channelId: 'order_notifications',
+        color: '#4CAF50',
+      });
     } catch (error) {
       console.error('Error showing order success notification:', error);
+      const orderIdPrefix = NotificationService.getOrderIdPrefix(orderId);
       Alert.alert(
         'Đặt hàng thành công',
-        `Đơn hàng #${orderId} của bạn đã được tạo thành công!`,
+        `Đơn hàng #${orderIdPrefix} của bạn đã được tạo thành công!`,
       );
     }
   },

@@ -94,7 +94,7 @@ const OrderResultScreen: React.FC = () => {
   };
 
   const handleViewOrders = () => {
-    navigation.navigate('Orders');
+    navigation.navigate('MyOrder');
   };
 
   const handleViewOrderDetail = () => {

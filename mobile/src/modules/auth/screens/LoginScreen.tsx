@@ -133,7 +133,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
           console.log('📧 Login response status:', res.status);
           const data = await res.json();
           console.log('📧 Login response data:', data);
-          
+
           if (!res.ok) {
             throw new Error(data.error || 'Login failed');
           }
@@ -172,16 +172,23 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                 // 🔔 REGISTER FCM TOKEN AFTER EMAIL LOGIN
                 (async () => {
                   try {
-                    console.log('🔔 Requesting notification permission after email login...');
+                    console.log(
+                      '🔔 Requesting notification permission after email login...',
+                    );
                     const hasPermission = await requestUserPermission();
                     console.log('🔔 Permission result:', hasPermission);
-                    
+
                     if (hasPermission) {
                       const userToken = await getAccessToken();
-                      console.log('🔔 AccessToken retrieved:', userToken ? '✅ exists' : '❌ null');
-                      
+                      console.log(
+                        '🔔 AccessToken retrieved:',
+                        userToken ? '✅ exists' : '❌ null',
+                      );
+
                       if (userToken) {
-                        console.log('🔔 Calling getFCMToken after email login with token...');
+                        console.log(
+                          '🔔 Calling getFCMToken after email login with token...',
+                        );
                         await getFCMToken(userToken);
                         console.log('🔔 getFCMToken completed');
                       } else {

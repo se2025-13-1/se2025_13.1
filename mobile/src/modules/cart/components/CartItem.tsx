@@ -7,6 +7,7 @@ import {
   Image,
   Dimensions,
   Modal,
+  Alert,
 } from 'react-native';
 import CartVariantSelector from './CartVariantSelector';
 
@@ -66,10 +67,34 @@ const CartItem: React.FC<CartItemProps> = ({
     setShowVariantSelector(false);
   };
 
+  const handleDeletePress = () => {
+    Alert.alert(
+      'Xóa sản phẩm',
+      `Bạn có chắc chắn muốn xóa "${name}" khỏi giỏ hàng?`,
+      [
+        {
+          text: 'Hủy',
+          onPress: () => {
+            console.log('[CartItem] Delete cancelled');
+          },
+          style: 'cancel',
+        },
+        {
+          text: 'Xóa',
+          onPress: () => {
+            console.log('[CartItem] Delete confirmed, id:', id);
+            onRemove?.();
+          },
+          style: 'destructive',
+        },
+      ],
+    );
+  };
+
   return (
     <View style={styles.container}>
       {/* Delete Button - Top Right */}
-      <TouchableOpacity style={styles.deleteButton} onPress={onRemove}>
+      <TouchableOpacity style={styles.deleteButton} onPress={handleDeletePress}>
         <Image
           source={require('../../../assets/icons/Trash.png')}
           style={styles.trashIcon}
@@ -269,12 +294,14 @@ const styles = StyleSheet.create({
   },
   detailsContainer: {
     flex: 1,
+    paddingRight: 28,
   },
   productName: {
     fontSize: 13,
     fontWeight: '600',
     color: '#333',
     marginBottom: 4,
+    marginRight: 4,
   },
   sizeRow: {
     flexDirection: 'row',

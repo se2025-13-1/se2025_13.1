@@ -5,12 +5,15 @@ import {cacheService} from '../../../services/cacheService';
 const BASE_URL = AppConfig.BASE_URL;
 
 export interface CartItem {
-  id: string;
-  variant_id: string;
-  product_id: string;
+  id?: string;
+  item_id?: string;
+  variant_id?: string;
+  product_variant_id?: string;
+  product_id?: string;
   product_name: string;
   price: number;
   image_url?: string;
+  thumbnail?: string;
   color?: string;
   size?: string;
   quantity: number;

@@ -123,17 +123,19 @@ export const OrderRepository = {
     const orderRes = await pgPool.query(orderQuery, [orderId, userId]);
     if (orderRes.rows.length === 0) return null;
 
-    // Lấy items
+    // Lấy items (kèm product_id từ product_variants)
     const itemsQuery = `
       SELECT 
-        oi.*, 
+        oi.*,
+        pv.product_id,
         (
           SELECT image_url FROM product_images pi 
-          JOIN product_variants pv ON pv.product_id = pi.product_id
-          WHERE pv.id = oi.product_variant_id 
+          JOIN product_variants pv2 ON pv2.product_id = pi.product_id
+          WHERE pv2.id = oi.product_variant_id 
           ORDER BY (CASE WHEN pi.color_ref IS NULL THEN 0 ELSE 1 END) ASC LIMIT 1
         ) as thumbnail
       FROM order_items oi 
+      JOIN product_variants pv ON oi.product_variant_id = pv.id
       WHERE oi.order_id = $1
     `;
     const itemsRes = await pgPool.query(itemsQuery, [orderId]);

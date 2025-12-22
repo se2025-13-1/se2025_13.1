@@ -51,15 +51,6 @@ const EntrySearchBar: React.FC<EntrySearchBarProps> = ({
             />
           </TouchableOpacity>
         )}
-
-        {!searchText && (
-          <TouchableOpacity hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
-            <Image
-              source={require('../../../assets/icons/Camera.png')}
-              style={styles.cameraIcon}
-            />
-          </TouchableOpacity>
-        )}
       </View>
 
       <TouchableOpacity
@@ -118,11 +109,6 @@ const styles = StyleSheet.create({
     height: 20,
     marginLeft: 6,
 
-    tintColor: '#999',
-  },
-  cameraIcon: {
-    width: 20,
-    height: 20,
     tintColor: '#999',
   },
   searchButton: {

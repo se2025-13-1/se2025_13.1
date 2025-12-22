@@ -7,6 +7,7 @@ import {
   Image,
   ViewStyle,
 } from 'react-native';
+import {useFocusEffect} from '@react-navigation/native';
 import {useAuth} from '../../../contexts/AuthContext';
 import RequireAuth from '../../auth/components/RequireAuth';
 import {wishlistApi} from '../../wishlist/services/wishlistApi';
@@ -45,6 +46,46 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
   >('cart');
   const [isFavorited, setIsFavorited] = useState(false);
   const [isLoadingFavorite, setIsLoadingFavorite] = useState(false);
+
+  // Check if product is in wishlist when component mounts or productId changes
+  useEffect(() => {
+    if (productId && isAuthenticated) {
+      checkIfInWishlist();
+    }
+  }, [productId, isAuthenticated]);
+
+  // Re-check wishlist status every time this screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log(
+        '[BottomActionBar] Screen focused, re-checking wishlist status',
+      );
+      if (productId && isAuthenticated) {
+        checkIfInWishlist();
+      }
+    }, [productId, isAuthenticated]),
+  );
+
+  const checkIfInWishlist = async () => {
+    try {
+      console.log(
+        '[BottomActionBar] Checking wishlist status for product:',
+        productId,
+      );
+      const response = await wishlistApi.getWishlistStatus(productId);
+      console.log('[BottomActionBar] Wishlist status response:', response);
+      setIsFavorited(response.is_liked);
+      console.log(
+        '[BottomActionBar] Wishlist status for product',
+        productId,
+        ':',
+        response.is_liked,
+      );
+    } catch (error) {
+      console.error('[BottomActionBar] Error checking wishlist status:', error);
+      setIsFavorited(false);
+    }
+  };
 
   const handleAuthRequiredAction = (
     feature: 'cart' | 'chat' | 'notification',
@@ -134,7 +175,7 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
                 ? require('../../../assets/icons/HeartFilled.png')
                 : require('../../../assets/icons/Heart.png')
             }
-            style={styles.iconSmall}
+            style={[styles.iconSmall, isFavorited && {tintColor: '#FF4444'}]}
           />
           <Text style={styles.actionLabel}>Yêu thích</Text>
         </TouchableOpacity>
