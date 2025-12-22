@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   Text,
   TouchableOpacity,
-  Image,
   TextInput,
 } from 'react-native';
 import {useRoute, useNavigation} from '@react-navigation/native';
@@ -17,6 +16,12 @@ import {searchApi, SearchSuggestion} from '../services/searchApi';
 import ProductCard from '../../../shared/Components/ProductCard';
 import FilterPanel, {FilterState} from '../components/FilterPanel';
 import type {RootStackParamList} from '../../../../App';
+import {
+  ArrowLeft,
+  SlidersHorizontal,
+  MoveUp,
+  MoveDown,
+} from 'lucide-react-native';
 
 type SearchResultNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -134,10 +139,14 @@ const SearchResult: React.FC = () => {
   };
 
   const getPriceLabel = () => {
-    if (currentFilters.sort_by === 'price') {
-      return currentFilters.sort_order === 'asc' ? 'Giá ↑' : 'Giá ↓';
-    }
     return 'Giá';
+  };
+
+  const getPriceIcon = () => {
+    if (currentFilters.sort_by === 'price') {
+      return currentFilters.sort_order === 'asc' ? MoveUp : MoveDown;
+    }
+    return MoveUp;
   };
 
   const renderProductItem = ({item}: {item: SearchSuggestion}) => (
@@ -203,10 +212,7 @@ const SearchResult: React.FC = () => {
         <TouchableOpacity
           onPress={handleBackPress}
           hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
-          <Image
-            source={require('../../../assets/icons/Back.png')}
-            style={styles.backIcon}
-          />
+          <ArrowLeft size={24} color="#ee4d2d" />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -220,10 +226,7 @@ const SearchResult: React.FC = () => {
         <TouchableOpacity
           onPress={handleFilterPress}
           hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
-          <Image
-            source={require('../../../assets/icons/Filter.png')}
-            style={styles.filterIcon}
-          />
+          <SlidersHorizontal size={24} color="#ee4d2d" />
         </TouchableOpacity>
       </View>
 
@@ -280,13 +283,25 @@ const SearchResult: React.FC = () => {
             activeSort === 'price' && styles.sortButtonActive,
           ]}
           onPress={() => handleSortPress('price')}>
-          <Text
-            style={[
-              styles.sortButtonText,
-              activeSort === 'price' && styles.sortButtonTextActive,
-            ]}>
-            {getPriceLabel()}
-          </Text>
+          <View style={styles.sortButtonContent}>
+            <Text
+              style={[
+                styles.sortButtonText,
+                activeSort === 'price' && styles.sortButtonTextActive,
+              ]}>
+              {getPriceLabel()}
+            </Text>
+            {(() => {
+              const PriceIcon = getPriceIcon();
+              return (
+                <PriceIcon
+                  size={14}
+                  color={activeSort === 'price' ? '#ee4d2d' : '#666666'}
+                  style={styles.priceIcon}
+                />
+              );
+            })()}
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -335,11 +350,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
-  backIcon: {
-    width: 24,
-    height: 24,
-    tintColor: '#ee4d2d',
-  },
   searchBar: {
     flex: 1,
     marginHorizontal: 12,
@@ -353,11 +363,6 @@ const styles = StyleSheet.create({
   searchText: {
     fontSize: 14,
     color: '#333333',
-  },
-  filterIcon: {
-    width: 24,
-    height: 24,
-    tintColor: '#ee4d2d',
   },
   sortBar: {
     flexDirection: 'row',
@@ -375,6 +380,14 @@ const styles = StyleSheet.create({
   sortButtonActive: {
     borderBottomWidth: 2,
     borderBottomColor: '#ee4d2d',
+  },
+  sortButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  priceIcon: {
+    marginLeft: 2,
   },
   sortButtonText: {
     fontSize: 13,

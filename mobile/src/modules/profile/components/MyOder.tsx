@@ -4,15 +4,22 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Image,
   ScrollView,
 } from 'react-native';
+import {
+  Clock,
+  Truck,
+  CheckCircle,
+  XCircle,
+  ChevronRight,
+  PackageCheck,
+} from 'lucide-react-native';
 
 interface OrderStatus {
   id: string;
   label: string;
   count: number;
-  icon: any;
+  icon: typeof Clock;
   tabIndex: number;
 }
 
@@ -32,35 +39,35 @@ const MyOder: React.FC<MyOderProps> = ({
       id: 'pending-confirmation',
       label: 'Chờ xác nhận',
       count: 2,
-      icon: require('../../../assets/icons/Clock.png'),
+      icon: Clock,
       tabIndex: 0,
     },
     {
       id: 'pending-pickup',
       label: 'Chờ lấy hàng',
       count: 0,
-      icon: require('../../../assets/icons/Truck.png'),
+      icon: PackageCheck,
       tabIndex: 1,
     },
     {
       id: 'pending-delivery',
       label: 'Đang giao hàng',
       count: 1,
-      icon: require('../../../assets/icons/Truck.png'),
+      icon: Truck,
       tabIndex: 2,
     },
     {
       id: 'delivered',
       label: 'Đã giao',
       count: 5,
-      icon: require('../../../assets/icons/Check.png'),
+      icon: CheckCircle,
       tabIndex: 3,
     },
     {
       id: 'cancelled',
       label: 'Đã hủy',
       count: 0,
-      icon: require('../../../assets/icons/Close.png'),
+      icon: XCircle,
       tabIndex: 4,
     },
   ];
@@ -78,6 +85,7 @@ const MyOder: React.FC<MyOderProps> = ({
   };
 
   const renderStatusButton = (status: OrderStatus) => {
+    const IconComponent = status.icon;
     return (
       <TouchableOpacity
         key={status.id}
@@ -85,7 +93,7 @@ const MyOder: React.FC<MyOderProps> = ({
         onPress={() => handleStatusPress(status)}
         activeOpacity={0.7}>
         <View style={styles.statusIconContainer}>
-          <Image source={status.icon} style={styles.statusIcon} />
+          <IconComponent size={40} color="#333333" />
         </View>
         <Text style={styles.statusLabel}>{status.label}</Text>
       </TouchableOpacity>
@@ -102,10 +110,7 @@ const MyOder: React.FC<MyOderProps> = ({
           onPress={onViewHistoryPress}
           activeOpacity={0.7}>
           <Text style={styles.viewHistoryText}>Xem lịch sử mua hàng</Text>
-          <Image
-            source={require('../../../assets/icons/ArrowForward.png')}
-            style={styles.arrowIcon}
-          />
+          <ChevronRight size={16} color="#333" />
         </TouchableOpacity>
       </View>
 
@@ -149,12 +154,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginRight: 4,
   },
-  arrowIcon: {
-    width: 16,
-    height: 16,
-    resizeMode: 'contain',
-    tintColor: '#333',
-  },
   scrollContainer: {
     marginHorizontal: -16,
     paddingHorizontal: 16,
@@ -171,11 +170,6 @@ const styles = StyleSheet.create({
   statusIconContainer: {
     position: 'relative',
     marginBottom: 8,
-  },
-  statusIcon: {
-    width: 40,
-    height: 40,
-    resizeMode: 'contain',
   },
   statusLabel: {
     fontSize: 12,

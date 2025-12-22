@@ -6,7 +6,7 @@ import {
   StyleSheet,
   SafeAreaView,
 } from 'react-native';
-import {Image} from 'react-native';
+import {Home, Search, ShoppingCart, User} from 'lucide-react-native';
 import {useAuth} from '../../contexts/AuthContext';
 import RequireAuth from '../../modules/auth/components/RequireAuth';
 
@@ -22,7 +22,6 @@ interface TabBarProps {
   onLogin?: () => void;
   onRegister?: () => void;
   onGoogleLogin?: () => void;
-  onFacebookLogin?: () => void;
 }
 
 const TabBar: React.FC<TabBarProps> = ({
@@ -31,51 +30,44 @@ const TabBar: React.FC<TabBarProps> = ({
   onLogin,
   onRegister,
   onGoogleLogin,
-  onFacebookLogin,
 }) => {
   const {isAuthenticated} = useAuth();
   const [showRequireAuth, setShowRequireAuth] = useState(false);
   const [selectedFeature, setSelectedFeature] = useState<
-    'chat' | 'notification' | 'cart'
+    'notification' | 'cart'
   >('cart');
   const tabs: TabItem[] = [
     {
       id: 'home',
       label: 'Trang chủ',
-      icon: require('../../assets/icons/Address.png'),
+      icon: Home,
     },
     {
       id: 'search',
       label: 'Tìm kiếm',
-      icon: require('../../assets/icons/Search.png'),
+      icon: Search,
     },
     {
       id: 'cart',
       label: 'Giỏ hàng',
-      icon: require('../../assets/icons/Cart.png'),
-    },
-    {
-      id: 'messages',
-      label: 'Tin nhắn',
-      icon: require('../../assets/icons/Chat.png'),
+      icon: ShoppingCart,
     },
     {
       id: 'profile',
       label: 'Cá nhân',
-      icon: require('../../assets/icons/UserIcon.png'),
+      icon: User,
     },
   ];
 
   const handleTabPress = (tabId: string) => {
-    // Kiểm tra nếu là cart hoặc messages và người dùng chưa đăng nhập
-    if ((tabId === 'cart' || tabId === 'messages') && !isAuthenticated) {
-      const feature = tabId === 'cart' ? 'cart' : 'chat';
-      setSelectedFeature(feature);
+    // Kiểm tra nếu là cart và người dùng chưa đăng nhập
+    if (tabId === 'cart' && !isAuthenticated) {
+      setSelectedFeature('cart');
       setShowRequireAuth(true);
       return;
     }
 
-    // Nếu đã đăng nhập hoặc không phải cart/messages, thực hiện navigation bình thường
+    // Nếu đã đăng nhập hoặc không phải cart, thực hiện navigation bình thường
     onTabPress(tabId);
   };
 
@@ -98,13 +90,9 @@ const TabBar: React.FC<TabBarProps> = ({
     onGoogleLogin?.();
   };
 
-  const handleFacebookLoginPress = () => {
-    setShowRequireAuth(false);
-    onFacebookLogin?.();
-  };
-
   const renderTabItem = (tab: TabItem) => {
     const isActive = activeTab === tab.id;
+    const IconComponent = tab.icon;
 
     return (
       <TouchableOpacity
@@ -117,13 +105,7 @@ const TabBar: React.FC<TabBarProps> = ({
             styles.iconContainer,
             isActive && styles.activeIconContainer,
           ]}>
-          <Image
-            source={tab.icon}
-            style={[
-              styles.tabIcon,
-              isActive ? styles.activeTintColor : styles.inactiveTintColor,
-            ]}
-          />
+          <IconComponent color={isActive ? '#007AFF' : '#8E8E93'} size={24} />
         </View>
         <Text
           style={[
@@ -148,7 +130,6 @@ const TabBar: React.FC<TabBarProps> = ({
         onLogin={handleLoginPress}
         onRegister={handleRegisterPress}
         onGoogleLogin={handleGoogleLoginPress}
-        onFacebookLogin={handleFacebookLoginPress}
       />
     </SafeAreaView>
   );
@@ -183,27 +164,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 122, 255, 0.1)',
     borderRadius: 14,
   },
-  tabIcon: {
-    width: 25,
-    height: 25,
-    resizeMode: 'contain',
-  },
   tabLabel: {
     fontSize: 11,
     fontWeight: '500',
     textAlign: 'center',
   },
   activeColor: {
-    color: '#333',
+    color: '#007AFF',
   },
   inactiveColor: {
-    color: '#333',
-  },
-  activeTintColor: {
-    tintColor: '#333',
-  },
-  inactiveTintColor: {
-    tintColor: '#333',
+    color: '#8E8E93',
   },
 });
 

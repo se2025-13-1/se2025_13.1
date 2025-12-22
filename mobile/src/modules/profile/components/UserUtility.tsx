@@ -1,13 +1,14 @@
 import React, {useState} from 'react';
-import {View, Text, TouchableOpacity, StyleSheet, Image} from 'react-native';
+import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {useAuth} from '../../../contexts/AuthContext';
 import RequireAuth from '../../auth/components/RequireAuth';
+import {Heart, Ticket, ShoppingCart, ChevronRight} from 'lucide-react-native';
 
 interface UtilityItem {
   id: string;
   label: string;
-  icon: any;
+  icon: typeof Heart;
 }
 
 interface UserUtilityProps {
@@ -16,7 +17,6 @@ interface UserUtilityProps {
   onLogin?: () => void;
   onRegister?: () => void;
   onGoogleLogin?: () => void;
-  onFacebookLogin?: () => void;
   onNavigateToCart?: () => void;
   onNavigateToChat?: () => void;
   onNavigateToNotifications?: () => void;
@@ -29,7 +29,6 @@ const UserUtility: React.FC<UserUtilityProps> = ({
   onLogin,
   onRegister,
   onGoogleLogin,
-  onFacebookLogin,
   onNavigateToCart,
   onNavigateToChat,
   onNavigateToNotifications,
@@ -46,17 +45,17 @@ const UserUtility: React.FC<UserUtilityProps> = ({
     {
       id: 'favorites',
       label: 'Yêu thích',
-      icon: require('../../../assets/icons/Heart.png'),
+      icon: Heart,
     },
     {
       id: 'vouchers',
       label: 'Voucher',
-      icon: require('../../../assets/icons/Voucher.png'),
+      icon: Ticket,
     },
     {
       id: 'cart',
       label: 'Giỏ hàng',
-      icon: require('../../../assets/icons/AddToCart.png'),
+      icon: ShoppingCart,
     },
   ];
 
@@ -113,12 +112,8 @@ const UserUtility: React.FC<UserUtilityProps> = ({
     onGoogleLogin?.();
   };
 
-  const handleFacebookLoginPress = () => {
-    setShowRequireAuth(false);
-    onFacebookLogin?.();
-  };
-
   const renderUtilityItem = (item: UtilityItem) => {
+    const IconComponent = item.icon;
     return (
       <TouchableOpacity
         key={item.id}
@@ -126,7 +121,7 @@ const UserUtility: React.FC<UserUtilityProps> = ({
         onPress={() => handleUtilityPress(item.id)}
         activeOpacity={0.7}>
         <View style={styles.utilityIconContainer}>
-          <Image source={item.icon} style={styles.utilityIcon} />
+          <IconComponent size={40} color="#333333" />
         </View>
         <Text style={styles.utilityLabel}>{item.label}</Text>
       </TouchableOpacity>
@@ -143,10 +138,7 @@ const UserUtility: React.FC<UserUtilityProps> = ({
           onPress={onViewMorePress}
           activeOpacity={0.7}>
           <Text style={styles.viewMoreText}>Xem thêm tiện ích</Text>
-          <Image
-            source={require('../../../assets/icons/ArrowForward.png')}
-            style={styles.arrowIcon}
-          />
+          <ChevronRight size={16} color="#333333" />
         </TouchableOpacity>
       </View>
 
@@ -163,7 +155,6 @@ const UserUtility: React.FC<UserUtilityProps> = ({
         onLogin={handleLoginPress}
         onRegister={handleRegisterPress}
         onGoogleLogin={handleGoogleLoginPress}
-        onFacebookLogin={handleFacebookLoginPress}
       />
     </View>
   );
@@ -196,16 +187,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginRight: 4,
   },
-  arrowIcon: {
-    width: 16,
-    height: 16,
-    resizeMode: 'contain',
-    tintColor: '#33333',
-  },
   utilitiesContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
   },
   utilityButton: {
     alignItems: 'center',
@@ -213,15 +198,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 8,
     marginBottom: 8,
+    marginRight: 16,
   },
   utilityIconContainer: {
     marginBottom: 8,
-  },
-  utilityIcon: {
-    width: 40,
-    height: 40,
-    resizeMode: 'contain',
-    tintColor: '#333333',
   },
   utilityLabel: {
     fontSize: 12,
