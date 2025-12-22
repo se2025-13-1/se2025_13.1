@@ -8,6 +8,7 @@ import {
   Animated,
   Dimensions,
   TextInput,
+  Image,
 } from 'react-native';
 import {AppConfig} from '../../../config/AppConfig';
 
@@ -48,9 +49,11 @@ const PRICE_RANGES = [
 ];
 
 const RATING_OPTIONS = [
-  {label: '4+ sao', value: 4},
-  {label: '3+ sao', value: 3},
-  {label: '2+ sao', value: 2},
+  {label: '5 sao', value: 5, stars: 5},
+  {label: '4 sao', value: 4, stars: 4},
+  {label: '3 sao', value: 3, stars: 3},
+  {label: '2 sao', value: 2, stars: 2},
+  {label: '1 sao', value: 1, stars: 1},
 ];
 
 const SORT_OPTIONS = [
@@ -371,24 +374,31 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         return (
           <View style={styles.contentSection}>
             <Text style={styles.contentTitle}>Đánh giá</Text>
-            <View style={styles.contentGrid}>
+            <View style={styles.ratingContainer}>
               {RATING_OPTIONS.map(option => (
                 <TouchableOpacity
                   key={option.value}
                   style={[
-                    styles.contentItemGrid,
+                    styles.ratingItem,
                     selectedRating === option.value &&
-                      styles.contentItemSelected,
+                      styles.ratingItemSelected,
                   ]}
                   onPress={() => handleSelectRating(option.value)}>
+                  <Image
+                    source={require('../../../assets/icons/Star.png')}
+                    style={[
+                      styles.starIcon,
+                      selectedRating === option.value &&
+                        styles.starIconSelected,
+                    ]}
+                  />
                   <Text
                     style={[
-                      styles.contentItemText,
+                      styles.ratingLabel,
                       selectedRating === option.value &&
-                        styles.contentItemTextSelected,
-                    ]}
-                    numberOfLines={2}>
-                    {option.label}
+                        styles.ratingLabelSelected,
+                    ]}>
+                    {option.value}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -729,6 +739,45 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  ratingItem: {
+    width: '48%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#F8F9FA',
+    borderWidth: 2,
+    borderColor: '#E9ECEF',
+  },
+  ratingItemSelected: {
+    backgroundColor: '#FFF3E0',
+    borderColor: '#FF9800',
+  },
+  starIcon: {
+    width: 18,
+    height: 18,
+    resizeMode: 'contain',
+    tintColor: '#CCCCCC',
+    marginRight: 8,
+  },
+  starIconSelected: {
+    tintColor: '#FF9800',
+  },
+  ratingLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666666',
+  },
+  ratingLabelSelected: {
+    color: '#FF9800',
+    fontWeight: '600',
   },
 });
 

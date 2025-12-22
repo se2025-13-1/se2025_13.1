@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
 import {View, Text, TouchableOpacity, StyleSheet, Image} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 import {useAuth} from '../../../contexts/AuthContext';
 import RequireAuth from '../../auth/components/RequireAuth';
 
@@ -32,8 +33,9 @@ const UserUtility: React.FC<UserUtilityProps> = ({
   onNavigateToCart,
   onNavigateToChat,
   onNavigateToNotifications,
-  navigation,
+  navigation: navProp,
 }) => {
+  const navigation = useNavigation<any>();
   const {isAuthenticated} = useAuth();
   const [showRequireAuth, setShowRequireAuth] = useState(false);
   const [selectedFeature, setSelectedFeature] = useState<'cart' | 'chat'>(
@@ -59,6 +61,7 @@ const UserUtility: React.FC<UserUtilityProps> = ({
   ];
 
   const handleUtilityPress = (utilityId: string) => {
+    console.log('🎯 UserUtility.handleUtilityPress called with:', utilityId);
     // Xử lý nút favorites - điều hướng đến WishList Screen
     if (utilityId === 'favorites') {
       if (!isAuthenticated) {
@@ -66,24 +69,28 @@ const UserUtility: React.FC<UserUtilityProps> = ({
         setShowRequireAuth(true);
         return;
       }
-      navigation?.navigate('WishList');
+      console.log('📍 Navigating to WishList');
+      navigation.navigate('WishList');
       return;
     }
 
-    // Xử lý vouchers - không cần đăng nhập
+    // Xử lý vouchers - điều hướng đến VoucherScreen
     if (utilityId === 'vouchers') {
-      onUtilityPress?.(utilityId);
+      console.log('🎫 Navigating to Voucher screen from UserUtility');
+      navigation.navigate('Voucher');
       return;
     }
 
     // Xử lý giỏ hàng - yêu cầu đăng nhập
     if (utilityId === 'cart') {
+      console.log('🛒 Navigating to Cart screen');
       if (!isAuthenticated) {
         setSelectedFeature('cart');
         setShowRequireAuth(true);
         return;
       }
-      onNavigateToCart?.();
+      navigation.navigate('Cart');
+      return;
     }
   };
 

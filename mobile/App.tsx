@@ -22,6 +22,7 @@ import NotificationScreen from './src/modules/notifications/screens/Notification
 import NotificationDetailScreen from './src/modules/notifications/screens/NotificationDetailScreen';
 import EditProfileScreen from './src/modules/profile/screens/EditProfileScreen';
 import SettingScreen from './src/modules/profile/screens/SettingScreen';
+import VoucherScreen from './src/modules/profile/screens/VoucherScreen';
 import AddAddressScreen from './src/modules/address/screens/AddAddressScreen';
 import AddressListScreen from './src/modules/address/screens/AddressListScreen';
 import EditAddressScreen from './src/modules/address/screens/EditAddressScreen';
@@ -70,6 +71,7 @@ export type RootStackParamList = {
   };
   EditProfile: undefined;
   Settings: undefined;
+  Voucher: undefined;
   AddressList: undefined;
   AddAddress: undefined;
   EditAddress: {address: any};
@@ -90,6 +92,7 @@ export type RootStackParamList = {
   ReviewSubmit: {orderId: string};
   OrderResult: {orderId: string; items?: any[]};
   WishList: undefined;
+  Categories: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -233,6 +236,7 @@ const App = () => {
               />
               <Stack.Screen name="EditProfile" component={EditProfileScreen} />
               <Stack.Screen name="Settings" component={SettingScreen} />
+              <Stack.Screen name="Voucher" component={VoucherScreen} />
               <Stack.Screen name="AddressList" component={AddressListScreen} />
               <Stack.Screen name="AddAddress" component={AddAddressScreen} />
               <Stack.Screen name="EditAddress" component={EditAddressScreen} />
