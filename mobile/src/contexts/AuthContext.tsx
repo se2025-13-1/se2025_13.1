@@ -12,7 +12,7 @@ import {
   isAuthenticated as checkIsAuthenticated,
 } from '../services/tokenService';
 import {AuthApi} from '../modules/auth/services/authApi';
-import {LogoutService} from '../services/logoutService';
+import {LogoutService, LogoutResult} from '../services/logoutService';
 import {globalCacheManager} from '../services/globalCacheManager';
 
 export interface AuthUser {
@@ -32,7 +32,7 @@ export interface AuthContextType {
   // Actions
   login: (email: string, password: string) => Promise<void>;
   signup: (fullName: string, email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
+  logout: () => Promise<LogoutResult | undefined>;
   clearError: () => void;
   setUser: (user: AuthUser | null) => void;
   setIsAuthenticated: (value: boolean) => void;

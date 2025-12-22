@@ -16,45 +16,10 @@ const NotificationScreen: React.FC = () => {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState('notification');
 
-  // Sample notification data
-  const [notifications] = useState([
-    {
-      id: '1',
-      title: '30% Special Discount!',
-      description:
-        'Special promotion only valid today. Limited time offer for you!',
-      timestamp: '10:30 AM - Today',
-    },
-    {
-      id: '2',
-      title: 'New Arrival',
-      description:
-        'Check out our latest collection of fashion items now available in store.',
-      timestamp: '2 hours ago',
-    },
-    {
-      id: '3',
-      title: 'Order Confirmed',
-      description:
-        'Your order has been confirmed and will be shipped within 24 hours.',
-      timestamp: '04/12/2024 - 2:15 PM',
-    },
-    {
-      id: '4',
-      title: 'Delivery Update',
-      description:
-        'Your package is on the way and will arrive tomorrow morning.',
-      timestamp: '03/12/2024 - 8:45 PM',
-    },
-  ]);
+  const [notifications] = useState([]);
 
   const handleBackPress = () => {
     navigation.goBack();
-  };
-
-  const handleChatPress = () => {
-    console.log('Chat pressed from notification header');
-    // TODO: Navigate to chat screen
   };
 
   const handleNotificationPress = (notification: any) => {
@@ -82,10 +47,7 @@ const NotificationScreen: React.FC = () => {
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
 
       {/* Header Component */}
-      <NotificationHeader
-        onBackPress={handleBackPress}
-        onChatPress={handleChatPress}
-      />
+      <NotificationHeader onBackPress={handleBackPress} />
 
       {/* Main Content */}
       <ScrollView

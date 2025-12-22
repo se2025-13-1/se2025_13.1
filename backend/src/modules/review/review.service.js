@@ -54,4 +54,8 @@ export const ReviewService = {
 
     return await ReviewRepository.findByProductId(productId, { limit, offset });
   },
+
+  async getOrderReviews(orderId, userId) {
+    return await ReviewRepository.findByOrderId(orderId, userId);
+  },
 };

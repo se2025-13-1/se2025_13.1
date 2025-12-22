@@ -8,6 +8,14 @@ import {
 
 const router = express.Router();
 
+// User có thể upload ảnh avatar của mình
+router.post(
+  "/avatar",
+  requireAuth,
+  uploadMiddleware.single("image"),
+  UploadController.uploadSingle
+);
+
 // Chỉ Admin mới được upload ảnh sản phẩm
 router.post(
   "/",

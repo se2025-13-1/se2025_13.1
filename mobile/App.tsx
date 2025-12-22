@@ -35,6 +35,7 @@ import OrderResultScreen from './src/modules/order/screens/OrderResultScreen';
 import MyOrderScreen from './src/modules/order/screens/MyOrderScreen';
 import OrderDetailScreen from './src/modules/order/screens/OrderDetailScreen';
 import ReviewSubmitScreen from './src/modules/reviews/screens/ReviewSubmitScreen';
+import ReviewViewScreen from './src/modules/reviews/screens/ReviewViewScreen';
 import WishListScreen from './src/modules/wishlist/screens/WishListScreen';
 import CategoriesScreen from './src/modules/home/screens/CategoriesScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -90,6 +91,7 @@ export type RootStackParamList = {
   MyOrder: undefined;
   OrderDetail: {orderId: string};
   ReviewSubmit: {orderId: string};
+  ReviewView: {orderId: string};
   OrderResult: {orderId: string; items?: any[]};
   WishList: undefined;
   Categories: undefined;
@@ -258,6 +260,7 @@ const App = () => {
                 name="ReviewSubmit"
                 component={ReviewSubmitScreen}
               />
+              <Stack.Screen name="ReviewView" component={ReviewViewScreen} />
               <Stack.Screen name="WishList" component={WishListScreen} />
               <Stack.Screen name="Categories" component={CategoriesScreen} />
               {/* Auth screens still available if user wants to login */}

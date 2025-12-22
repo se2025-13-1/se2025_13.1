@@ -11,4 +11,7 @@ router.post("/", requireAuth, ReviewController.create);
 // Lưu ý: Route này thường được gọi từ trang chi tiết sản phẩm
 router.get("/product/:productId", ReviewController.listByProduct);
 
+// 3. Xem đánh giá của đơn hàng (Cần login)
+router.get("/order/:orderId", requireAuth, ReviewController.listByOrder);
+
 export default router;

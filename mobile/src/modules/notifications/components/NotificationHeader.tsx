@@ -4,23 +4,15 @@ import {View, Text, StyleSheet, TouchableOpacity, Image} from 'react-native';
 interface NotificationHeaderProps {
   title?: string;
   onBackPress?: () => void;
-  onChatPress?: () => void;
 }
 
 const NotificationHeader: React.FC<NotificationHeaderProps> = ({
   title,
   onBackPress,
-  onChatPress,
 }) => {
   const handleBackPress = () => {
     if (onBackPress) {
       onBackPress();
-    }
-  };
-
-  const handleChatPress = () => {
-    if (onChatPress) {
-      onChatPress();
     }
   };
 
@@ -38,15 +30,7 @@ const NotificationHeader: React.FC<NotificationHeaderProps> = ({
 
       <Text style={styles.title}>{title || 'Thông báo'}</Text>
 
-      <TouchableOpacity
-        style={styles.chatButton}
-        onPress={handleChatPress}
-        activeOpacity={0.7}>
-        <Image
-          source={require('../../../assets/icons/Chat.png')}
-          style={styles.chatIcon}
-        />
-      </TouchableOpacity>
+      <View style={styles.placeholder} />
     </View>
   );
 };
@@ -84,14 +68,8 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
   },
-  chatButton: {
-    padding: 8,
-    borderRadius: 20,
-  },
-  chatIcon: {
-    width: 28,
-    height: 28,
-    tintColor: '#333',
+  placeholder: {
+    width: 44,
   },
 });
 

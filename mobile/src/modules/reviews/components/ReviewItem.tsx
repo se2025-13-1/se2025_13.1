@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, Text, StyleSheet, Image} from 'react-native';
+import {View, Text, StyleSheet, Image, ScrollView} from 'react-native';
 
 interface ReviewItemProps {
   id?: string;
@@ -10,6 +10,7 @@ interface ReviewItemProps {
   timestamp?: string | Date;
   verified?: boolean;
   likeCount?: number;
+  images?: string[];
 }
 
 const ReviewItem: React.FC<ReviewItemProps> = ({
@@ -21,6 +22,7 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
   timestamp = new Date('2025-11-05'),
   verified = true,
   likeCount = 9,
+  images = [],
 }) => {
   const formatDate = (date: string | Date) => {
     try {
@@ -103,6 +105,22 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
       <Text style={styles.reviewText} numberOfLines={3}>
         {reviewText}
       </Text>
+
+      {/* Row 4: Review Images */}
+      {images && images.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.imagesScroll}>
+          {images.map((imageUri, index) => (
+            <Image
+              key={index}
+              source={{uri: imageUri}}
+              style={styles.reviewImage}
+            />
+          ))}
+        </ScrollView>
+      )}
     </View>
   );
 };
@@ -175,6 +193,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#555555',
     lineHeight: 18,
+    marginBottom: 8,
+  },
+  imagesScroll: {
+    marginTop: 8,
+  },
+  reviewImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    marginRight: 8,
+    backgroundColor: '#F5F5F5',
   },
 });
 

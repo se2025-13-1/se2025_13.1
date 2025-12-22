@@ -7,9 +7,16 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
+  Platform,
+  PermissionsAndroid,
 } from 'react-native';
-// Using react-native's built-in ImagePicker alternative
-// For now, we'll use a simple implementation without external libraries
+import {
+  launchCamera,
+  launchImageLibrary,
+  ImagePickerResponse,
+  CameraOptions,
+  ImageLibraryOptions,
+} from 'react-native-image-picker';
 
 interface ReviewImagePickerProps {
   images: string[];
@@ -24,6 +31,52 @@ export const ReviewImagePicker: React.FC<ReviewImagePickerProps> = ({
   disabled = false,
   maxImages = 5,
 }) => {
+  // Kiểm tra và yêu cầu quyền camera cho Android
+  const requestCameraPermission = async (): Promise<boolean> => {
+    if (Platform.OS !== 'android') {
+      return true;
+    }
+
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.CAMERA,
+        {
+          title: 'Quyền sử dụng Camera',
+          message: 'Ứng dụng cần quyền truy cập camera để chụp ảnh',
+          buttonNeutral: 'Hỏi lại sau',
+          buttonNegative: 'Từ chối',
+          buttonPositive: 'Đồng ý',
+        },
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    } catch (err) {
+      console.warn('Error requesting camera permission:', err);
+      return false;
+    }
+  };
+
+  // Xử lý response từ image picker
+  const handleImagePickerResponse = (response: ImagePickerResponse) => {
+    if (response.didCancel) {
+      console.log('User cancelled image picker');
+      return;
+    }
+
+    if (response.errorCode) {
+      console.log('ImagePicker Error: ', response.errorMessage);
+      Alert.alert('Lỗi', response.errorMessage || 'Không thể chọn ảnh');
+      return;
+    }
+
+    if (response.assets && response.assets[0]) {
+      const imageUri = response.assets[0].uri;
+      if (imageUri) {
+        // Thêm ảnh mới vào danh sách
+        onImagesChange([...images, imageUri]);
+      }
+    }
+  };
+
   const handleAddImage = () => {
     if (images.length >= maxImages) {
       Alert.alert('Thông báo', `Chỉ có thể tải tối đa ${maxImages} ảnh`);
@@ -43,49 +96,38 @@ export const ReviewImagePicker: React.FC<ReviewImagePickerProps> = ({
   };
 
   const openImageLibrary = () => {
-    // TODO: Implement image picker when react-native-image-picker is installed
-    Alert.alert('Thông báo', 'Tính năng chọn ảnh sẽ được cập nhật sau');
+    const options: ImageLibraryOptions = {
+      mediaType: 'photo',
+      quality: 0.8,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      selectionLimit: 1,
+    };
 
-    // Placeholder implementation - would use launchImageLibrary here
-    // launchImageLibrary(
-    //   {
-    //     mediaType: 'photo',
-    //     quality: 0.7,
-    //     maxWidth: 800,
-    //     maxHeight: 800,
-    //   },
-    //   (response: any) => {
-    //     if (response.assets && response.assets[0]) {
-    //       const imageUri = response.assets[0].uri;
-    //       if (imageUri) {
-    //         onImagesChange([...images, imageUri]);
-    //       }
-    //     }
-    //   }
-    // );
+    launchImageLibrary(options, handleImagePickerResponse);
   };
 
-  const openCamera = () => {
-    // TODO: Implement camera when react-native-image-picker is installed
-    Alert.alert('Thông báo', 'Tính năng chụp ảnh sẽ được cập nhật sau');
+  const openCamera = async () => {
+    // Yêu cầu quyền camera trước khi mở
+    const hasPermission = await requestCameraPermission();
+    if (!hasPermission) {
+      Alert.alert(
+        'Quyền bị từ chối',
+        'Vui lòng cấp quyền camera trong cài đặt để sử dụng tính năng này',
+      );
+      return;
+    }
 
-    // Placeholder implementation - would use launchCamera here
-    // launchCamera(
-    //   {
-    //     mediaType: 'photo',
-    //     quality: 0.7,
-    //     maxWidth: 800,
-    //     maxHeight: 800,
-    //   },
-    //   (response: any) => {
-    //     if (response.assets && response.assets[0]) {
-    //       const imageUri = response.assets[0].uri;
-    //       if (imageUri) {
-    //         onImagesChange([...images, imageUri]);
-    //       }
-    //     }
-    //   }
-    // );
+    const options: CameraOptions = {
+      mediaType: 'photo',
+      quality: 0.8,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      saveToPhotos: false,
+      cameraType: 'back',
+    };
+
+    launchCamera(options, handleImagePickerResponse);
   };
 
   const removeImage = (index: number) => {

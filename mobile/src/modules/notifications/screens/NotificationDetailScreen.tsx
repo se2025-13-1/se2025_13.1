@@ -28,11 +28,6 @@ const NotificationDetailScreen: React.FC = () => {
     navigation.goBack();
   };
 
-  const handleChatPress = () => {
-    console.log('Chat pressed from notification detail header');
-    // TODO: Navigate to chat screen
-  };
-
   const handleTabPress = (tabId: string) => {
     if (tabId === 'search') {
       navigation.navigate('SearchEntry' as never);
@@ -49,11 +44,7 @@ const NotificationDetailScreen: React.FC = () => {
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
 
       {/* Header Component with Dynamic Title */}
-      <NotificationHeader
-        title={params?.title}
-        onBackPress={handleBackPress}
-        onChatPress={handleChatPress}
-      />
+      <NotificationHeader title={params?.title} onBackPress={handleBackPress} />
 
       {/* Main Content */}
       <ScrollView

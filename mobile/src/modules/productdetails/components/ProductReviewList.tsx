@@ -65,6 +65,7 @@ const ProductReviewList: React.FC<ProductReviewListProps> = ({
         timestamp: formatTimestamp(review.created_at),
         verified: review.is_approved,
         likeCount: 0, // Backend doesn't support likes yet
+        images: review.images || [], // Add images from backend
       }));
 
       setReviews(mappedReviews);
@@ -184,6 +185,7 @@ const ProductReviewList: React.FC<ProductReviewListProps> = ({
                 timestamp={review.timestamp}
                 verified={review.verified}
                 likeCount={review.likeCount}
+                images={review.images}
               />
             ))}
 
@@ -311,6 +313,25 @@ const styles = StyleSheet.create({
   viewAllIcon: {
     width: 16,
     height: 16,
+  },
+  loadingContainer: {
+    paddingVertical: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    fontSize: 14,
+    color: '#999999',
+    marginTop: 8,
+  },
+  errorContainer: {
+    paddingVertical: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#E53935',
   },
   emptyState: {
     paddingVertical: 32,

@@ -22,6 +22,12 @@ export interface ProductReview {
   user_name?: string;
   user_avatar?: string;
   variant_info?: any;
+  // Additional fields from getReviewsByOrder endpoint
+  product_name?: string;
+  full_product_name?: string;
+  thumbnail?: string;
+  quantity?: number;
+  unit_price?: number;
 }
 
 export interface ReviewResponse {
@@ -78,9 +84,27 @@ export const ReviewApi = {
     return response.json();
   },
 
-  // Optional: Lấy reviews theo đơn hàng (nếu BE có endpoint này sau)
+  // Lấy reviews theo đơn hàng - khớp với BE GET /reviews/order/:orderId
   async getReviewsByOrder(orderId: string): Promise<ProductReview[]> {
-    // Tạm thời return empty - có thể implement sau
-    return [];
+    const token = await getAccessToken();
+
+    const response = await fetch(
+      `${AppConfig.BASE_URL}/api/reviews/order/${orderId}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Lỗi khi tải đánh giá đơn hàng');
+    }
+
+    const data = await response.json();
+    return data.reviews || [];
   },
 };

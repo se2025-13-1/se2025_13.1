@@ -9,7 +9,9 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import {useFocusEffect} from '@react-navigation/native';
 import {OrderApi, Order} from '../services/orderApi';
+import {ReviewApi} from '../../reviews/services/review.api';
 import OrderStatus from '../components/OrderStatus';
 import OrderProduct from '../components/OrderProduct';
 import OrderShipping from '../components/OrderShipping';
@@ -27,21 +29,52 @@ const OrderDetailScreen: React.FC<OrderDetailScreenProps> = ({
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
+  const [hasReviews, setHasReviews] = useState(false);
+  const [checkingReviews, setCheckingReviews] = useState(false);
 
   React.useEffect(() => {
     fetchOrderDetail();
   }, [orderId]);
+
+  // Refresh order details when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      // Only refresh review status if order is already loaded
+      if (order && order.status === 'completed') {
+        checkOrderReviews(orderId);
+      }
+    }, [orderId, order]),
+  );
 
   const fetchOrderDetail = async () => {
     try {
       setLoading(true);
       const orderData = await OrderApi.getOrder(orderId);
       setOrder(orderData);
+
+      // Kiểm tra xem đơn hàng đã được đánh giá chưa
+      if (orderData.status === 'completed') {
+        checkOrderReviews(orderId);
+      }
     } catch (error) {
       console.error('Error fetching order:', error);
       Alert.alert('Lỗi', 'Không thể lấy thông tin đơn hàng');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkOrderReviews = async (orderId: string) => {
+    try {
+      setCheckingReviews(true);
+      const reviews = await ReviewApi.getReviewsByOrder(orderId);
+      setHasReviews(reviews.length > 0);
+    } catch (error) {
+      console.error('Error checking reviews:', error);
+      // Không hiển thị alert vì đây chỉ là check phụ
+      setHasReviews(false);
+    } finally {
+      setCheckingReviews(false);
     }
   };
 
@@ -115,7 +148,13 @@ const OrderDetailScreen: React.FC<OrderDetailScreenProps> = ({
 
   const handleReviewOrder = () => {
     if (order) {
-      navigation.navigate('ReviewSubmit', {orderId: order.id});
+      if (hasReviews) {
+        // Đã có review -> Xem đánh giá
+        navigation.navigate('ReviewView', {orderId: order.id});
+      } else {
+        // Chưa có review -> Viết đánh giá
+        navigation.navigate('ReviewSubmit', {orderId: order.id});
+      }
     }
   };
 
@@ -192,9 +231,16 @@ const OrderDetailScreen: React.FC<OrderDetailScreenProps> = ({
         {/* Review Order Button - when completed */}
         {canReviewOrder && (
           <TouchableOpacity
-            style={styles.reviewButton}
-            onPress={handleReviewOrder}>
-            <Text style={styles.reviewButtonText}>Đánh giá sản phẩm</Text>
+            style={hasReviews ? styles.viewReviewButton : styles.reviewButton}
+            onPress={handleReviewOrder}
+            disabled={checkingReviews}>
+            {checkingReviews ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.reviewButtonText}>
+                {hasReviews ? 'Xem đánh giá của bạn' : 'Đánh giá sản phẩm'}
+              </Text>
+            )}
           </TouchableOpacity>
         )}
 
@@ -279,6 +325,14 @@ const styles = StyleSheet.create({
   },
   reviewButton: {
     backgroundColor: '#4CAF50',
+    paddingVertical: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  viewReviewButton: {
+    backgroundColor: '#2196F3',
     paddingVertical: 12,
     borderRadius: 6,
     alignItems: 'center',

@@ -17,7 +17,6 @@ interface RequireAuthProps {
   onLogin?: () => void;
   onRegister?: () => void;
   onGoogleLogin?: () => void;
-  onFacebookLogin?: () => void;
 }
 
 const RequireAuth: React.FC<RequireAuthProps> = ({
@@ -27,7 +26,6 @@ const RequireAuth: React.FC<RequireAuthProps> = ({
   onLogin,
   onRegister,
   onGoogleLogin,
-  onFacebookLogin,
 }) => {
   const navigation = useNavigation<any>();
 
@@ -52,11 +50,6 @@ const RequireAuth: React.FC<RequireAuthProps> = ({
   const handleGoogleLogin = () => {
     onClose(); // Đóng modal trước
     onGoogleLogin?.();
-  };
-
-  const handleFacebookLogin = () => {
-    onClose(); // Đóng modal trước
-    onFacebookLogin?.();
   };
 
   return (
@@ -102,21 +95,6 @@ const RequireAuth: React.FC<RequireAuthProps> = ({
                 />
                 <Text style={styles.socialButtonText}>
                   Đăng nhập bằng Google
-                </Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* Facebook login */}
-            <TouchableOpacity
-              style={[styles.socialButton, styles.facebookButton]}
-              onPress={handleFacebookLogin}>
-              <View style={styles.socialButtonContent}>
-                <Image
-                  source={require('../../../assets/icons/Facebook.png')}
-                  style={styles.socialIcon}
-                />
-                <Text style={styles.socialButtonTextWhite}>
-                  Đăng nhập bằng Facebook
                 </Text>
               </View>
             </TouchableOpacity>
@@ -241,10 +219,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderColor: '#E5E7EB',
   },
-  facebookButton: {
-    backgroundColor: '#1877F2',
-    borderColor: '#1877F2',
-  },
   socialIcon: {
     width: 20,
     height: 20,
@@ -254,12 +228,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#374151',
-  },
-  socialButtonTextWhite: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#FFFFFF',
-    marginLeft: 12,
   },
   registerContainer: {
     flexDirection: 'row',

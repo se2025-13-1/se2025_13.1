@@ -26,6 +26,7 @@ interface Review {
   timestamp: string | Date;
   verified?: boolean;
   likeCount?: number;
+  images?: string[];
 }
 
 const ReviewListScreen: React.FC = () => {
@@ -73,6 +74,7 @@ const ReviewListScreen: React.FC = () => {
           timestamp: new Date(review.created_at),
           verified: review.is_approved, // Verified purchase = approved review
           likeCount: 0, // Backend doesn't support likes yet
+          images: review.images || [], // Add images from backend
         }),
       );
 
@@ -169,6 +171,7 @@ const ReviewListScreen: React.FC = () => {
       timestamp={item.timestamp}
       verified={item.verified}
       likeCount={item.likeCount}
+      images={item.images}
     />
   );
 

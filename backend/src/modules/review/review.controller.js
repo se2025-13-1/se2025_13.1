@@ -34,4 +34,15 @@ export const ReviewController = {
       return res.status(500).json({ error: err.message });
     }
   },
+
+  async listByOrder(req, res) {
+    try {
+      const userId = req.user.id;
+      const { orderId } = req.params;
+      const reviews = await ReviewService.getOrderReviews(orderId, userId);
+      return res.json({ reviews });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  },
 };

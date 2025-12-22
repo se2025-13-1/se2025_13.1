@@ -26,9 +26,7 @@ interface SettingItem {
 const SETTING_ITEMS: SettingItem[] = [
   // Tài khoản section
   {id: '1', title: 'Tài khoản', section: 'account'},
-  {id: '2', title: 'Tài khoản & Bảo mật', section: 'account'},
   {id: '3', title: 'Địa Chỉ', section: 'account'},
-  {id: '4', title: 'Tài khoản / Thẻ Ngân hàng', section: 'account'},
 
   // Hỗ trợ section
   {id: '11', title: 'Hỗ trợ', section: 'support'},
@@ -48,7 +46,7 @@ const SettingScreen: React.FC<SettingScreenProps> = ({navigation}) => {
     console.log(`Setting pressed: ${itemId} - ${title}`);
 
     // Account-related items that require authentication
-    const accountItems = ['2', '3', '4'];
+    const accountItems = ['3'];
 
     if (accountItems.includes(itemId)) {
       // Check if user is authenticated
@@ -59,17 +57,9 @@ const SettingScreen: React.FC<SettingScreenProps> = ({navigation}) => {
 
       // Navigate to appropriate screen based on itemId
       switch (itemId) {
-        case '2':
-          // Tài khoản & Bảo mật
-          navigation?.navigate('AccountSecurity');
-          break;
         case '3':
           // Địa Chỉ - Navigate to AddressList instead of AddAddress
           navigation?.navigate('AddressList');
-          break;
-        case '4':
-          // Tài khoản / Thẻ Ngân hàng
-          navigation?.navigate('PaymentMethod');
           break;
       }
     }
@@ -202,19 +192,6 @@ const SettingScreen: React.FC<SettingScreenProps> = ({navigation}) => {
         {renderSectionItems('account', SETTING_ITEMS)}
         {renderSectionItems('settings', SETTING_ITEMS)}
         {renderSectionItems('support', SETTING_ITEMS)}
-
-        {/* Delete Account Button */}
-        <View style={styles.deleteAccountSection}>
-          <TouchableOpacity
-            style={styles.deleteAccountButton}
-            onPress={handleDeleteAccount}>
-            <Image
-              source={require('../../../assets/icons/Trash.png')}
-              style={styles.deleteAccountIcon}
-            />
-            <Text style={styles.deleteAccountText}>Xóa tài khoản</Text>
-          </TouchableOpacity>
-        </View>
 
         {/* Logout Button */}
         <View style={styles.logoutSection}>

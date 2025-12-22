@@ -88,4 +88,32 @@ export const ReviewRepository = {
     const res = await pgPool.query(query, [productId, limit, offset]);
     return res.rows;
   },
+
+  // 5. Lấy danh sách Review theo Order ID (Cho user xem lại đánh giá của mình)
+  async findByOrderId(orderId, userId) {
+    const query = `
+      SELECT 
+        r.*,
+        oi.product_name,
+        oi.variant_info,
+        oi.quantity,
+        oi.unit_price,
+        prod.id as product_id,
+        prod.name as full_product_name,
+        (
+          SELECT image_url FROM product_images pi 
+          JOIN product_variants pv2 ON pv2.product_id = pi.product_id
+          WHERE pv2.id = oi.product_variant_id 
+          ORDER BY (CASE WHEN pi.color_ref IS NULL THEN 0 ELSE 1 END) ASC LIMIT 1
+        ) as thumbnail
+      FROM reviews r
+      JOIN order_items oi ON r.order_item_id = oi.id
+      JOIN orders o ON oi.order_id = o.id
+      JOIN products prod ON r.product_id = prod.id
+      WHERE o.id = $1 AND o.user_id = $2
+      ORDER BY r.created_at DESC
+    `;
+    const res = await pgPool.query(query, [orderId, userId]);
+    return res.rows;
+  },
 };
