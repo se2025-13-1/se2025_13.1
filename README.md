@@ -1,5 +1,22 @@
 # 🛍️ DoubleD Fashion - Hệ thống Thương mại Điện tử Thời trang
 
+## 📑 Mục lục (Table of Contents)
+
+1. [Giới thiệu](#1-giới-thiệu-introduction)
+2. [Mục đích & Mục tiêu](#2-mục-đích--mục-tiêu-goals--objectives)
+3. [Phạm vi dự án](#3-phạm-vi-dự-án-scope-of-work)
+4. [Kiến trúc & Công nghệ](#4-kiến-trúc--công-nghệ-architecture--tech-stack)
+5. [Chức năng chi tiết](#5-chức-năng-chi-tiết-detailed-features)
+6. [Thiết kế Cơ sở dữ liệu](#6-thiết-kế-cơ-sở-dữ-liệu-database-schema)
+7. [UI/UX Design](#7-uiux-design)
+8. [Yêu cầu phi chức năng](#8-yêu-cầu-phi-chức-năng-non-functional-requirements)
+9. [Tài liệu API](#9-tài-liệu-api-api-documentation)
+10. [Hướng dẫn cài đặt](#10-hướng-dẫn-cài-đặt-local-development)
+11. [Hướng dẫn Deploy](#11-hướng-dẫn-deploy-deployment-guide)
+12. [Kết luận](#12-kết-luận-conclusion)
+
+---
+
 ## 1. Giới thiệu (Introduction)
 
 DoubleD Fashion (Mã dự án: se2025_13.1) là một giải pháp thương mại điện tử toàn diện (End-to-End Solution) chuyên biệt cho ngành thời trang theo mô hình B2C (Business to Customer).
@@ -16,7 +33,7 @@ Hệ sinh thái bao gồm:
 
     Infrastructure: Triển khai đồng bộ trên môi trường Docker.
 
-Web-Admin co the xem them [Tai day](http://se2025fashion.duckdns.org:5173/)
+Link triển khai Web-Admin có thể xem thêm [Tai day](http://se2025fashion.duckdns.org:5173/)
 
 ## 2. Mục đích & Mục tiêu (Goals & Objectives)
 
@@ -190,7 +207,7 @@ D. DevOps & Vận hành
 | **Authentication**    | JWT + OTP (SĐT)              | Bảo mật 2 lớp khi thanh toán                       |
 | **Storage**           | Supabase Storage             | Lưu trữ hình ảnh sản phẩm.                         |
 | **Notification**      | Firebase (FCM)               | Gửi thông báo đẩy (Push Notification).             |
-| **OAuth**             |                              | Dang nhap nhanh bang Google va Facebook            |
+| **OAuth**             |                              | Dang nhap nhanh bang Google                        |
 
 ### 4.3. Cấu trúc thư mục
 
@@ -235,7 +252,7 @@ se2025_13.1/
 
             Sử dụng AsyncStorage để lưu Token đăng nhập và trạng thái người dùng an toàn.
 
-    - Authentication: Đăng ký/Đăng nhập (Email, Google, Facebook), Quên mật khẩu (OTP).
+    - Authentication: Đăng ký/Đăng nhập (Email, Google), Quên mật khẩu (OTP).
 
     - Khám phá: Trang chủ, Tìm kiếm & Lọc nâng cao (Giá, Danh mục), Xem chi tiết (Biến thể, Ảnh màu).
 
@@ -291,7 +308,21 @@ Hệ thống sử dụng PostgreSQL làm cơ sở dữ liệu duy nhất, với 
 
 ## 7. UI/UX Design
 
-### Mot so Giao dien co ban cua trang Web Admin:
+### Thiết kế Giao diện Mobile (Figma Design):
+
+Toàn bộ giao diện ứng dụng Mobile được thiết kế chi tiết trên Figma, bao gồm các màn hình chính như Trang chủ, Chi tiết sản phẩm, Giỏ hàng, Thanh toán, Danh sách yêu thích, và Hồ sơ người dùng.
+
+**🎨 Xem thiết kế Figma đầy đủ tại đây:** [Figma Design - DoubleD Fashion Mobile](https://www.figma.com/design/T7iw308eoPn9dlLoHCUFoJ/Demo?node-id=146-4433)
+
+**Một số giao diện thực tế của ứng dụng Mobile:**
+
+<p align="center">
+  <img src="./photos/home_screen.png" width="250">
+  <img src="./photos/app_categories.png" width="250">
+  <img src="./photos/oderscreen.png" width="250">
+</p>
+
+### Một số giao diện cơ bản của trang Web-Admin:
 
 <p align="center">
   <img src="./photos/login_admin.png" width="450">
@@ -301,11 +332,9 @@ Hệ thống sử dụng PostgreSQL làm cơ sở dữ liệu duy nhất, với 
 
 <p align="center">
     <img src="./photos/admin_orders.png" width="450">
-  <img src="./photos//admin_categories.png" width="450">
+  <img src="./photos/admin_categories.png" width="450">
   <img src="./photos/admin_vouchers.png" width="450">
 </p>
-
-Thiet ke Giao dien cho mobile chi tiet: [Xem tai day](https://www.figma.com/design/T7iw308eoPn9dlLoHCUFoJ/Demo?node-id=146-4433)
 
 ## 8. Yêu cầu phi chức năng (Non-Functional Requirements)
 
@@ -317,7 +346,23 @@ Reliability: Hệ thống xử lý lỗi tập trung, không crash khi dữ li�
 
 Maintainability: Code sạch, tuân thủ chuẩn ESLint/Prettier.
 
-## 9. Hướng dẫn cài đặt (Local Development)
+## 9. Tài liệu API (API Documentation)
+
+Hệ thống cung cấp RESTful API đầy đủ cho cả Mobile App và Web Admin. Tài liệu chi tiết về các endpoints, request/response format, authentication, và error handling:
+
+**📚 [Xem tài liệu API đầy đủ](./API_DOCS.md)**
+
+Tài liệu bao gồm:
+
+- **Authentication & Authorization** - Đăng ký, đăng nhập, quản lý token
+- **Products & Categories** - Quản lý sản phẩm, danh mục, biến thể
+- **Cart & Orders** - Giỏ hàng, đặt hàng, quản lý đơn hàng
+- **User Management** - Hồ sơ người dùng, địa chỉ, yêu thích
+- **Vouchers & Reviews** - Mã giảm giá, đánh giá sản phẩm
+- **Notifications** - Thông báo đẩy, lịch sử thông báo
+- **Admin Dashboard** - Thống kê, báo cáo, quản lý hệ thống
+
+## 10. Hướng dẫn cài đặt (Local Development)
 
 1️⃣ Clone dự án
 
@@ -356,3 +401,23 @@ Lưu ý: Tạo file .env trong thư mục backend dựa trên .env.example.
     # Chạy trên Android
     npx react-native start
     npx react-native run-android
+
+## 11. Hướng dẫn Deploy (Deployment Guide)
+
+Để triển khai hệ thống lên môi trường production, vui lòng tham khảo hướng dẫn chi tiết tại:
+
+**📦 [Hướng dẫn Deploy chi tiết](./DEPLOY-GUIDE.md)**
+
+**🌐 Demo Web-Admin đã triển khai:** [Xem tại đây](http://se2025fashion.duckdns.org:5173/)
+
+---
+
+## 12. Kết luận (Conclusion)
+
+**DoubleD Fashion** là một hệ thống thương mại điện tử hoàn chỉnh, được xây dựng với kiến trúc hiện đại và các công nghệ tiên tiến. Dự án đã thành công trong việc giải quyết bài toán quản lý sản phẩm đa biến thể phức tạp trong ngành thời trang, đồng thời tối ưu trải nghiệm người dùng thông qua luồng "Lazy Auth" và hệ thống Voucher thông minh. Hệ thống đảm bảo hiệu năng cao với Redis Caching và Database Transaction, bảo mật chặt chẽ với JWT Authentication và OAuth, cùng với việc triển khai thành công lên môi trường production sử dụng Docker. Với kiến trúc linh hoạt và có khả năng mở rộng, dự án sẵn sàng tích hợp các tính năng tương lai như thanh toán trực tuyến (VNPay/Momo), hệ thống gợi ý sản phẩm bằng AI, chat real-time, và hỗ trợ đa nền tảng iOS.
+
+---
+
+**Developed with ❤️ by Team DoubleD**
+
+_© 2025 DoubleD Fashion - SE2025 Project_

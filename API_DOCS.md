@@ -1,319 +1,330 @@
-# 📘 API Documentation - DoubleD Fashion
+# 📚 API Documentation - DoubleD Fashion
 
-### Base URL:
+## 🌐 Base URL & Authentication
 
-    Local (Android Emulator): http://10.0.2.2:3000/api
+### Base URL
 
-    Local (Device/Web): http://<YOUR_IP>:3000/api (Ví dụ: http://192.168.1.5:3000/api)
+```
+Local (Android Emulator): http://10.0.2.2:3000/api
+Local (Device/Web):       http://<YOUR_IP>:3000/api
+Production:               http://se2025fashion.duckdns.org:3000/api
+```
 
-### Authentication:
+### Authentication Header
 
-    Header: Authorization: Bearer <ACCESS_TOKEN>
+```
+Authorization: Bearer <ACCESS_TOKEN>
+```
 
-    Token lấy được sau khi Login/Register.
+Token được lấy sau khi đăng nhập/đăng ký thành công.
 
-### Ký hiệu:
+### Phân quyền
 
-    🟢 Public: Không cần đăng nhập.
+- 🟢 **Public** - Không cần token
+- 🔒 **User** - Cần token người dùng
+- 🛡️ **Admin** - Cần token quản trị viên
 
-    🔒 User: Cần Token User.
+---
 
-    🛡️ Admin: Cần Token Admin.
+## 1️⃣ Authentication & User Management
 
-## 1. Authentication (Xác thực)
+| Method | Endpoint                | Auth | Mô tả                       |
+| ------ | ----------------------- | ---- | --------------------------- |
+| `POST` | `/auth/register`        | 🟢   | Đăng ký tài khoản mới       |
+| `POST` | `/auth/login`           | 🟢   | Đăng nhập email/password    |
+| `POST` | `/auth/firebase`        | 🟢   | Đăng nhập Google (Firebase) |
+| `POST` | `/auth/forgot-password` | 🟢   | Gửi OTP quên mật khẩu       |
+| `POST` | `/auth/reset-password`  | 🟢   | Đặt lại mật khẩu với OTP    |
+| `GET`  | `/auth/me`              | 🔒   | Lấy thông tin profile       |
+| `PUT`  | `/auth/profile`         | 🔒   | Cập nhật thông tin cá nhân  |
+| `POST` | `/auth/logout`          | 🔒   | Đăng xuất                   |
 
-🟢 Đăng ký
+**Request Body Examples:**
 
-    Endpoint: POST /auth/register
+```json
+// Register
+{ "email": "user@example.com", "password": "123456", "name": "Nguyen Van A", "phone": "0901234567" }
 
-    Body: { "email": "...", "password": "...", "name": "...", "phone": "..." }
+// Login
+{ "email": "user@example.com", "password": "123456" }
 
-🟢 Đăng nhập (Email/Pass)
+// Update Profile
+{ "full_name": "Nguyen Van A", "phone": "0901234567", "gender": "male", "birthday": "1990-01-01", "avatar_url": "..." }
+```
 
-    Endpoint: POST /auth/login
+---
 
-    Body: { "email": "...", "password": "..." }
+## 2️⃣ Products & Categories
 
-🟢 Đăng nhập bằng Firebase (Google)
+### Products
 
-    Endpoint: POST /auth/firebase
+| Method   | Endpoint        | Auth | Mô tả                                              |
+| -------- | --------------- | ---- | -------------------------------------------------- |
+| `GET`    | `/products`     | 🟢   | Danh sách sản phẩm (có filter, search, pagination) |
+| `GET`    | `/products/:id` | 🟢   | Chi tiết sản phẩm                                  |
+| `POST`   | `/products`     | 🛡️   | Tạo sản phẩm mới                                   |
+| `PUT`    | `/products/:id` | 🛡️   | Cập nhật sản phẩm                                  |
+| `DELETE` | `/products/:id` | 🛡️   | Xóa sản phẩm (soft delete)                         |
 
-    Body: { "idToken": "token_tu_firebase_client" }
+**Query Parameters (GET /products):**
 
-🟢 Quên mật khẩu
+- `page`, `limit` - Phân trang
+- `q` - Từ khóa tìm kiếm
+- `category_id` - Lọc theo danh mục
+- `min_price`, `max_price` - Lọc theo giá
+- `sort_by`, `sort_order` - Sắp xếp (price, created_at)
 
-    Endpoint: POST /auth/forgot-password
+### Categories
 
-    Body: { "email": "..." }
+| Method   | Endpoint           | Auth | Mô tả                      |
+| -------- | ------------------ | ---- | -------------------------- |
+| `GET`    | `/categories`      | 🟢   | Cây danh mục (nested)      |
+| `GET`    | `/categories/flat` | 🟢   | Danh sách phẳng (dropdown) |
+| `POST`   | `/categories`      | 🛡️   | Tạo danh mục               |
+| `PUT`    | `/categories/:id`  | 🛡️   | Cập nhật danh mục          |
+| `DELETE` | `/categories/:id`  | 🛡️   | Xóa danh mục               |
 
-🟢 Đặt lại mật khẩu
+---
 
-    Endpoint: POST /auth/reset-password
+## 3️⃣ Shopping Cart
 
-    Body: { "email": "...", "otp": "...", "newPassword": "..." }
+| Method   | Endpoint         | Auth | Mô tả                 |
+| -------- | ---------------- | ---- | --------------------- |
+| `GET`    | `/cart`          | 🔒   | Lấy giỏ hàng hiện tại |
+| `POST`   | `/cart`          | 🔒   | Thêm sản phẩm vào giỏ |
+| `PUT`    | `/cart/:item_id` | 🔒   | Cập nhật số lượng     |
+| `DELETE` | `/cart/:item_id` | 🔒   | Xóa khỏi giỏ hàng     |
 
-🔒 Lấy thông tin cá nhân (Profile)
+**Request Body:**
 
-    Endpoint: GET /auth/me
+```json
+// Add to cart
+{ "variant_id": "uuid", "quantity": 1 }
+
+// Update quantity
+{ "quantity": 5 }
+```
+
+---
+
+## 4️⃣ Orders & Checkout
+
+### User Orders
+
+| Method | Endpoint               | Auth | Mô tả                     |
+| ------ | ---------------------- | ---- | ------------------------- |
+| `POST` | `/orders`              | 🔒   | Tạo đơn hàng (checkout)   |
+| `GET`  | `/orders`              | 🔒   | Lịch sử đơn hàng          |
+| `GET`  | `/orders/:id`          | 🔒   | Chi tiết đơn hàng         |
+| `PUT`  | `/orders/:id/cancel`   | 🔒   | Hủy đơn (chỉ khi pending) |
+| `PUT`  | `/orders/:id/complete` | 🔒   | Xác nhận đã nhận hàng     |
+
+### Admin Orders
+
+| Method | Endpoint             | Auth | Mô tả               |
+| ------ | -------------------- | ---- | ------------------- |
+| `GET`  | `/orders/admin/all`  | 🛡️   | Tất cả đơn hàng     |
+| `GET`  | `/orders/admin/:id`  | 🛡️   | Chi tiết đơn hàng   |
+| `PUT`  | `/orders/:id/status` | 🛡️   | Cập nhật trạng thái |
+
+**Checkout Request:**
+
+```json
+{
+  "address_id": "uuid",
+  "payment_method": "cod",
+  "voucher_code": "SALE50",
+  "type": "cart", // hoặc "buy_now"
+  "items": [{ "variant_id": "uuid", "quantity": 2 }] // chỉ dùng khi type = "buy_now"
+}
+```
+
+**Order Status Flow:**
+
+```
+pending → confirmed → preparing → shipping → delivered → completed
+                                           ↓
+                                      cancelled
+```
+
+---
+
+## 5️⃣ Addresses
+
+| Method   | Endpoint                 | Auth | Mô tả                    |
+| -------- | ------------------------ | ---- | ------------------------ |
+| `GET`    | `/addresses`             | 🔒   | Danh sách địa chỉ        |
+| `POST`   | `/addresses`             | 🔒   | Thêm địa chỉ mới         |
+| `PUT`    | `/addresses/:id`         | 🔒   | Cập nhật địa chỉ         |
+| `DELETE` | `/addresses/:id`         | 🔒   | Xóa địa chỉ              |
+| `PATCH`  | `/addresses/:id/default` | 🔒   | Đặt làm địa chỉ mặc định |
 
-🔒 Cập nhật hồ sơ
+**Request Body:**
 
-    Endpoint: PUT /auth/profile
+```json
+{
+  "recipient_name": "Nguyen Van A",
+  "recipient_phone": "0901234567",
+  "province": "Hồ Chí Minh",
+  "district": "Quận 1",
+  "ward": "Phường Bến Nghé",
+  "address_detail": "123 Đường ABC",
+  "is_default": true
+}
+```
 
-    Body: { "full_name": "...", "phone": "...", "gender": "...", "birthday": "...", "avatar_url": "..." }
+---
 
-🔒 Đăng xuất
+## 6️⃣ Vouchers & Promotions
 
-    Endpoint: POST /auth/logout
+| Method   | Endpoint          | Auth | Mô tả                      |
+| -------- | ----------------- | ---- | -------------------------- |
+| `GET`    | `/vouchers`       | 🟢   | Danh sách voucher khả dụng |
+| `POST`   | `/vouchers/check` | 🟢   | Kiểm tra mã voucher        |
+| `GET`    | `/vouchers/:id`   | 🛡️   | Chi tiết voucher           |
+| `POST`   | `/vouchers`       | 🛡️   | Tạo voucher mới            |
+| `PUT`    | `/vouchers/:id`   | 🛡️   | Cập nhật voucher           |
+| `DELETE` | `/vouchers/:id`   | 🛡️   | Xóa voucher                |
 
-## 2. Products (Sản phẩm)
+**Check Voucher:**
+
+```json
+{
+  "code": "SALE50",
+  "total_amount": 200000
+}
+```
 
-🟢 Lấy danh sách & Tìm kiếm
-
-    Endpoint: GET /products
-
-    Query: page, limit, q (keyword), category_id, min_price, max_price, sort_by, sort_order.
-
-🟢 Chi tiết sản phẩm
-
-    Endpoint: GET /products/:id
-
-🛡️ Tạo sản phẩm (Admin)
-
-    Endpoint: POST /products
-
-    Body: JSON chứa thông tin sản phẩm, variants, images.
-
-🛡️ Cập nhật sản phẩm (Admin)
-
-    Endpoint: PUT /products/:id
-
-🛡️ Xóa sản phẩm (Admin - Soft Delete)
-
-    Endpoint: DELETE /products/:id
-
-🛡️ Sửa lỗi Slug (Admin - Utility)
-
-    Endpoint: POST /products/fix-slugs
-
-## 3. Categories (Danh mục)
-
-🟢 Lấy cây danh mục (Menu App)
-
-    Endpoint: GET /categories
-
-    Response: Dạng cây (nested children).
-
-🟢 Lấy danh sách phẳng (Dropdown Admin)
-
-    Endpoint: GET /categories/flat
-
-🛡️ Tạo danh mục (Admin)
-
-    Endpoint: POST /categories
-
-    Body: { "name": "...", "parent_id": "..." }
-
-🛡️ Cập nhật danh mục (Admin)
-
-    Endpoint: PUT /categories/:id
-
-🛡️ Xóa danh mục (Admin)
-
-    Endpoint: DELETE /categories/:id
-
-## 4. Cart (Giỏ hàng)
-
-🔒 Lấy giỏ hàng
-
-    Endpoint: GET /cart
-
-🔒 Thêm vào giỏ
-
-    Endpoint: POST /cart
-
-    Body: { "variant_id": "...", "quantity": 1 }
-
-🔒 Cập nhật số lượng
-
-    Endpoint: PUT /cart/:item_id
-
-    Body: { "quantity": 5 }
-
-🔒 Xóa khỏi giỏ
-
-    Endpoint: DELETE /cart/:item_id
-
-## 5. Address (Địa chỉ)
-
-🔒 Lấy danh sách
-
-    Endpoint: GET /addresses
-
-🔒 Thêm địa chỉ
-
-    Endpoint: POST /addresses
-
-    Body: { "recipient_name": "...", "recipient_phone": "...", "province": "...", "district": "...", "ward": "...", "address_detail": "...", "is_default": true/false }
-
-🔒 Cập nhật địa chỉ
-
-    Endpoint: PUT /addresses/:id
-
-🔒 Xóa địa chỉ
-
-    Endpoint: DELETE /addresses/:id
-
-🔒 Đặt làm mặc định
-
-    Endpoint: PATCH /addresses/:id/default
-
-## 6. Vouchers (Mã giảm giá)
-
-🟢 Kiểm tra mã (Check Code)
-
-    Endpoint: POST /vouchers/check
-
-    Body: { "code": "SALE50", "total_amount": 200000 }
-
-🟢 Lấy danh sách Voucher khả dụng (Banner)
-
-    Endpoint: GET /vouchers
-
-🛡️ Lấy chi tiết Voucher (Admin)
-
-    Endpoint: GET /vouchers/:id
-
-🛡️ Tạo Voucher (Admin)
-
-    Endpoint: POST /vouchers
-
-    Body: { "code": "...", "discount_type": "percent/fixed", "discount_value": 10, ... }
-
-🛡️ Cập nhật Voucher (Admin)
-
-    Endpoint: PUT /vouchers/:id
-
-🛡️ Xóa Voucher (Admin)
-
-    Endpoint: DELETE /vouchers/:id
-
-## 7. Orders (Đơn hàng) - QUAN TRỌNG ⚠️
-
-🔒 Tạo đơn hàng (Checkout)
-
-    Endpoint: POST /orders
-
-    Body: { "address_id": "...", "payment_method": "cod", "voucher_code": "...", "type": "cart/buy_now", "items": [...] }
-
-🔒 Lịch sử đơn hàng (User)
-
-    Endpoint: GET /orders
-
-🔒 Chi tiết đơn hàng (User)
-
-    Endpoint: GET /orders/:id
-
-🔒 Hủy đơn hàng (User - Pending only)
-
-    Endpoint: PUT /orders/:id/cancel
-
-🔒 Xác nhận đã nhận hàng (User)
-
-    Endpoint: PUT /orders/:id/complete
-
-🛡️ Lấy tất cả đơn hàng (Admin)
-
-    Endpoint: GET /orders/admin/all
-
-🛡️ Chi tiết đơn hàng (Admin)
-
-    Endpoint: GET /orders/admin/:id
-
-🛡️ Cập nhật trạng thái (Admin)
-
-    Endpoint: PUT /orders/:id/status
-
-    Body: { "status": "shipping" }
-
-## 8. Reviews (Đánh giá)
-
-🔒 Viết đánh giá
-
-    Endpoint: POST /reviews
-
-    Body: { "order_item_id": "...", "rating": 5, "comment": "...", "images": [] }
-
-🟢 Xem đánh giá theo Sản phẩm
-
-    Endpoint: GET /reviews/product/:productId
-
-🔒 Xem đánh giá theo Đơn hàng (User check lịch sử)
-
-    Endpoint: GET /reviews/order/:orderId
-
-## 9. Upload (Tải ảnh)
-
-🔒 Upload Avatar (User)
-
-    Endpoint: POST /upload/avatar
-
-    Format: multipart/form-data, Key: image.
-
-🛡️ Upload ảnh Sản phẩm (Admin)
-
-    Endpoint: POST /upload
-
-    Format: multipart/form-data, Key: image.
-
-## 10. Statistics (Admin Dashboard)
-
-🛡️ Tổng quan Dashboard
-
-    Endpoint: GET /stats/dashboard
-
-🛡️ Biểu đồ doanh thu
-
-    Endpoint: GET /stats/revenue
-
-    Query: ?range=7 (hoặc 30).
-
-🛡️ Top sản phẩm
-
-    Endpoint: GET /stats/top-products
-
-🛡️ Trạng thái đơn hàng
-
-    Endpoint: GET /stats/order-status
-
-## 11. Notifications (Thông báo)
-
-🔒 Đăng ký Token thiết bị (FCM)
-
-    Endpoint: POST /notifications/device
-
-    Body: { "fcm_token": "...", "platform": "android/ios" }
-
-🔒 Lấy danh sách thông báo
-
-    Endpoint: GET /notifications
-
-🔒 Đánh dấu đã đọc
-
-    Endpoint: PUT /notifications/:id/read
-
-## 12. Wishlist (Yêu thích)
-
-🔒 Toggle Yêu thích (Like/Unlike)
-
-    Endpoint: POST /wishlist/toggle
-
-    Body: { "product_id": "..." }
-
-🔒 Lấy danh sách yêu thích
-
-    Endpoint: GET /wishlist
-
-🔒 Lấy danh sách ID (Để tô đỏ tim)
-
-    Endpoint: GET /wishlist/ids
+---
+
+## 7️⃣ Reviews & Ratings
+
+| Method | Endpoint                      | Auth | Mô tả                             |
+| ------ | ----------------------------- | ---- | --------------------------------- |
+| `POST` | `/reviews`                    | 🔒   | Viết đánh giá (verified purchase) |
+| `GET`  | `/reviews/product/:productId` | 🟢   | Xem đánh giá theo sản phẩm        |
+| `GET`  | `/reviews/order/:orderId`     | 🔒   | Xem đánh giá theo đơn hàng        |
+
+**Create Review:**
+
+```json
+{
+  "order_item_id": "uuid",
+  "rating": 5,
+  "comment": "Sản phẩm rất tốt!",
+  "images": ["url1", "url2"]
+}
+```
+
+---
+
+## 8️⃣ Wishlist (Yêu thích)
+
+| Method | Endpoint           | Auth | Mô tả                          |
+| ------ | ------------------ | ---- | ------------------------------ |
+| `POST` | `/wishlist/toggle` | 🔒   | Thêm/Bỏ yêu thích              |
+| `GET`  | `/wishlist`        | 🔒   | Danh sách sản phẩm yêu thích   |
+| `GET`  | `/wishlist/ids`    | 🔒   | Danh sách ID (để highlight UI) |
+
+---
+
+## 9️⃣ Notifications
+
+| Method | Endpoint                  | Auth | Mô tả               |
+| ------ | ------------------------- | ---- | ------------------- |
+| `POST` | `/notifications/device`   | 🔒   | Đăng ký FCM token   |
+| `GET`  | `/notifications`          | 🔒   | Danh sách thông báo |
+| `PUT`  | `/notifications/:id/read` | 🔒   | Đánh dấu đã đọc     |
+
+**Register Device:**
+
+```json
+{
+  "fcm_token": "firebase_cloud_messaging_token",
+  "platform": "android" // hoặc "ios"
+}
+```
+
+---
+
+## 🔟 File Upload
+
+| Method | Endpoint         | Auth | Mô tả               |
+| ------ | ---------------- | ---- | ------------------- |
+| `POST` | `/upload/avatar` | 🔒   | Upload ảnh đại diện |
+| `POST` | `/upload`        | 🛡️   | Upload ảnh sản phẩm |
+
+**Format:** `multipart/form-data` với key `image`
+
+---
+
+## 1️⃣1️⃣ Admin Statistics & Dashboard
+
+| Method | Endpoint                 | Auth | Mô tả                              |
+| ------ | ------------------------ | ---- | ---------------------------------- |
+| `GET`  | `/stats/dashboard`       | 🛡️   | Tổng quan dashboard                |
+| `GET`  | `/stats/revenue?range=7` | 🛡️   | Biểu đồ doanh thu (7 hoặc 30 ngày) |
+| `GET`  | `/stats/top-products`    | 🛡️   | Top sản phẩm bán chạy              |
+| `GET`  | `/stats/order-status`    | 🛡️   | Phân bố trạng thái đơn hàng        |
+
+---
+
+## 📝 Response Format
+
+### Success Response
+
+```json
+{
+  "success": true,
+  "data": { ... },
+  "message": "Operation successful"
+}
+```
+
+### Error Response
+
+```json
+{
+  "success": false,
+  "error": "Error message",
+  "details": { ... }
+}
+```
+
+### Pagination Response
+
+```json
+{
+  "success": true,
+  "data": [...],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 100,
+    "totalPages": 5
+  }
+}
+```
+
+---
+
+## 🔐 Error Codes
+
+| Code  | Meaning                                                       |
+| ----- | ------------------------------------------------------------- |
+| `400` | Bad Request - Dữ liệu không hợp lệ                            |
+| `401` | Unauthorized - Chưa đăng nhập hoặc token hết hạn              |
+| `403` | Forbidden - Không có quyền truy cập                           |
+| `404` | Not Found - Không tìm thấy tài nguyên                         |
+| `409` | Conflict - Xung đột dữ liệu (email đã tồn tại, hết hàng, ...) |
+| `500` | Internal Server Error - Lỗi server                            |
+
+---
+
+## 💡 Notes
+
+- Tất cả timestamps sử dụng định dạng ISO 8601: `2024-01-01T00:00:00.000Z`
+- Tất cả ID sử dụng UUID v4
+- File upload giới hạn 5MB/file
+- Rate limiting: 100 requests/phút cho mỗi IP
+- Token hết hạn sau 7 ngày (có thể refresh)
