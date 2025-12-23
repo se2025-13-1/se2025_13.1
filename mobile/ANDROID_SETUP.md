@@ -76,12 +76,6 @@ npm run android
 2. Update `src/services/googleService.ts` line 10
 3. Replace `google-services.json` in `android/app/`
 
-### Facebook Login
-
-1. Get App ID from [Facebook Developers](https://developers.facebook.com/apps/)
-2. Update `android/app/src/main/res/values/strings.xml`
-3. Update `src/services/facebookService.ts`
-
 ## 📚 Project Structure
 
 ```
@@ -95,11 +89,3 @@ mobile/
 ├── App.tsx                    # Root component
 └── package.json
 ```
-
-## 🤝 Note on iOS
-
-iOS folder is present but not configured for active development. To enable iOS in the future:
-
-1. Run `pod install` in `ios/` directory
-2. Configure Google & Facebook credentials in Info.plist
-3. Update package.json to add iOS scripts back
