@@ -15,6 +15,8 @@
 11. [Hướng dẫn Deploy](#11-hướng-dẫn-deploy-deployment-guide)
 12. [Kết luận](#12-kết-luận-conclusion)
 
+- [👥 Phân chia công việc](#-phân-chia-công-việc-team-contribution)
+
 ---
 
 ## 1. Giới thiệu (Introduction)
@@ -304,7 +306,7 @@ Hệ thống sử dụng PostgreSQL làm cơ sở dữ liệu duy nhất, với 
   <img src="./photos/DB_Diagram.png" width="1000">
 </p>
 
-(Xem file ./photos/DB_Diagram.png đính kèm để thấy sơ đồ ERD chi tiết)
+**📊 [Xem sơ đồ ERD chi tiết](./photos/DB_Diagram.png)**
 
 ## 7. UI/UX Design
 
@@ -319,7 +321,7 @@ Toàn bộ giao diện ứng dụng Mobile được thiết kế chi tiết trê
 <p align="center">
   <img src="./photos/home_screen.png" width="250">
   <img src="./photos/app_categories.png" width="250">
-  <img src="./photos/oderscreen.png" width="250">
+  <img src="./photos/login_app.png" width="250">
 </p>
 
 ### Một số giao diện cơ bản của trang Web-Admin:
@@ -418,6 +420,18 @@ Lưu ý: Tạo file .env trong thư mục backend dựa trên .env.example.
 
 ---
 
-**Developed with ❤️ by Team DoubleD**
+## 👥 Phân chia công việc (Team Contribution)
 
-_© 2025 DoubleD Fashion - SE2025 Project_
+| Thành viên          | Vai trò                       | Trách nhiệm chính                                                                                                                                                 |
+| ------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Nguyễn Minh Đức** | Backend & Infrastructure Lead | • Thiết kế Database Schema (PostgreSQL)<br>• Xây dựng Backend API (Node.js + Express)<br>• Cấu hình môi trường Docker<br>• Phát triển Web Admin Dashboard Backend |
+| **Phạm Quý Đô**     | Frontend & UI/UX Lead         | • Thiết kế giao diện Figma<br>• Phát triển Mobile App (React Native)<br>• Phát triển Web Admin Frontend<br>• Tối ưu trải nghiệm người dùng                        |
+
+### Công việc chung
+
+- Tích hợp Frontend - Backend
+- Testing & Bug fixing
+- Viết tài liệu kỹ thuật
+- Triển khai hệ thống
+
+---
