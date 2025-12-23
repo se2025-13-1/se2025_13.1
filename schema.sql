@@ -5,11 +5,13 @@
  * ======================================================================================
  */
 
--- 1. CẤU HÌNH CƠ BẢN
+-- ======================================================================================
+-- 1. CAU HINH CO BAN
+-- ======================================================================================
 -- Kích hoạt extension để tạo UUID và hỗ trợ tìm kiếm Full-text
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-CREATE EXTENSION IF NOT EXISTS "pg_trgm"; -- Hỗ trợ tìm kiếm like %name% nhanh hơn
-CREATE EXTENSION IF NOT EXISTS "unaccent"; -- Hỗ trợ tìm kiếm tiếng Việt không dấu
+CREATE EXTENSION IF NOT EXISTS "pg_trgm"; 
+CREATE EXTENSION IF NOT EXISTS "unaccent";
 
 -- Hàm tự động cập nhật thời gian 'updated_at'
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -24,12 +26,12 @@ $$ language 'plpgsql';
 -- 2. MODULE AUTH & USER (NGƯỜI DÙNG)
 -- ======================================================================================
 
--- Bảng tài khoản đăng nhập (Tối giản)
+-- Bảng tài khoản đăng nhập 
 CREATE TABLE auth_users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email VARCHAR(150) UNIQUE NOT NULL,
   password_hash TEXT, -- Null nếu login bằng Google/FB
-  role VARCHAR(20) DEFAULT 'customer', -- 'customer', 'admin', 'staff'
+  role VARCHAR(20) DEFAULT 'customer', -- 'customer', 'admin'
   is_active BOOLEAN DEFAULT TRUE, -- Để Admin khóa tài khoản
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
@@ -67,7 +69,7 @@ CREATE TABLE user_addresses (
   recipient_name VARCHAR(100) NOT NULL,
   recipient_phone VARCHAR(20) NOT NULL,
   province VARCHAR(100),       -- Tỉnh/TP
-  district VARCHAR(100),       -- Quận/Huyện (Quan trọng để tính ship)
+  district VARCHAR(100),       -- Quận/Huyện (
   ward VARCHAR(100),           -- Phường/Xã
   address_detail TEXT,         -- Số nhà, tên đường
   is_default BOOLEAN DEFAULT FALSE,
@@ -247,7 +249,7 @@ CREATE TABLE reviews (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth_users(id) ON DELETE CASCADE,
   product_id UUID REFERENCES products(id) ON DELETE CASCADE,
-  order_item_id UUID REFERENCES order_items(id) ON DELETE CASCADE, -- Verified Purchase
+  order_item_id UUID REFERENCES order_items(id) ON DELETE CASCADE,
   
   rating INT CHECK (rating BETWEEN 1 AND 5),
   comment TEXT,
@@ -269,9 +271,9 @@ CREATE TABLE IF NOT EXISTS user_devices (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth_users(id) ON DELETE CASCADE,
   fcm_token TEXT NOT NULL,
-  platform VARCHAR(20), -- 'ios', 'android'
+  platform VARCHAR(20), 
   updated_at TIMESTAMP DEFAULT NOW(),
-  UNIQUE(fcm_token) -- Một token chỉ lưu 1 lần
+  UNIQUE(fcm_token)
 );
 
 -- 2. Bảng lưu nội dung thông báo
@@ -280,8 +282,8 @@ CREATE TABLE IF NOT EXISTS notifications (
   user_id UUID REFERENCES auth_users(id) ON DELETE CASCADE,
   title VARCHAR(255) NOT NULL,
   body TEXT,
-  type VARCHAR(50), -- 'order', 'promo'
-  data JSONB,       -- Dữ liệu để navigate: { "orderId": "..." }
+  type VARCHAR(50), 
+  data JSONB,       
   is_read BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT NOW()
 );
@@ -302,8 +304,6 @@ CREATE INDEX IF NOT EXISTS idx_products_price ON products(base_price);
 CREATE INDEX IF NOT EXISTS idx_products_rating ON products(rating_average);
 CREATE INDEX IF NOT EXISTS idx_products_created_at ON products(created_at);
 CREATE INDEX IF NOT EXISTS idx_products_sold_count ON products(sold_count);
-
--- Index cho tìm kiếm
 CREATE INDEX idx_products_name_trigram ON products USING gin (name gin_trgm_ops);
 
 -- Trigger tự động update 'updated_at'

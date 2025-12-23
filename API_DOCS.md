@@ -1,150 +1,126 @@
-# 📘 API Documentation - Fashion E-commerce
+# 📘 API Documentation - DoubleD Fashion
 
-Base URL:
+### Base URL:
 
     Local (Android Emulator): http://10.0.2.2:3000/api
 
     Local (Device/Web): http://<YOUR_IP>:3000/api (Ví dụ: http://192.168.1.5:3000/api)
 
-Authentication:
+### Authentication:
 
     Header: Authorization: Bearer <ACCESS_TOKEN>
 
     Token lấy được sau khi Login/Register.
 
-## 1. Authentication (Người dùng)
+### Ký hiệu:
+
+    🟢 Public: Không cần đăng nhập.
+
+    🔒 User: Cần Token User.
+
+    🛡️ Admin: Cần Token Admin.
+
+## 1. Authentication (Xác thực)
 
 🟢 Đăng ký
 
     Endpoint: POST /auth/register
 
-    Body:
-    code JSON
+    Body: { "email": "...", "password": "...", "name": "...", "phone": "..." }
 
-
-    {
-      "email": "user@example.com",
-      "password": "password123",
-      "name": "Nguyen Van A",
-      "phone": "0987654321" // Optional
-    }
-
-🟢 Đăng nhập
+🟢 Đăng nhập (Email/Pass)
 
     Endpoint: POST /auth/login
 
-    Body:
-    code JSON
+    Body: { "email": "...", "password": "..." }
 
+🟢 Đăng nhập bằng Firebase (Google)
 
-    {
-      "email": "user@example.com",
-      "password": "password123"
-    }
+    Endpoint: POST /auth/firebase
 
+    Body: { "idToken": "token_tu_firebase_client" }
 
+🟢 Quên mật khẩu
 
-    Response: Trả về accessToken và thông tin user.
+    Endpoint: POST /auth/forgot-password
+
+    Body: { "email": "..." }
+
+🟢 Đặt lại mật khẩu
+
+    Endpoint: POST /auth/reset-password
+
+    Body: { "email": "...", "otp": "...", "newPassword": "..." }
 
 🔒 Lấy thông tin cá nhân (Profile)
 
     Endpoint: GET /auth/me
 
-    Header: Cần Token.
-
-    Response: Trả về thông tin user, bao gồm cả mảng addresses (địa chỉ).
-
 🔒 Cập nhật hồ sơ
 
     Endpoint: PUT /auth/profile
 
-    Header: Cần Token.
+    Body: { "full_name": "...", "phone": "...", "gender": "...", "birthday": "...", "avatar_url": "..." }
 
-    Body: (Gửi các trường cần sửa)
-    code JSON
+🔒 Đăng xuất
 
-    {
-    "full_name": "Ten Moi",
-    "phone": "09999999",
-    "gender": "male", // male, female, other
-    "birthday": "1999-01-01",
-    "avatar_url": "https://..."
-    }
+    Endpoint: POST /auth/logout
 
 ## 2. Products (Sản phẩm)
 
-🟢 Lấy danh sách & Tìm kiếm (Quan trọng)
-
-API này dùng cho cả Trang chủ, Tìm kiếm, Lọc, Admin List.
+🟢 Lấy danh sách & Tìm kiếm
 
     Endpoint: GET /products
 
-    Query Params (Tùy chọn):
-
-        page: Số trang (Mặc định 1).
-
-        limit: Số lượng (Mặc định 20).
-
-        q: Từ khóa tìm kiếm (Tên sản phẩm).
-
-        category_id: ID danh mục.
-
-        min_price / max_price: Khoảng giá.
-
-        min_rating: Số sao tối thiểu (VD: 4).
-
-        sort_by: price, rating, sold, name (Không bắt buộc).
-            - Nếu không truyền → Mặc định sắp xếp theo created_at DESC (Mới nhất).
-
-        sort_order: asc (Tăng dần), desc (Giảm dần, Mặc định).
-
-    Ví dụ: /products?q=áo&min_price=100000&sort_by=price&sort_order=asc
+    Query: page, limit, q (keyword), category_id, min_price, max_price, sort_by, sort_order.
 
 🟢 Chi tiết sản phẩm
 
     Endpoint: GET /products/:id
 
-🔒 Tạo sản phẩm (Admin)
+🛡️ Tạo sản phẩm (Admin)
 
     Endpoint: POST /products
 
-    Body:
-    code JSON
+    Body: JSON chứa thông tin sản phẩm, variants, images.
 
+🛡️ Cập nhật sản phẩm (Admin)
 
-    {
-      "name": "Áo Thun",
-      "base_price": 200000,
-      "category_id": "uuid...",
-      "description": "Mô tả...",
-      "variants": [
-        { "sku": "A-RED-S", "color": "Red", "size": "S", "stock_quantity": 10, "price": 200000 }
-      ],
-      "images": [
-        { "image_url": "https://...", "color_ref": null }, // Ảnh chung
-        { "image_url": "https://...", "color_ref": "Red" } // Ảnh màu đỏ
-      ]
-    }
+    Endpoint: PUT /products/:id
 
-🔒 Cập nhật / Xóa (Admin)
+🛡️ Xóa sản phẩm (Admin - Soft Delete)
 
-    Update: PUT /products/:id
+    Endpoint: DELETE /products/:id
 
-    Delete: DELETE /products/:id (Soft delete)
+🛡️ Sửa lỗi Slug (Admin - Utility)
+
+    Endpoint: POST /products/fix-slugs
 
 ## 3. Categories (Danh mục)
 
-🟢 Lấy cây danh mục (Menu)
+🟢 Lấy cây danh mục (Menu App)
 
     Endpoint: GET /categories
 
-    Response: Trả về dạng cây lồng nhau (children: []). Dùng để hiển thị Menu đa cấp.
+    Response: Dạng cây (nested children).
 
-🟢 Lấy danh sách phẳng (Dropdown)
+🟢 Lấy danh sách phẳng (Dropdown Admin)
 
     Endpoint: GET /categories/flat
 
-    Response: Mảng phẳng. Dùng cho Admin chọn danh mục cha.
+🛡️ Tạo danh mục (Admin)
+
+    Endpoint: POST /categories
+
+    Body: { "name": "...", "parent_id": "..." }
+
+🛡️ Cập nhật danh mục (Admin)
+
+    Endpoint: PUT /categories/:id
+
+🛡️ Xóa danh mục (Admin)
+
+    Endpoint: DELETE /categories/:id
 
 ## 4. Cart (Giỏ hàng)
 
@@ -156,18 +132,11 @@ API này dùng cho cả Trang chủ, Tìm kiếm, Lọc, Admin List.
 
     Endpoint: POST /cart
 
-    Body:
-    code JSON
-
-
-    {
-      "variant_id": "uuid-cua-bien-the-mau-size", // KHÔNG PHẢI product_id
-      "quantity": 1
-    }
+    Body: { "variant_id": "...", "quantity": 1 }
 
 🔒 Cập nhật số lượng
 
-    Endpoint: PUT /cart/:item_id (Lưu ý: item_id là ID dòng trong giỏ hàng)
+    Endpoint: PUT /cart/:item_id
 
     Body: { "quantity": 5 }
 
@@ -177,41 +146,57 @@ API này dùng cho cả Trang chủ, Tìm kiếm, Lọc, Admin List.
 
 ## 5. Address (Địa chỉ)
 
-    List: GET /addresses
+🔒 Lấy danh sách
 
-    Create: POST /addresses
+    Endpoint: GET /addresses
 
-        Body: { recipient_name, recipient_phone, province, district, ward, address_detail, is_default }
+🔒 Thêm địa chỉ
 
-    Update: PUT /addresses/:id
+    Endpoint: POST /addresses
 
-    Delete: DELETE /addresses/:id
+    Body: { "recipient_name": "...", "recipient_phone": "...", "province": "...", "district": "...", "ward": "...", "address_detail": "...", "is_default": true/false }
 
-    Set Default: PATCH /addresses/:id/default
+🔒 Cập nhật địa chỉ
+
+    Endpoint: PUT /addresses/:id
+
+🔒 Xóa địa chỉ
+
+    Endpoint: DELETE /addresses/:id
+
+🔒 Đặt làm mặc định
+
+    Endpoint: PATCH /addresses/:id/default
 
 ## 6. Vouchers (Mã giảm giá)
 
-🟢 Lấy danh sách Banner (Trang chủ)
-
-    Endpoint: GET /vouchers
-
-    Logic: Hiển thị các mã đang chạy để user bấm "Lưu".
-
-🔒 Lưu Voucher (Sưu tầm)
-
-    Endpoint: POST /vouchers/:id/collect
-
-🔒 Ví Voucher (Trang Checkout)
-
-    Endpoint: GET /vouchers/my-wallet
-
-    Query: ?total_amount=500000 (Gửi tổng tiền lên để Server check xem mã nào sáng/tối).
-
-🟢 Check mã thủ công (Nhập tay)
+🟢 Kiểm tra mã (Check Code)
 
     Endpoint: POST /vouchers/check
 
     Body: { "code": "SALE50", "total_amount": 200000 }
+
+🟢 Lấy danh sách Voucher khả dụng (Banner)
+
+    Endpoint: GET /vouchers
+
+🛡️ Lấy chi tiết Voucher (Admin)
+
+    Endpoint: GET /vouchers/:id
+
+🛡️ Tạo Voucher (Admin)
+
+    Endpoint: POST /vouchers
+
+    Body: { "code": "...", "discount_type": "percent/fixed", "discount_value": 10, ... }
+
+🛡️ Cập nhật Voucher (Admin)
+
+    Endpoint: PUT /vouchers/:id
+
+🛡️ Xóa Voucher (Admin)
+
+    Endpoint: DELETE /vouchers/:id
 
 ## 7. Orders (Đơn hàng) - QUAN TRỌNG ⚠️
 
@@ -219,41 +204,37 @@ API này dùng cho cả Trang chủ, Tìm kiếm, Lọc, Admin List.
 
     Endpoint: POST /orders
 
-    Body (Mua từ giỏ hàng):
-    code JSON
-
-{
-"address_id": "uuid...",
-"payment_method": "cod",
-"voucher_code": "SALE50", // Optional
-"type": "cart",
-"cart_item_ids": ["id1", "id2"] // Hoặc [] để mua hết
-}
-
-Body (Mua ngay - Buy Now):
-code JSON
-
-    {
-      "address_id": "uuid...",
-      "type": "buy_now",
-      "items": [
-         { "variant_id": "uuid...", "quantity": 1 }
-      ]
-    }
+    Body: { "address_id": "...", "payment_method": "cod", "voucher_code": "...", "type": "cart/buy_now", "items": [...] }
 
 🔒 Lịch sử đơn hàng (User)
 
-    List: GET /orders
+    Endpoint: GET /orders
 
-    Detail: GET /orders/:id
+🔒 Chi tiết đơn hàng (User)
 
-    Cancel: PUT /orders/:id/cancel (Chỉ hủy được khi status là pending).
+    Endpoint: GET /orders/:id
 
-🔒 Quản lý đơn hàng (Admin)
+🔒 Hủy đơn hàng (User - Pending only)
 
-    List All: GET /orders/admin/all
+    Endpoint: PUT /orders/:id/cancel
 
-    Update Status: PUT /orders/:id/status (Body: { "status": "shipping" })
+🔒 Xác nhận đã nhận hàng (User)
+
+    Endpoint: PUT /orders/:id/complete
+
+🛡️ Lấy tất cả đơn hàng (Admin)
+
+    Endpoint: GET /orders/admin/all
+
+🛡️ Chi tiết đơn hàng (Admin)
+
+    Endpoint: GET /orders/admin/:id
+
+🛡️ Cập nhật trạng thái (Admin)
+
+    Endpoint: PUT /orders/:id/status
+
+    Body: { "status": "shipping" }
 
 ## 8. Reviews (Đánh giá)
 
@@ -261,47 +242,78 @@ code JSON
 
     Endpoint: POST /reviews
 
-    Body:
-    code JSON
+    Body: { "order_item_id": "...", "rating": 5, "comment": "...", "images": [] }
 
-
-    {
-      "order_item_id": "uuid-trong-don-hang", // Bắt buộc
-      "rating": 5,
-      "comment": "Hàng đẹp",
-      "images": ["url1", "url2"]
-    }
-
-🟢 Xem đánh giá (Trang chi tiết SP)
+🟢 Xem đánh giá theo Sản phẩm
 
     Endpoint: GET /reviews/product/:productId
 
+🔒 Xem đánh giá theo Đơn hàng (User check lịch sử)
+
+    Endpoint: GET /reviews/order/:orderId
+
 ## 9. Upload (Tải ảnh)
 
-🔒 Upload ảnh
+🔒 Upload Avatar (User)
+
+    Endpoint: POST /upload/avatar
+
+    Format: multipart/form-data, Key: image.
+
+🛡️ Upload ảnh Sản phẩm (Admin)
 
     Endpoint: POST /upload
 
-    Content-Type: multipart/form-data
-
-    Key: image (File).
-
-    Response: { "url": "https://supabase..." }
+    Format: multipart/form-data, Key: image.
 
 ## 10. Statistics (Admin Dashboard)
 
-    Tổng quan: GET /stats/dashboard
+🛡️ Tổng quan Dashboard
 
-    Biểu đồ: GET /stats/revenue?range=7
+    Endpoint: GET /stats/dashboard
 
-    Top sản phẩm: GET /stats/top-products
+🛡️ Biểu đồ doanh thu
 
-    Trạng thái đơn: GET /stats/order-status
+    Endpoint: GET /stats/revenue
+
+    Query: ?range=7 (hoặc 30).
+
+🛡️ Top sản phẩm
+
+    Endpoint: GET /stats/top-products
+
+🛡️ Trạng thái đơn hàng
+
+    Endpoint: GET /stats/order-status
 
 ## 11. Notifications (Thông báo)
 
-    Đăng ký Token: POST /notifications/device (Body: { fcm_token, platform })
+🔒 Đăng ký Token thiết bị (FCM)
 
-    Lấy danh sách: GET /notifications
+    Endpoint: POST /notifications/device
 
-    Đánh dấu đã đọc: PUT /notifications/:id/read
+    Body: { "fcm_token": "...", "platform": "android/ios" }
+
+🔒 Lấy danh sách thông báo
+
+    Endpoint: GET /notifications
+
+🔒 Đánh dấu đã đọc
+
+    Endpoint: PUT /notifications/:id/read
+
+## 12. Wishlist (Yêu thích)
+
+🔒 Toggle Yêu thích (Like/Unlike)
+
+    Endpoint: POST /wishlist/toggle
+
+    Body: { "product_id": "..." }
+
+🔒 Lấy danh sách yêu thích
+
+    Endpoint: GET /wishlist
+
+🔒 Lấy danh sách ID (Để tô đỏ tim)
+
+    Endpoint: GET /wishlist/ids
