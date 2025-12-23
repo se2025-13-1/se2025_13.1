@@ -121,7 +121,7 @@ const UserUtility: React.FC<UserUtilityProps> = ({
         onPress={() => handleUtilityPress(item.id)}
         activeOpacity={0.7}>
         <View style={styles.utilityIconContainer}>
-          <IconComponent size={40} color="#333333" />
+          <IconComponent size={37} color="#333333" />
         </View>
         <Text style={styles.utilityLabel}>{item.label}</Text>
       </TouchableOpacity>

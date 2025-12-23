@@ -1,5 +1,6 @@
 import React from 'react';
 import {View, Text, Image, TouchableOpacity, StyleSheet} from 'react-native';
+import {User} from 'lucide-react-native';
 
 interface ProfileHeaderProps {
   userName?: string;
@@ -34,14 +35,13 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         <View style={styles.leftSection}>
           {/* Avatar Container */}
           <View style={styles.avatarContainer}>
-            <Image
-              source={
-                avatarUrl
-                  ? {uri: avatarUrl}
-                  : require('../../../assets/icons/UserIcon.png')
-              }
-              style={styles.avatar}
-            />
+            {avatarUrl ? (
+              <Image source={{uri: avatarUrl}} style={styles.avatar} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <User color="#666666" size={28} />
+              </View>
+            )}
             {/* Edit Button */}
             <TouchableOpacity
               style={styles.editButton}
@@ -141,8 +141,16 @@ const styles = StyleSheet.create({
   avatar: {
     width: 50,
     height: 50,
-    borderRadius: 30,
+    borderRadius: 25,
     backgroundColor: '#F0F0F0',
+  },
+  avatarPlaceholder: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#F0F0F0',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   editButton: {
     position: 'absolute',

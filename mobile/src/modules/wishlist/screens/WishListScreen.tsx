@@ -16,6 +16,7 @@ import {wishlistApi} from '../services/wishlistApi';
 
 interface WishListScreenProps {
   navigation?: any;
+  onBackPress?: () => void;
 }
 
 interface WishlistProduct {
@@ -28,7 +29,10 @@ interface WishlistProduct {
 
 const {width} = Dimensions.get('window');
 
-const WishListScreen: React.FC<WishListScreenProps> = ({navigation}) => {
+const WishListScreen: React.FC<WishListScreenProps> = ({
+  navigation,
+  onBackPress,
+}) => {
   const {isAuthenticated} = useAuth();
   const [products, setProducts] = useState<WishlistProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,7 +58,11 @@ const WishListScreen: React.FC<WishListScreenProps> = ({navigation}) => {
   };
 
   const handleBackPress = () => {
-    navigation?.goBack();
+    if (onBackPress) {
+      onBackPress();
+    } else {
+      navigation?.goBack();
+    }
   };
 
   const handleProductRemoved = (productId: string) => {

@@ -6,7 +6,7 @@ import {
   StyleSheet,
   SafeAreaView,
 } from 'react-native';
-import {Home, Search, ShoppingCart, User} from 'lucide-react-native';
+import {Home, Search, ShoppingCart, Heart, User} from 'lucide-react-native';
 import {useAuth} from '../../contexts/AuthContext';
 import RequireAuth from '../../modules/auth/components/RequireAuth';
 
@@ -34,7 +34,7 @@ const TabBar: React.FC<TabBarProps> = ({
   const {isAuthenticated} = useAuth();
   const [showRequireAuth, setShowRequireAuth] = useState(false);
   const [selectedFeature, setSelectedFeature] = useState<
-    'notification' | 'cart'
+    'notification' | 'cart' | 'wishlist'
   >('cart');
   const tabs: TabItem[] = [
     {
@@ -53,6 +53,11 @@ const TabBar: React.FC<TabBarProps> = ({
       icon: ShoppingCart,
     },
     {
+      id: 'wishlist',
+      label: 'Yêu thích',
+      icon: Heart,
+    },
+    {
       id: 'profile',
       label: 'Cá nhân',
       icon: User,
@@ -60,14 +65,14 @@ const TabBar: React.FC<TabBarProps> = ({
   ];
 
   const handleTabPress = (tabId: string) => {
-    // Kiểm tra nếu là cart và người dùng chưa đăng nhập
-    if (tabId === 'cart' && !isAuthenticated) {
-      setSelectedFeature('cart');
+    // Kiểm tra nếu là cart hoặc wishlist và người dùng chưa đăng nhập
+    if ((tabId === 'cart' || tabId === 'wishlist') && !isAuthenticated) {
+      setSelectedFeature(tabId as 'cart' | 'wishlist');
       setShowRequireAuth(true);
       return;
     }
 
-    // Nếu đã đăng nhập hoặc không phải cart, thực hiện navigation bình thường
+    // Nếu đã đăng nhập hoặc không phải cart/wishlist, thực hiện navigation bình thường
     onTabPress(tabId);
   };
 

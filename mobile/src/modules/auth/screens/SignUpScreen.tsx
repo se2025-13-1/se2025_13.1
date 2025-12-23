@@ -81,25 +81,25 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
 
     // Validation
     if (!fullName.trim()) {
-      newErrors.fullName = 'Please enter your full name';
+      newErrors.fullName = 'Vui lòng nhập họ và tên';
     }
 
     if (!email.trim()) {
-      newErrors.email = 'Please enter your email address';
+      newErrors.email = 'Vui lòng nhập địa chỉ email';
     } else if (!validateEmail(email)) {
-      newErrors.email = 'Please enter valid email address';
+      newErrors.email = 'Vui lòng nhập địa chỉ email hợp lệ';
     }
 
     if (!password.trim()) {
-      newErrors.password = 'Please enter your password';
+      newErrors.password = 'Vui lòng nhập mật khẩu';
     } else if (!validatePassword(password)) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
     }
 
     if (!confirmPassword.trim()) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors.confirmPassword = 'Vui lòng xác nhận mật khẩu';
     } else if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = 'Mật khẩu không khớp';
     }
 
     setErrors(newErrors);
@@ -120,7 +120,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
         .then(async res => {
           const data = await res.json();
           if (!res.ok) {
-            throw new Error(data.message || 'Registration failed');
+            throw new Error(data.message || 'Đăng ký thất bại');
           }
           // Success - Save tokens if auto-login
           if (data.accessToken) {
@@ -152,8 +152,8 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
 
               setIsSuccess(true);
               Alert.alert(
-                'Success',
-                'Account created successfully! You are now logged in.',
+                'Thành công',
+                'Tạo tài khoản thành công! Bạn đã đăng nhập.',
                 [
                   {
                     text: 'OK',
@@ -172,8 +172,8 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
               // Still show success message even if storage fails
               setIsSuccess(true);
               Alert.alert(
-                'Success',
-                'Account created successfully! Please log in.',
+                'Thành công',
+                'Tạo tài khoản thành công! Vui lòng đăng nhập.',
                 [
                   {
                     text: 'OK',
@@ -192,8 +192,8 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
             // No auto-login, show success message and navigate to login
             setIsSuccess(true);
             Alert.alert(
-              'Success',
-              'Account created successfully! Please log in.',
+              'Thành công',
+              'Tạo tài khoản thành công! Vui lòng đăng nhập.',
               [
                 {
                   text: 'OK',
@@ -214,8 +214,8 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
           setErrors({
             submit:
               err instanceof TypeError
-                ? 'Network error. Please check your connection.'
-                : err.message || 'Registration failed. Please try again.',
+                ? 'Lỗi kết nối. Vui lòng kiểm tra kết nối mạng.'
+                : err.message || 'Đăng ký thất bại. Vui lòng thử lại.',
           });
         });
     }
@@ -235,7 +235,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
             setIsAuthenticated(true);
             setIsSuccess(true);
 
-            Alert.alert('Success', 'Google sign up successful!', [
+            Alert.alert('Thành công', 'Đăng ký Google thành công!', [
               {
                 text: 'OK',
                 onPress: () => {
@@ -251,9 +251,9 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
         } catch (error) {
           console.error('Google Sign-In error:', error);
           Alert.alert(
-            'Google Sign-In Error',
+            'Lỗi đăng ký Google',
             (error instanceof Error ? error.message : String(error)) ||
-              'Google Sign-In failed.',
+              'Đăng ký Google thất bại.',
           );
         } finally {
           setSocialLoading(null);
@@ -263,9 +263,9 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
     } catch (err: any) {
       setSocialLoading(null);
       console.error(`${provider} sign up error:`, err);
-      let errorMessage = `${provider} sign up failed. Please try again.`;
+      let errorMessage = `Đăng ký ${provider} thất bại. Vui lòng thử lại.`;
       if (err instanceof TypeError) {
-        errorMessage = 'Network error. Please check your connection.';
+        errorMessage = 'Lỗi kết nối. Vui lòng kiểm tra kết nối mạng.';
       } else if (err.message) {
         errorMessage = err.message;
       }
@@ -277,7 +277,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
     if (onLogin) {
       onLogin();
     } else {
-      Alert.alert('Login', 'Redirecting to Login screen...');
+      Alert.alert('Đăng nhập', 'Đang chuyển đến màn hình đăng nhập...');
     }
   };
 
@@ -298,21 +298,21 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
 
         {/* Content */}
         <View style={styles.content}>
-          <Text style={styles.title}>Create an account</Text>
-          <Text style={styles.subtitle}>Let's create your account.</Text>
+          <Text style={styles.title}>Tạo tài khoản</Text>
+          <Text style={styles.subtitle}>Hãy tạo tài khoản của bạn.</Text>
 
           {/* Form */}
           <View style={styles.form}>
             {/* Full Name */}
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Full Name</Text>
+              <Text style={styles.label}>Họ và tên</Text>
               <TextInput
                 style={[
                   styles.input,
                   errors.fullName && styles.inputError,
                   isFullNameValid() && !errors.fullName && styles.inputSuccess,
                 ]}
-                placeholder="Enter your full name"
+                placeholder="Nhập họ và tên của bạn"
                 placeholderTextColor="#999999"
                 value={fullName}
                 onChangeText={text => {
@@ -338,7 +338,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                   errors.email && styles.inputError,
                   isEmailValid() && !errors.email && styles.inputSuccess,
                 ]}
-                placeholder="Enter your email address"
+                placeholder="Nhập địa chỉ email của bạn"
                 placeholderTextColor="#999999"
                 value={email}
                 onChangeText={text => {
@@ -359,7 +359,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
 
             {/* Password */}
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Password</Text>
+              <Text style={styles.label}>Mật khẩu</Text>
               <View style={styles.passwordContainer}>
                 <TextInput
                   style={[
@@ -369,7 +369,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                       !errors.password &&
                       styles.inputSuccess,
                   ]}
-                  placeholder="Enter your password"
+                  placeholder="Nhập mật khẩu của bạn"
                   placeholderTextColor="#999999"
                   value={password}
                   onChangeText={text => {
@@ -402,7 +402,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
 
             {/* Confirm Password */}
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Confirm Password</Text>
+              <Text style={styles.label}>Xác nhận mật khẩu</Text>
               <View style={styles.passwordContainer}>
                 <TextInput
                   style={[
@@ -412,7 +412,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                       !errors.confirmPassword &&
                       styles.inputSuccess,
                   ]}
-                  placeholder="Confirm your password"
+                  placeholder="Xác nhận mật khẩu của bạn"
                   placeholderTextColor="#999999"
                   value={confirmPassword}
                   onChangeText={text => {
@@ -445,10 +445,10 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
 
             {/* Terms */}
             <Text style={styles.termsText}>
-              By signing up you agree to our{' '}
-              <Text style={styles.linkText}>Terms</Text>,{' '}
-              <Text style={styles.linkText}>Privacy Policy</Text>, and{' '}
-              <Text style={styles.linkText}>Cookie Use</Text>
+              Bằng việc đăng ký, bạn đồng ý với{' '}
+              <Text style={styles.linkText}>Điều khoản</Text>,{' '}
+              <Text style={styles.linkText}>Chính sách bảo mật</Text>, và{' '}
+              <Text style={styles.linkText}>Sử dụng Cookie</Text>
             </Text>
 
             {/* Error Message */}
@@ -473,14 +473,14 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                   isFormValid() && !isSuccess && styles.signUpButtonTextEnabled,
                   isSuccess && styles.signUpButtonTextSuccess,
                 ]}>
-                {isSuccess ? 'Account Created!' : 'Create an Account'}
+                {isSuccess ? 'Tài khoản đã tạo!' : 'Tạo tài khoản'}
               </Text>
             </TouchableOpacity>
 
             {/* Divider */}
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>Or</Text>
+              <Text style={styles.dividerText}>Hoặc</Text>
               <View style={styles.dividerLine} />
             </View>
 
@@ -499,8 +499,8 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                 />
                 <Text style={styles.socialButtonText}>
                   {socialLoading === 'Google'
-                    ? 'Signing up...'
-                    : 'Sign up with Google'}
+                    ? 'Đang đăng ký...'
+                    : 'Đăng ký bằng Google'}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -510,8 +510,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
               style={styles.loginLink}
               onPress={handleGoToLogin}>
               <Text style={styles.loginLinkText}>
-                Already have an account?{' '}
-                <Text style={styles.linkText}>Log In</Text>
+                Đã có tài khoản? <Text style={styles.linkText}>Đăng nhập</Text>
               </Text>
             </TouchableOpacity>
           </View>

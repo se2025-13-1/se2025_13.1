@@ -16,6 +16,7 @@ import ProductList from '../components/ProductList';
 import ProfileScreen from '../../profile/screens/ProfileScreen';
 import CartScreen from '../../cart/screens/CartScreen';
 import ChatScreen from '../../chat/screens/ChatScreen';
+import WishListScreen from '../../wishlist/screens/WishListScreen';
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -27,6 +28,8 @@ const HomeScreen: React.FC = () => {
       navigation.navigate('SearchEntry' as never);
     } else if (tabId === 'cart') {
       setActiveTab('cart');
+    } else if (tabId === 'wishlist') {
+      setActiveTab('wishlist');
     } else if (tabId === 'messages') {
       // Navigate to Chat screen
       setActiveTab('messages');
@@ -70,6 +73,11 @@ const HomeScreen: React.FC = () => {
         <ProfileScreen navigation={navigation} />
       ) : activeTab === 'cart' ? (
         <CartScreen onBackPress={() => setActiveTab('home')} />
+      ) : activeTab === 'wishlist' ? (
+        <WishListScreen
+          navigation={navigation}
+          onBackPress={() => setActiveTab('home')}
+        />
       ) : activeTab === 'messages' ? (
         <ChatScreen
           navigation={navigation}
@@ -112,7 +120,6 @@ const HomeScreen: React.FC = () => {
         onLogin={handleLoginPress}
         onRegister={handleRegisterPress}
         onGoogleLogin={handleGoogleLoginPress}
-        onFacebookLogin={handleFacebookLoginPress}
       />
     </SafeAreaView>
   );

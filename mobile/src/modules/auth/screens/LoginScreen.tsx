@@ -105,13 +105,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
 
     // Validation
     if (!email.trim()) {
-      newErrors.email = 'Please enter your email address';
+      newErrors.email = 'Vui lòng nhập địa chỉ email';
     } else if (!validateEmail(email)) {
-      newErrors.email = 'Please enter valid email address';
+      newErrors.email = 'Vui lòng nhập địa chỉ email hợp lệ';
     }
 
     if (!password.trim()) {
-      newErrors.password = 'Please enter your password';
+      newErrors.password = 'Vui lòng nhập mật khẩu';
     }
 
     setErrors(newErrors);
@@ -135,7 +135,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
           console.log('📧 Login response data:', data);
 
           if (!res.ok) {
-            throw new Error(data.error || 'Login failed');
+            throw new Error(data.error || 'Đăng nhập thất bại');
           }
           // Success - Save tokens and update context
           if (data.accessToken) {
@@ -219,9 +219,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
           console.error('❌ Email login error:', err);
           setIsLoading(false);
           // Phân biệt loại lỗi
-          let errorMessage = 'Login failed. Please try again.';
+          let errorMessage = 'Đăng nhập thất bại. Vui lòng thử lại.';
           if (err instanceof TypeError) {
-            errorMessage = 'Network error. Please check your connection.';
+            errorMessage = 'Lỗi kết nối. Vui lòng kiểm tra kết nối mạng.';
           } else if (err.message) {
             errorMessage = err.message;
           }
@@ -294,9 +294,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         } catch (error) {
           console.error('Google Sign-In error:', error);
           Alert.alert(
-            'Google Sign-In Error',
+            'Lỗi đăng nhập Google',
             (error instanceof Error ? error.message : String(error)) ||
-              'Google Sign-In failed.',
+              'Đăng nhập Google thất bại.',
           );
         } finally {
           setSocialLoading(null);
@@ -306,9 +306,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     } catch (err: any) {
       setSocialLoading(null);
       console.error(`${provider} login error:`, err);
-      let errorMessage = `${provider} login failed. Please try again.`;
+      let errorMessage = `Đăng nhập ${provider} thất bại. Vui lòng thử lại.`;
       if (err instanceof TypeError) {
-        errorMessage = 'Network error. Please check your connection.';
+        errorMessage = 'Lỗi kết nối. Vui lòng kiểm tra kết nối mạng.';
       } else if (err.message) {
         errorMessage = err.message;
       }
@@ -320,10 +320,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     if (onForgotPassword) {
       onForgotPassword();
     } else {
-      Alert.alert(
-        'Forgot Password',
-        'Password reset functionality coming soon!',
-      );
+      Alert.alert('Quên mật khẩu', 'Chức năng đặt lại mật khẩu sẽ sớm ra mắt!');
     }
   };
 
@@ -331,7 +328,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     if (onSignUp) {
       onSignUp();
     } else {
-      Alert.alert('Sign Up', 'Redirecting to Sign Up screen...');
+      Alert.alert('Đăng ký', 'Đang chuyển đến màn hình đăng ký...');
     }
   };
 
@@ -351,8 +348,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
 
       {/* Content */}
       <View style={styles.content}>
-        <Text style={styles.title}>Login to your account</Text>
-        <Text style={styles.subtitle}>It's great to see you again.</Text>
+        <Text style={styles.title}>Đăng nhập tài khoản</Text>
+        <Text style={styles.subtitle}>Rất vui được gặp lại bạn.</Text>
 
         {/* Form */}
         <View style={styles.form}>
@@ -365,7 +362,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                 errors.email && styles.inputError,
                 isSuccess && !errors.email && styles.inputSuccess,
               ]}
-              placeholder="Enter your email address"
+              placeholder="Nhập địa chỉ email của bạn"
               placeholderTextColor="#999999"
               value={email}
               onChangeText={text => {
@@ -391,7 +388,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
 
           {/* Password */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Password</Text>
+            <Text style={styles.label}>Mật khẩu</Text>
             <View style={styles.passwordContainer}>
               <TextInput
                 style={[
@@ -399,7 +396,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                   errors.password && styles.inputError,
                   isSuccess && !errors.password && styles.inputSuccess,
                 ]}
-                placeholder="Enter your password"
+                placeholder="Nhập mật khẩu của bạn"
                 placeholderTextColor="#999999"
                 value={password}
                 onChangeText={text => {
@@ -440,8 +437,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
             onPress={handleForgotPassword}
             style={styles.forgotPassword}>
             <Text style={styles.forgotPasswordText}>
-              Forgot your password?{' '}
-              <Text style={styles.linkText}>Reset your password</Text>
+              Quên mật khẩu?{' '}
+              <Text style={styles.linkText}>Đặt lại mật khẩu</Text>
             </Text>
           </TouchableOpacity>
 
@@ -479,17 +476,17 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                   styles.loginButtonGlowText,
               ]}>
               {isLoading
-                ? 'Logging in...'
+                ? 'Đang đăng nhập...'
                 : isSuccess
-                ? 'Login Successful!'
-                : 'Login'}
+                ? 'Đăng nhập thành công!'
+                : 'Đăng nhập'}
             </Text>
           </TouchableOpacity>
 
           {/* Divider */}
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>Or</Text>
+            <Text style={styles.dividerText}>Hoặc</Text>
             <View style={styles.dividerLine} />
           </View>
 
@@ -508,8 +505,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
               />
               <Text style={styles.socialButtonText}>
                 {socialLoading === 'Google'
-                  ? 'Signing in...'
-                  : 'Login with Google'}
+                  ? 'Đang đăng nhập...'
+                  : 'Đăng nhập bằng Google'}
               </Text>
             </View>
           </TouchableOpacity>
@@ -517,7 +514,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
           {/* Sign Up Link */}
           <TouchableOpacity style={styles.signUpLink} onPress={handleSignUp}>
             <Text style={styles.signUpLinkText}>
-              Don't have an account? <Text style={styles.linkText}>Join</Text>
+              Chưa có tài khoản? <Text style={styles.linkText}>Đăng ký</Text>
             </Text>
           </TouchableOpacity>
         </View>

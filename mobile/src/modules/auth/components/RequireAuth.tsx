@@ -13,7 +13,7 @@ import {useNavigation} from '@react-navigation/native';
 interface RequireAuthProps {
   visible: boolean;
   onClose: () => void;
-  feature: 'chat' | 'notification' | 'cart';
+  feature: 'chat' | 'notification' | 'cart' | 'wishlist';
   onLogin?: () => void;
   onRegister?: () => void;
   onGoogleLogin?: () => void;

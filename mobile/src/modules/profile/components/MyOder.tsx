@@ -93,7 +93,7 @@ const MyOder: React.FC<MyOderProps> = ({
         onPress={() => handleStatusPress(status)}
         activeOpacity={0.7}>
         <View style={styles.statusIconContainer}>
-          <IconComponent size={40} color="#333333" />
+          <IconComponent size={35} color="#333333" />
         </View>
         <Text style={styles.statusLabel}>{status.label}</Text>
       </TouchableOpacity>
