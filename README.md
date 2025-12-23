@@ -422,10 +422,10 @@ Lưu ý: Tạo file .env trong thư mục backend dựa trên .env.example.
 
 ## 👥 Phân chia công việc (Team Contribution)
 
-| Thành viên          | Vai trò                       | Trách nhiệm chính                                                                                                                                                 |
-| ------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Nguyễn Minh Đức** | Backend & Infrastructure Lead | • Thiết kế Database Schema (PostgreSQL)<br>• Xây dựng Backend API (Node.js + Express)<br>• Cấu hình môi trường Docker<br>• Phát triển Web Admin Dashboard Backend |
-| **Phạm Quý Đô**     | Frontend & UI/UX Lead         | • Thiết kế giao diện Figma<br>• Phát triển Mobile App (React Native)<br>• Phát triển Web Admin Frontend<br>• Tối ưu trải nghiệm người dùng                        |
+| Thành viên          | Vai trò                       | Trách nhiệm chính                                                                                                                                                    |
+| ------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Nguyễn Minh Đức** | Backend & Infrastructure Lead | • Thiết kế Database Schema (PostgreSQL)<br>• Xây dựng Backend API (Node.js + Express)<br>• Cấu hình môi trường Docker<br>• Phát triển Web Admin (Frontend + Backend) |
+| **Phạm Quý Đô**     | Frontend & UI/UX Lead         | • Thiết kế giao diện Figma<br>• Phát triển Mobile App (React Native)<br>• Phát triển Web Admin (Frontend + Backend)<br>• Tối ưu trải nghiệm người dùng               |
 
 ### Công việc chung
 
